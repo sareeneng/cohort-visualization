@@ -1,0 +1,7 @@
+For each dataset, put all CSV files into a new folder in this folder
+
+e.g. for TOPICC, the file structure would be:
+
+datasets/TOPICC/CARDIACPROCEDURES.csv
+datasets/TOPICC/CARDIACSURGERY.csv
+...

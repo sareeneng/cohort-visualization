@@ -1,0 +1,574 @@
+import json
+import os
+import pandas as pd
+import itertools
+from collections import defaultdict
+import utilities as u
+
+PARENT_TO = 'is parent to'
+CHILD_OF = 'is child of'
+SIBLING_OF = 'is sibling of'
+TABLE_TYPE_MANY = 'many'
+TABLE_TYPE_ONE = 'one'
+
+
+class DB():
+	'''
+	A directed graph connects tables together
+	If the tables have a 1:1 relationship, then they are siblings (bidirectional arrow in directed graph)
+	If the tables have a many:1 relationship, then the many table is the parent of the 1 table (many table is left table in a join) (unidirectional arrow in directed graph)
+	There is no support for many:many relationships.
+	'''
+
+	def __init__(self, data_dir_db=None, **kwargs):
+		self.tables = {}
+		self.common_columns = {}
+		self.exclude_columns_from_data_viz = []
+
+		if data_dir_db is not None:
+			self.load_from_directory(data_dir_db, **kwargs)
+			
+	def load_from_directory(self, data_dir_db, data_dir_base='datasets', data_file_ext='csv', delimiter=',', **kwargs):
+		directory_path = os.path.join(data_dir_base, data_dir_db)
+		data_files = [x for x in os.listdir(directory_path) if x.endswith(data_file_ext)]
+
+		# check for config file. If exists, then load from config. Otherwise prompt the user
+		config_files = [x for x in os.listdir(directory_path) if x.endswith('config')]
+		config_valid = False
+		config = None
+
+		if len(config_files) > 1:
+			print('ERROR: Only one .config file should be present in the directory. Recommend deleting them and re-configuring')
+		elif len(config_files) == 1:
+			config_path = os.path.join(directory_path, config_files[0])
+			with open(config_path, 'r') as f:
+				config = json.load(f)
+
+		for file_name in data_files:
+			path = os.path.join(directory_path, file_name)
+			table_name = file_name.split('.')[0]  # name the table after the file
+			df = pd.read_csv(path, delimiter=delimiter)
+			self.tables[table_name] = Table(name=table_name, df=df)
+
+		if config is not None:
+			try:
+				global_fks = config['global_fks']
+				custom_fks = config['custom_fks']
+				exclude_columns = config['exclude_columns']
+				config_valid = True
+			except KeyError:
+				print('Incomplete config file - will need to reconfigure')
+
+		if config_valid is False:
+			common_column_names = self.get_common_column_names()
+			print(common_column_names)
+			global_fks_valid = False
+			while not global_fks_valid:
+				global_fks = input('Which column labels are used to join tables together? Use space to separate them. Use * to indicate all. Case-sensitive. ')
+				if global_fks == '':
+					global_fks = []
+					global_fks_valid = True				
+				elif global_fks == '*':
+					global_fks = common_column_names
+					global_fks_valid = True
+				else:
+					global_fks_valid = True
+					global_fks = global_fks.split(' ')
+					for x in global_fks:
+						if x not in common_column_names:
+							print(f'{x} is not a valid column')
+							global_fks_valid = False
+			
+			exclude_columns_choice = input('Do you want to exclude any of these columns from being used as data visualization inputs/outputs [Y/N]? ')
+			exclude_columns_valid = True
+			if len(exclude_columns_choice) > 0:
+				if exclude_columns_choice[0].upper() == 'Y':
+					exclude_columns_valid = False
+
+			if exclude_columns_valid:
+				exclude_columns = []
+			
+			while not exclude_columns_valid:
+				exclude_columns_input = input('Which columns do you want to exclude? Use space to separate them. Use * to indicate all. Case-sensitive. ')
+				if exclude_columns_input == '':
+					exclude_columns = []
+					exclude_columns_valid = True
+				elif exclude_columns_input == '*':
+					exclude_columns = common_column_names
+					exclude_columns_valid = True
+				else:
+					exclude_columns_valid = True
+					exclude_columns = exclude_columns_input.split(' ')
+					for x in exclude_columns:
+						if x not in common_column_names:
+							print(f'{x} is not a valid column')
+							exclude_columns_valid = False
+
+			# Now get custom FKs
+			custom_fks = []
+			more_fks_input = input('Do you want to create other foreign key links? [Y/N]? ')
+			more_fks = False
+			if len(more_fks_input) > 0:
+				if more_fks_input[0].upper() == 'Y':
+					more_fks = True
+
+			if more_fks is False:
+				custom_fks = []	
+
+			while more_fks:
+				table_names = sorted(list(self.tables.keys()))
+
+				print(table_names)
+				table_1_valid = False
+				while not table_1_valid:
+					table_1_name = input("Enter first table (case-sensitive): ")
+					if table_1_name in table_names:
+						table_1_valid = True
+					else:
+						print('Table is not valid')
+
+				table_2_valid = False
+				while not table_2_valid:
+					table_2_name = input("Enter second table (case-sensitive): ")
+					if table_2_name in table_names:
+						table_2_valid = True
+					else:
+						print('Table is not valid')
+				
+				column_1_valid = False
+				table_1_column_names = sorted(self.tables[table_1_name].df.columns)
+				print(table_1_column_names)
+				while not column_1_valid:
+					column_1_name = input("Enter the column from the first table that serves as a link (case-sensitive): ")
+					if column_1_name in table_1_column_names:
+						column_1_valid = True
+					else:
+						print('Column name is not valid')
+
+				column_2_valid = False
+				table_2_column_names = sorted(self.tables[table_2_name].df.columns)
+				print(table_2_column_names)
+				while not column_2_valid:
+					column_2_name = input("Enter the column from the second table that serves as a link (case-sensitive): ")
+					if column_2_name in table_2_column_names:
+						column_2_valid = True
+					else:
+						print('Column name is not valid')
+				
+				add_dict = {'table_1': table_1_name, 'table_2': table_2_name, 'column_1': column_1_name, 'column_2': column_2_name}
+				if add_dict not in custom_fks:
+					custom_fks.append(add_dict)
+				else:
+					print('This link has already been set up')
+
+				more_fks_input = input('Do you want to create other foreign key links? [Y/N]? ')
+				
+				if len(more_fks_input) > 0:
+					if more_fks_input[0].upper() != 'Y':
+						more_fks = False
+				else:
+					more_fks = False
+
+
+			# dump config
+			config = {'global_fks': global_fks, 'custom_fks': custom_fks, 'exclude_columns': exclude_columns}
+			config_path = os.path.join(directory_path, f'{data_dir_db}.config')
+			with open(config_path, 'w') as f:
+				json.dump(config, f)
+
+		self.assign_global_fks(global_fks)
+		for global_fk in global_fks:
+			self.common_columns[global_fk] = Column(global_fk, shared=True)
+
+		for custom_fk in custom_fks:
+			self.assign_fk(table_1_name=custom_fk['table_1'], table_2_name=custom_fk['table_2'], column_1=custom_fk['column_1'], column_2=custom_fk['column_2'])
+
+		self.exclude_columns_from_data_viz = exclude_columns
+
+		for table in self.tables.values():
+			for column in table.df.columns:
+				if column in global_fks:
+					table.add_existing_column(self.common_columns[column])
+					self.common_columns[column].add_table(table)
+				else:
+					table.add_new_column(column_name=column)
+			table.add_suffix()
+
+	def get_common_column_names(self):
+		# find all columns that are found in multiple tables, these are obvious candidates for joining
+		column_counts = defaultdict(int)
+		for table_obj in self.tables.values():
+			for column in table_obj.df.columns:
+				column_counts[column] += 1
+
+		common_columns = [k for k, v in column_counts.items() if v > 1]
+		return common_columns
+
+	def get_all_columns(self):
+		column_set = set()
+		for table in self.tables.values():
+			for column in table.columns.values():
+				column_set.add(column)
+		return list(column_set)
+
+	def assign_global_fks(self, global_fks):
+		# option to supply a list of global fks instead of calling the function over and over
+		for global_fk in global_fks:
+			self.assign_global_fk(global_fk)
+
+	def assign_global_fk(self, global_fk):
+		for table_1, table_2 in itertools.combinations(self.tables.values(), 2):
+			self.assign_fk(table_1.name, table_2.name, column_1=global_fk, column_2=global_fk)
+
+	def assign_fk(self, table_1_name, table_2_name, column_1, column_2):
+		table_1 = self.tables[table_1_name]
+		table_2 = self.tables[table_2_name]
+			
+		table_1_type = table_1.get_table_type_for_column(column=column_1)
+		table_2_type = table_2.get_table_type_for_column(column=column_2)
+		# four options: many:many, many:one, one:many, or one:one. If column is not found then get_table_type_for_columns will return None
+
+		if table_1_type is not None and table_2_type is not None:
+			if table_1.has_relation(table_2_name):
+				print(f'Relation already exists between {table_1_name} and {table_2_name}. Cannot assign two foreign keys between two tables.')  # serves as a safety check
+			else:
+				if table_1_type == TABLE_TYPE_MANY:
+					if table_2_type == TABLE_TYPE_MANY:
+						pass  # do not establish a relationship between these two tables
+					elif table_2_type == TABLE_TYPE_ONE:
+						self.add_parent_child_link(parent_table=table_1, child_table=table_2, parent_column=column_1, child_column=column_2)
+				elif table_1_type == TABLE_TYPE_ONE:
+					if table_2_type == TABLE_TYPE_MANY:
+						self.add_parent_child_link(parent_table=table_2, child_table=table_1, parent_column=column_2, child_column=column_1)
+					elif table_2_type == TABLE_TYPE_ONE:
+						self.add_sibling_link(sibling_1_table=table_1, sibling_2_table=table_2, sibling_1_column=column_1, sibling_2_column=column_2)
+
+	def add_parent_child_link(self, parent_table, child_table, parent_column, child_column):
+		parent_table.children[child_table.name] = TableRelation(origin_table=parent_table, other_table=child_table, origin_relation_type=PARENT_TO, origin_column=parent_column, other_column=child_column)
+		
+		child_table.parents[parent_table.name] = TableRelation(origin_table=child_table, other_table=parent_table, origin_relation_type=CHILD_OF, origin_column=child_column, other_column=parent_column)
+
+	def add_sibling_link(self, sibling_1_table, sibling_2_table, sibling_1_column, sibling_2_column):
+		sibling_1_table.siblings[sibling_2_table.name] = TableRelation(origin_table=sibling_1_table, other_table=sibling_2_table, origin_relation_type=SIBLING_OF, origin_column=sibling_1_column, other_column=sibling_2_column)
+
+		sibling_2_table.siblings[sibling_1_table.name] = TableRelation(origin_table=sibling_2_table, other_table=sibling_1_table, origin_relation_type=SIBLING_OF, origin_column=sibling_2_column, other_column=sibling_1_column)
+
+	def find_paths_multi_tables(self, list_of_tables, fix_first=False):
+		'''
+		Given a list of tables in any order, find a path that traverses all of them.
+
+		If fix_first is True, then the first element will remain constant (useful when wanting to break down a specific outcome by various other variables)
+		'''
+		# first get all combos, these are candidate incomplete paths (missing intermediary tables)
+		if len(list_of_tables) == 1:
+			return [list_of_tables]
+
+		permutations = itertools.permutations(list_of_tables)
+		if fix_first:
+			permutations = [x for x in permutations if x[0] == list_of_tables[0]]
+		
+		valid_incomplete_paths = []
+		for permutation in permutations:
+			is_valid=True
+			for pair in u.pairwise(permutation):
+				if len(self.find_paths_between_tables(start_table=pair[0], destination_table=pair[1])) == 0:
+					is_valid=False
+			if is_valid:
+				valid_incomplete_paths.append(permutation)
+		
+		unflattened_valid_complete_paths = []
+		for valid_incomplete_path in valid_incomplete_paths:
+			path_possibilities_pairwise = []
+			# combo [B,A,F]
+			# BA --> [[B,A]]
+			# AF --> [[A,D,C,F],[A,C,F],[A,B,E,F]]
+			for pair in u.pairwise(valid_incomplete_path):	
+				path_possibilities_pairwise.append(self.find_paths_between_tables(start_table=pair[0], destination_table=pair[1]))
+			#print(path_possibilities_pairwise)
+			combos = itertools.product(*path_possibilities_pairwise)
+			for combo in combos:
+				unflattened_valid_complete_paths.append(list(combo))
+			
+		flattened_valid_complete_paths = []
+		for l in unflattened_valid_complete_paths:
+			flattened_valid_complete_paths.append(list(u.flatten(l)))
+		
+		flattened_valid_complete_paths = u.remove_adjacent_repeats(flattened_valid_complete_paths)
+		
+		return flattened_valid_complete_paths
+
+	def find_paths_multi_columns(self, list_of_columns, fix_first=False):
+		'''
+		Given a list of columns that need to be traversed along a single path, call find_paths_multi_tables to find paths between then	
+		Fix_first is useful when you want to breakdown some outcome by different variables. For example, if you want to get Income broken down by State and Profession, then start_column = Income column, and list_of_columns = [State column, Profession column]
+		'''
+
+		column_permutations = itertools.permutations(list_of_columns)
+		if fix_first:
+			column_permutations = [x for x in column_permutations if x[0] == list_of_columns[0]]
+
+		options = []
+		for column_permutation in column_permutations:
+			table_list = [x.tables for x in column_permutation]
+			for x in itertools.product(*table_list):  # get all possible combinations of tables preserving column order within each column permutation
+				options.append(list(x))
+		
+		options = [[x.name for x in y] for y in options]  # convert Table objects to names, confusing syntax because it's a nested list
+
+		# Have a list of lists of possible table combinations. Some of these have duplicated tables, remove adjacent repeats within each list and then duplicated lists in full container
+		dedup_options = u.remove_adjacent_repeats(options)
+		de_dedup_options = u.remove_duplicated_lists(dedup_options)
+		
+		# Now I'm left with a list of potential table_paths, but many of them are likely not valid paths, and they are incomplete (do not include intermediary)
+		valid_column_paths = []
+		for table_list in de_dedup_options:
+			paths = self.find_paths_multi_tables(table_list, fix_first=fix_first)
+
+			for path in paths:
+				valid_column_paths.append(path)
+
+		dedup_valid_column_paths = u.remove_duplicated_lists(valid_column_paths)
+		return dedup_valid_column_paths
+
+	def find_paths_between_tables(self, start_table, destination_table, current_path=[]):
+		if start_table == destination_table:
+			return [start_table]
+		
+		if type(start_table) == str:
+			start_table = self.tables[start_table]
+			destination_table = self.tables[destination_table]
+
+		start_table_name = start_table.name
+		destination_table_name = destination_table.name
+
+		all_paths = []
+		current_path = current_path.copy() + [start_table_name]
+		if (destination_table_name in start_table.children) or (destination_table_name in start_table.siblings):  # immediately return valid path rather than going through children/siblings
+			all_paths.append(current_path.copy() + [destination_table_name])
+			return all_paths
+			
+		elif len(start_table.children) == 0 and len(start_table.siblings) == 0:  # destination table wasn't found and this path has nowhere else to go
+			return []
+
+		elif destination_table_name in start_table.parents:
+			# if found in parents, then if parent is not a sibling of any of this tables siblings, then there's no path to get up to that parent
+			# if it is a sibling of a sibling, then return that sibling + destination table appended to current_path
+			# I might be able to just not check siblings of siblings because I'm not sure if this relationship is possible, but it's not computationaly expensive
+			found_sibling_of_sibling = False
+			for sibling_name, sibling_relationship_obj in start_table.siblings.items():
+				if destination_table_name == sibling_relationship_obj.other_table.name:
+					found_sibling_of_sibling = True
+					all_paths.append(current_path.copy() + [sibling_name] + [destination_table_name])
+			if found_sibling_of_sibling:
+				return all_paths
+			else:
+				return []
+
+		for child_name in start_table.children.keys():
+			for path in self.find_paths_between_tables(start_table=child_name, destination_table=destination_table_name, current_path=current_path):
+				all_paths.append(path)
+		
+		for sibling_name in start_table.siblings.keys():
+			if sibling_name not in current_path:  # prevents just looping across siblings forever
+				for path in self.find_paths_between_tables(start_table=sibling_name, destination_table=destination_table_name, current_path=current_path):
+					all_paths.append(path)
+
+		return all_paths
+
+	def get_joined_df_options_from_paths(self, paths):
+		# given a list of paths, get all dfs that could arise
+		df_choices = []
+		for path in paths:
+			if type(path) == str:
+				path = [path]
+
+			df = self.tables[path[0]].df  # paths returns a list of strings of table_names. Initialize with the first table obj in the path
+			previous_table = self.tables[path[0]]
+			previous_table_name = previous_table.name
+			added_tables = [previous_table_name]
+			if len(path) > 1:
+				for next_table_name in path[1:]:
+					next_table = self.tables[next_table_name]
+					columns_for_joining = previous_table.get_fks(next_table_name)
+					# ensure that next_table was not already added in case the path backtracks, otherwise skip over
+					if next_table_name not in added_tables:
+						df = pd.merge(df, next_table.df, left_on=f'{columns_for_joining[0]}_[{previous_table_name}]', right_on=f'{columns_for_joining[1]}_[{next_table_name}]')
+						added_tables.append(next_table_name)
+					previous_table = next_table
+					previous_table_name = previous_table.name
+			df_choices.append(df)
+		return df_choices
+
+	def get_joined_df_options(self, table_1_name, table_2_name):
+		# return all dfs that arise from each possible path between two tables
+		possible_paths = self.find_paths_between_tables(start_table=table_1_name, destination_table=table_2_name)
+
+		return self.get_joined_df_options_from_paths(possible_paths)
+
+	def get_biggest_joined_df_option_from_paths(self, paths):
+		df_choices = self.get_joined_df_options_from_paths(paths)
+
+		idx = 0
+		longest_length = 0
+		counter = 0
+		if len(df_choices) > 0:
+			for df in df_choices:
+				if len(df) > longest_length:
+					longest_length = len(df)
+					idx = counter
+				counter += 1
+		else:
+			return None
+		
+		return df_choices[idx]
+
+	def get_biggest_joined_df_option(self, table_1_name, table_2_name):
+		# return only the longest df that arises from looking at each possible path
+
+		possible_paths = self.find_paths_between_tables(start_table=table_1_name, destination_table=table_2_name)
+
+		return self.get_biggest_joined_df_option_from_paths(possible_paths)
+
+	def get_still_accessible_tables(self, include_table_names, fix_first=False):
+		# Given a list of include_table_names that must be in a valid path (not necessarily in order), iterate through the rest of the tables to figure out if there are paths between include_tables and each of those
+		possible_tables = [x for x in self.tables.keys() if x not in include_table_names]
+
+		accessible_tables = []
+		for possible_table in possible_tables:
+			check_tables = include_table_names + [possible_table]
+			if len(self.find_paths_multi_tables(check_tables, fix_first=fix_first)) > 0:
+				accessible_tables.append(possible_table)
+		return accessible_tables
+
+	def get_still_accessible_columns(self, include_columns):
+		# Given a list of include_columns that must be in a valid path (not necessarily in order, but the function will preserve order), iterate through the rest of the columns to figure out if there are paths between include_columns and each of those
+		# One way to do this is to get all possible combinations of the tables that each include_column is in, figure out which tables are accessible, and then add those tables columns in
+		
+		accessible_columns = set()
+		include_table_options = [x.get_table_names() for x in include_columns]
+		table_products = itertools.product(*include_table_options)
+
+		dedup_table_products = [u.remove_duplicates(x) for x in table_products]
+		de_dedup_table_products = u.remove_duplicated_lists(dedup_table_products)
+		
+		accessible_tables = set()
+		all_paths = []
+		for table_combo in de_dedup_table_products:
+			potential_paths = self.find_paths_multi_tables(table_combo)
+			for path in potential_paths:
+				all_paths.append(path)
+				for traversed_table in path:
+					accessible_tables.add(traversed_table)
+		
+		# traversed tables represent all the tables I could touch with the columns already included. This means that all their columns are accessible already
+		for table_name in accessible_tables:
+			for column in self.tables[table_name].columns.values():
+				accessible_columns.add(column)
+		
+		remaining_table_names = [x for x in self.tables.keys() if x not in accessible_tables]
+
+		# potential paths represents all complete paths that can traverse between the columns in include_columns. To check if the other tables are accessible, see if there's a path between the last member in each path and the remaining table
+		for remaining_table_name in remaining_table_names:
+			found_valid_path = False
+			for path in all_paths:
+				if not found_valid_path:
+					if len(self.find_paths_between_tables(path[-1], remaining_table_name)) > 0:
+						found_valid_path = True
+						accessible_tables.add(remaining_table_name)
+						for column in self.tables[remaining_table_name].columns.values():
+							accessible_columns.add(column)
+
+		return list(accessible_columns)
+
+
+class Table():
+	def __init__(self, name, df):
+		self.name = name
+		self.df = df
+		self.columns = {}
+		self.children = {}
+		self.siblings = {}
+		self.parents = {}
+
+	def add_suffix(self):
+		self.df = self.df.add_suffix(f'_[{self.name}]')
+
+	def add_existing_column(self, column):
+		self.columns[column.name] = column
+
+	def add_new_column(self, column_name):
+		self.columns[column_name] = Column(name=column_name, shared=False, table=self)
+
+	def get_column_names(self):
+		return list(self.columns.keys())
+
+	def has_relation(self, other_table_name):
+		relations = self.get_children_names() + self.get_sibling_names() + self.get_parent_names()
+		return other_table_name in relations
+
+	def get_possible_connections(self):
+		return self.get_children_names() + self.get_sibling_names()
+
+	def get_children_names(self):
+		return [x for x in self.children.keys()]
+	
+	def get_sibling_names(self):
+		return [x for x in self.siblings.keys()]
+
+	def get_parent_names(self):
+		return [x for x in self.parents.keys()]
+
+	def get_table_type_for_column(self, column):
+		if column not in self.df.columns:
+			return None
+		
+		if len(self.df[column].dropna()) > len(self.df[column].dropna().unique()):
+			return TABLE_TYPE_MANY
+
+		if len(self.df[column].dropna()) == len(self.df[column].dropna().unique()):
+			return TABLE_TYPE_ONE
+
+		return None
+
+	def get_fks(self, next_table_name):
+		if next_table_name not in self.get_possible_connections():
+			return None
+		
+		if next_table_name in self.children:
+			relation_data = self.children[next_table_name]
+		elif next_table_name in self.siblings:
+			relation_data = self.siblings[next_table_name]
+
+		return (relation_data.origin_column, relation_data.other_column)
+
+	def __repr__(self):
+		return self.name
+
+	
+class TableRelation():
+	def __init__(self, origin_table, other_table, origin_relation_type, origin_column, other_column):
+		self.origin_table = origin_table
+		self.other_table = other_table
+		self.origin_relation_type = origin_relation_type  # origin_table is ___ other_table
+		self.origin_column = origin_column
+		self.other_column = other_column
+
+
+class Column():
+	def __init__(self, name, shared=False, table=None):
+		self.name = name
+		self.shared = shared
+		self.tables = set()
+		if table is not None:
+			self.tables.add(table)
+
+	def add_table(self, new_table):
+		self.tables.add(new_table)
+
+	def get_table_names(self):
+		table_list = list(self.tables)
+		return [x.name for x in table_list]
+			 
+
+	def __repr__(self):
+		return f'Column {self.name} in tables {self.tables}'

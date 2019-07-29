@@ -1,0 +1,9 @@
+*Notes*
+TOPICC/
+*.log*
+*.pyc*
+*.json*
+.ipynb_checkpoints/
+arbitrage/
+OTU/
+scratch.py
