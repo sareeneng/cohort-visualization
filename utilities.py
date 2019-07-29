@@ -15,13 +15,16 @@ def remove_adjacent_repeats(list_of_lists):
 	# e.g. [[A,A,B], [A,C,A]] --> [[A,B], [A,C,A]]
 	dedup_list = []
 	for indiv_list in list_of_lists:
-		previous_element = indiv_list[0]
-		list_to_add = [previous_element]
-		if len(indiv_list) > 1:
-			for element in indiv_list:
-				if element != previous_element:
-					list_to_add.append(element)
-					previous_element = element
+		if len(indiv_list) > 0:
+			previous_element = indiv_list[0]
+			list_to_add = [previous_element]
+			if len(indiv_list) > 1:
+				for element in indiv_list:
+					if element != previous_element:
+						list_to_add.append(element)
+						previous_element = element
+		else:
+			list_to_add = []
 		dedup_list.append(list_to_add)
 	return dedup_list
 
