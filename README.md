@@ -111,7 +111,7 @@ arrow represents a sibling-sibling link.
 
 sample_2 is a more abstract sample set that is used to show more difficult pathfinding. It is represented as such:
 
-![sample_2 schema](https://imgur.com/a/M9OgQB2)
+![sample 2 schema](https://i.imgur.com/1cQERiK.png)
 
 A has a many-to-one relationship with C/D, and a one-to-one relationship with B
 B has a many-to-one relationship with E, and a one-to-one relationship with A
@@ -137,9 +137,9 @@ paths = DB.find_paths_between_tables(table_start, table_end)
 ```
 
 To get a column from table F into A, there are three paths you can take:
-A JOIN D JOIN C JOIN F
-A JOIN C JOIN F
-A JOIN B JOIN E JOIN F
+- A JOIN D JOIN C JOIN F
+- A JOIN C JOIN F
+- A JOIN B JOIN E JOIN F
 
 Then you can get the resultant dataframes from these three options using:
 
@@ -148,8 +148,7 @@ DB.get_joined_df_options_from_paths(paths)
 ## result: array of three dataframes, with length of 4, 6, and 5 rows
 ```
 
-Any of these dataframes are valid solutions to the problem at hand, but clearly one is better (the largest one). So an alternative is 
-to use: 
+Any of these dataframes are valid solutions to the problem at hand, but one is better (the largest one). So an alternative is to use: 
 
 ```
 DB.get_biggest_joined_df_option_from_paths(paths)
