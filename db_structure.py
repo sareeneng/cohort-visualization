@@ -22,7 +22,7 @@ class DB():
 
 	def __init__(self, data_dir_db=None, **kwargs):
 		self.tables = {}
-		self.common_columns = {}
+		self.common_columns = []
 		self.exclude_columns_from_data_viz = []
 
 		if data_dir_db is not None:
@@ -181,7 +181,7 @@ class DB():
 
 		self.assign_global_fks(global_fks)
 		for global_fk in global_fks:
-			self.common_columns[global_fk] = Column(global_fk, shared=True)
+			self.common_columns.append(Column(global_fk, shared=True))
 
 		for custom_fk in custom_fks:
 			table_1 = self.tables[custom_fk['table_1']]
@@ -195,10 +195,12 @@ class DB():
 		for table in self.tables.values():
 			for column in table.df.columns:
 				if column in global_fks:
-					table.add_existing_column(self.common_columns[column])
-					self.common_columns[column].add_table(table)
+					column_to_add = self.get_common_column_by_name(column)
+					column_to_add.add_table(table)
 				else:
-					table.add_new_column(column_name=column)
+					column_to_add = Column(name=column, table=table)
+				table.add_column(column_to_add)
+			
 			table.add_suffix()
 
 	def get_common_column_names(self):
@@ -214,7 +216,7 @@ class DB():
 	def get_all_columns(self):
 		column_set = set()
 		for table in self.tables.values():
-			for column in table.columns.values():
+			for column in table.columns:
 				column_set.add(column)
 		return list(column_set)
 
@@ -450,7 +452,7 @@ class DB():
 		
 		# traversed tables represent all the tables I could touch with the columns already included. This means that all their columns are accessible already
 		for table in accessible_tables:
-			for column in table.columns.values():
+			for column in table.columns:
 				accessible_columns.add(column)
 		
 		remaining_tables = [x for x in self.tables.values() if x not in accessible_tables]
@@ -463,17 +465,20 @@ class DB():
 					if len(self.find_paths_between_tables(path[-1], remaining_table)) > 0:
 						found_valid_path = True
 						accessible_tables.add(remaining_table)
-						for column in remaining_table.columns.values():
+						for column in remaining_table.columns:
 							accessible_columns.add(column)
 
 		return list(accessible_columns)
+
+	def get_common_column_by_name(self, column_name):
+		return next((x for x in self.common_columns if x.name == column_name), None)
 
 
 class Table():
 	def __init__(self, name, df):
 		self.name = name
 		self.df = df
-		self.columns = {}
+		self.columns = []
 		self.children = {}
 		self.siblings = {}
 		self.parents = {}
@@ -487,14 +492,11 @@ class Table():
 	def add_suffix(self):
 		self.df = self.df.add_suffix(f'_[{self.name}]')
 
-	def add_existing_column(self, column):
-		self.columns[column.name] = column
-
-	def add_new_column(self, column_name):
-		self.columns[column_name] = Column(name=column_name, shared=False, table=self)
+	def add_column(self, column):
+		self.columns.append(column)
 
 	def get_column_names(self):
-		return list(self.columns.keys())
+		return [x.name for x in self.columns]
 
 	def has_relation(self, other_table):
 		return other_table.name in self.get_children_names() + self.get_sibling_names() + self.get_parent_names()
@@ -530,6 +532,9 @@ class Table():
 
 		return (relation_data.origin_column, relation_data.other_column)
 
+	def get_column_by_name(self, column_name):
+		return next((x for x in self.columns if x.name == column_name), None)
+
 	def __repr__(self):
 		return self.name
 
@@ -550,6 +555,12 @@ class Column():
 		self.tables = set()
 		if table is not None:
 			self.tables.add(table)
+
+	def __hash__(self):
+		return hash((self.name, self.tables))
+
+	def __eq__(self, other):
+		return (self.name == other.name) and (self.tables == other.tables)
 
 	def add_table(self, new_table):
 		self.tables.add(new_table)
