@@ -4,6 +4,7 @@ import dash_html_components as html
 import dash_reusable_components as drc
 from dash.dependencies import Input, Output
 from db_structure import DB
+import utilities as u
 
 import logging
 import pandas as pd
@@ -47,16 +48,15 @@ app.layout = html.Div(
 			id="variable_container",
 			children=[
 				drc.NamedDropdown(
-					name="Outcome",
-					id="outcome_variable",
-					options=sorted([{'label': x, 'value': x} for x in column_label_to_obj.keys() if x not in exclude_columns], key=lambda y: y['label'] ),
+					name="Independent variables",
+					id="ind_variables",
+					options = [],
+					value = [],
+					multi=True
 				),
 				drc.NamedDropdown(
-					name="Breakdown by",
-					id="breakdown_variables",
-					options=[],
-					value=[],
-					multi=True
+					name="Outcome",
+					id="outcome_variable"
 				),
 				drc.NamedRadioItems(
 					name="Distribution Type",
@@ -73,58 +73,82 @@ app.layout = html.Div(
 	]
 )
 
+def get_col_obj(*args):
+	args = [[] if x is None else x for x in args]
+	args = u.flatten(args)	
+	return [column_label_to_obj[x] for x in args]
+	
+
 @app.callback(
 	[
-		Output('breakdown_variables', 'options'),
-		Output('outcome_graph', 'figure'),
+		Output('outcome_variable', 'options'),
+		Output('ind_variables', 'options')
 	],
 	[
 		Input('outcome_variable', 'value'),
-		Input('breakdown_variables', 'value'),
+		Input('ind_variables', 'value')
+	]
+)
+def update_variable_options(outcome_var_chosen, ind_vars_chosen):
+	if len(ind_vars_chosen) == 0 and outcome_var_chosen is None:
+		# User hasn't chosen anything yet, so both the independent variables and outcome variables will have the same options
+		full_list = sorted([{'label': x, 'value': x} for x in column_label_to_obj.keys() if x not in exclude_columns], key=lambda y: y['label'])
+		return full_list, full_list
+	
+	current_col_obj_list = get_col_obj(outcome_var_chosen, ind_vars_chosen)
+	accessible_col_objs = db.get_still_accessible_columns(include_columns=current_col_obj_list)
+
+	accessible_list = sorted([{'label': x.name, 'value': x.name} for x in accessible_col_objs if x.name not in exclude_columns], key=lambda y: y['label'])
+
+	return accessible_list, accessible_list
+
+
+@app.callback(
+	Output('outcome_graph', 'figure'),
+	[
+		Input('outcome_variable', 'value'),
+		Input('ind_variables', 'value'),
 		Input('distribution_type', 'value')
 	]
 )
-def update_graph(outcome_variable, breakdown_variables, distribution_type):
-	if outcome_variable is None:
-		return_list = [sorted([{'label': x, 'value': x} for x in column_label_to_obj.keys() if x not in exclude_columns], key=lambda y: y['label'])]
-		return return_list, {}
+def update_graph(outcome_var_chosen, ind_vars_chosen, distribution_type):
+	if len(ind_vars_chosen) == 0:
+		return {}
 		
-	outcome_col_obj = column_label_to_obj[outcome_variable]
-	if breakdown_variables is not None:
-		breakdown_col_objs = [column_label_to_obj[x] for x in breakdown_variables]
+	current_col_obj_list = get_col_obj(outcome_var_chosen, ind_vars_chosen)
+	paths = db.find_paths_multi_columns(current_col_obj_list)
+	df = db.get_biggest_joined_df_option_from_paths(paths)
+
+	outcome_var_with_table = None
+	ind_vars_with_table = []
+	for col_obj in current_col_obj_list:
+		for table in col_obj.tables:
+			col_header = f'{col_obj.name}_[{table.name}]'
+			if col_header in df.columns:
+				if col_obj.name == outcome_var_chosen:
+					outcome_var_with_table = col_header
+				else:
+					ind_vars_with_table.append(col_header)
+
+	if outcome_var_chosen is None:
+		all_vars_with_tables = ind_vars_with_table
 	else:
-		breakdown_col_objs = []
-	current_col_obj_list = [outcome_col_obj] + breakdown_col_objs
+		all_vars_with_tables = [outcome_var_with_table] + ind_vars_with_table
 
-	accessible_col_objs = db.get_still_accessible_columns(include_columns=current_col_obj_list)
+	df = df.loc[:, all_vars_with_tables]
 
-	return_list = sorted([{'label': x.name, 'value': x.name} for x in accessible_col_objs if x.name not in exclude_columns], key=lambda y: y['label'])
-	
-	if len(breakdown_variables) > 0:
-		paths = db.find_paths_multi_columns(current_col_obj_list, fix_first=True)
-		df = db.get_biggest_joined_df_option_from_paths(paths)
-
-		breakdown_variables_with_table = []
-		for breakdown_col_obj in breakdown_col_objs:
-			for table in breakdown_col_obj.tables:
-				breakdown_column_header = f'{breakdown_col_obj.name}_[{table.name}]'
-				if breakdown_column_header in df.columns:
-					breakdown_variables_with_table.append(breakdown_column_header)
-					break
-		for table in outcome_col_obj.tables:
-			outcome_column_header = f'{outcome_col_obj.name}_[{table.name}]'
-			if outcome_column_header in df.columns:
-				outcome_variable_with_table = outcome_column_header
-				break
-
-		g = df.groupby(breakdown_variables_with_table)[outcome_variable_with_table]
+	if outcome_var_chosen is None:
+		# just get the counts then
+		distribution = df.groupby(ind_vars_with_table).size().reset_index(name="Count")
+	else:
+		g = df.groupby(ind_vars_with_table)[outcome_var_with_table]
 		
 		if distribution_type == 'Count':
 			distribution = g.value_counts().unstack().reset_index()
-			outcome_possibilities = [x for x in list(df[outcome_variable_with_table].unique()) if not pd.isnull(x)]
+			outcome_possibilities = [x for x in list(df[outcome_var_with_table].unique()) if not pd.isnull(x)]
 		elif distribution_type == '% within category':
 			distribution = (g.value_counts(normalize=True)*100).round(1).unstack().reset_index()
-			outcome_possibilities = [x for x in list(df[outcome_variable_with_table].unique()) if not pd.isnull(x)]
+			outcome_possibilities = [x for x in list(df[outcome_var_with_table].unique()) if not pd.isnull(x)]
 		elif distribution_type == 'sum':
 			distribution = g.sum().reset_index()
 			outcome_possibilities = None
@@ -132,44 +156,45 @@ def update_graph(outcome_variable, breakdown_variables, distribution_type):
 			distribution = g.mean().reset_index()
 			outcome_possibilities = None
 		logging.info(distribution)
-		
-		def get_breakdown_label(row, breakdown_variables):
-			return_str = ''
-			for x in breakdown_variables:
-				return_str += str(row[x]) + '_'
-			return_str = return_str[:-1]  # remove trailing underscore
-			return return_str
-		
-		distribution['Breakdown_axis_labels'] = distribution.apply(lambda x: get_breakdown_label(x, breakdown_variables_with_table), axis=1)
+	
+	def get_breakdown_label(row, ind_variables):
+		return_str = ''
+		for x in ind_variables:
+			return_str += str(row[x]) + '_'
+		return_str = return_str[:-1]  # remove trailing underscore
+		return return_str
+	
+	distribution['Breakdown_axis_labels'] = distribution.apply(lambda x: get_breakdown_label(x, ind_vars_with_table), axis=1)
 
+	if outcome_var_chosen is None:
+		traces = [go.Bar(x=distribution['Breakdown_axis_labels'], y=distribution["Count"])]
+	else:
 		traces = []
-		
 		if outcome_possibilities is not None:
 			for outcome_possibility in outcome_possibilities:
 				traces.append(go.Bar(x=distribution['Breakdown_axis_labels'], y=distribution[outcome_possibility], name=str(outcome_possibility)))
 		else:
-			traces.append(go.Bar(x=distribution['Breakdown_axis_labels'], y=distribution[outcome_variable_with_table], name=str(outcome_variable)))
+			traces.append(go.Bar(x=distribution['Breakdown_axis_labels'], y=distribution[outcome_var_with_table], name=str(outcome_var_with_table)))
 
-		graph_data = {
-			'data': traces,
-			'layout': go.Layout(
-				title=f'Outcome {outcome_variable} broken down by {breakdown_variables}',
-				xaxis={
-					'title': f'{breakdown_variables}',
-					'titlefont': {'color': 'black', 'size': 14},
-					'tickfont': {'size': 9, 'color': 'black'}
-				},
-				yaxis={
-					'title': f'{distribution_type} of {outcome_variable}',
-					'titlefont': {'color': 'black', 'size': 14},
-					'tickfont': {'size': 9, 'color': 'black'}
-				}
-			)
-		}
-	else:
-		graph_data = {}
+	graph_data = {
+		'data': traces,
+		'layout': go.Layout(
+			title=f'Outcome {outcome_var_chosen} broken down by {ind_vars_chosen}',
+			xaxis={
+				'title': f'{ind_vars_chosen}',
+				'titlefont': {'color': 'black', 'size': 14},
+				'tickfont': {'size': 9, 'color': 'black'}
+			},
+			yaxis={
+				'title': f'{distribution_type} of {outcome_var_chosen}',
+				'titlefont': {'color': 'black', 'size': 14},
+				'tickfont': {'size': 9, 'color': 'black'}
+			}
+		)
+	}
 
-	return return_list, graph_data
+	return graph_data
+
 
 if __name__ == '__main__':
 	app.run_server(debug=False, host='0.0.0.0', port=8050)
