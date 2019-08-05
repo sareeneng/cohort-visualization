@@ -31,12 +31,9 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 db = DB('TOPICC')
-all_columns = db.get_all_columns()
-repetitive_columns = db.get_common_column_names()
-non_repetitive_columns = [x for x in all_columns if x not in repetitive_columns]
+all_columns = db.columns
 exclude_columns = db.exclude_columns_from_data_viz
-
-column_label_to_obj = {f'{x.name}': x for x in non_repetitive_columns}
+column_label_to_obj = {x.name: x for x in all_columns if x.name not in exclude_columns}
 # for x in non_repetitive_columns:
 #	column_label_to_obj[x.name] = x
 
@@ -73,7 +70,7 @@ app.layout = html.Div(
 	]
 )
 
-def get_col_obj(*args):
+def get_col_objs(*args):
 	args = [[] if x is None else x for x in args]
 	args = u.flatten(args)	
 	return [column_label_to_obj[x] for x in args]
@@ -95,7 +92,7 @@ def update_variable_options(outcome_var_chosen, ind_vars_chosen):
 		full_list = sorted([{'label': x, 'value': x} for x in column_label_to_obj.keys() if x not in exclude_columns], key=lambda y: y['label'])
 		return full_list, full_list
 	
-	current_col_obj_list = get_col_obj(outcome_var_chosen, ind_vars_chosen)
+	current_col_obj_list = get_col_objs(outcome_var_chosen, ind_vars_chosen)
 	accessible_col_objs = db.get_still_accessible_columns(include_columns=current_col_obj_list)
 
 	accessible_list = sorted([{'label': x.name, 'value': x.name} for x in accessible_col_objs if x.name not in exclude_columns], key=lambda y: y['label'])
@@ -115,27 +112,36 @@ def update_graph(outcome_var_chosen, ind_vars_chosen, distribution_type):
 	if len(ind_vars_chosen) == 0:
 		return {}
 		
-	current_col_obj_list = get_col_obj(outcome_var_chosen, ind_vars_chosen)
+	current_col_obj_list = get_col_objs(outcome_var_chosen, ind_vars_chosen)
 	paths = db.find_paths_multi_columns(current_col_obj_list)
-	df = db.get_biggest_joined_df_option_from_paths(paths)
-
-	outcome_var_with_table = None
-	ind_vars_with_table = []
-	for col_obj in current_col_obj_list:
-		for table in col_obj.tables:
-			col_header = f'{col_obj.name}_[{table.name}]'
-			if col_header in df.columns:
-				if col_obj.name == outcome_var_chosen:
-					outcome_var_with_table = col_header
-				else:
-					ind_vars_with_table.append(col_header)
+	df, path = db.get_biggest_joined_df_option_from_paths(paths)
 
 	if outcome_var_chosen is None:
-		all_vars_with_tables = ind_vars_with_table
+		all_vars = ind_vars_chosen
 	else:
-		all_vars_with_tables = [outcome_var_with_table] + ind_vars_with_table
+		all_vars = ind_vars_chosen + [outcome_var_chosen]
+	all_vars_with_table = []
+	ind_vars_with_table = []
+	outcome_var_with_table = None
 
-	df = df.loc[:, all_vars_with_tables]
+	for var in all_vars:
+		col_obj = get_col_objs(var)[0]
+		name_to_add = None
+		if col_obj is not None:
+			if col_obj.shared:
+				for table in col_obj.tables:
+					if table in path:
+						name_to_add = f'{var}_[{table.name}]'
+			else:
+				name_to_add = var
+		if name_to_add is not None:
+			all_vars_with_table.append(name_to_add)
+			if var == outcome_var_chosen:
+				outcome_var_with_table = name_to_add
+			else:
+				ind_vars_with_table.append(name_to_add)
+
+	df = df.loc[:, all_vars_with_table]
 
 	if outcome_var_chosen is None:
 		# just get the counts then

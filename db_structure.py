@@ -22,7 +22,7 @@ class DB():
 
 	def __init__(self, data_dir_db=None, **kwargs):
 		self.tables = {}
-		self.common_columns = []
+		self.columns = []
 		self.exclude_columns_from_data_viz = []
 
 		if data_dir_db is not None:
@@ -179,28 +179,44 @@ class DB():
 			with open(config_path, 'w') as f:
 				json.dump(config, f, indent=4)
 
-		self.assign_global_fks(global_fks)
 		for global_fk in global_fks:
-			self.common_columns.append(Column(global_fk, shared=True))
-
+			new_column = Column(global_fk, shared=True)
+			for table in self.tables.values():
+				if global_fk in table.df.columns:
+					new_column.add_table(table)
+					table.link_df_col_name_to_col(col_name=global_fk, col_obj=new_column)
+			self.columns.append(new_column)
+			self.assign_global_fk(global_fk)
+		
 		for custom_fk in custom_fks:
+			# Find first column that already exists in common columns
 			table_1 = self.tables[custom_fk['table_1']]
 			table_2 = self.tables[custom_fk['table_2']]
-			column_1 = custom_fk['column_1']
-			column_2 = custom_fk['column_2']
-			self.assign_fk(table_1=table_1, table_2=table_2, column_1=column_1, column_2=column_2)
+
+			col_obj = self.get_common_column_by_name(custom_fk['column_1'])
+			if col_obj is None:
+				col_obj = self.get_common_column_by_name(custom_fk['column_2'])
+				if col_obj is None:
+					# If neither columns already exist, then create new shared column, and just use column_1 for its name
+					col_obj = Column(custom_fk['column_1'], shared=True)
+					self.columns.append(col_obj)
+					
+			table_1.link_df_col_name_to_col(custom_fk['column_1'], col_obj)
+			table_2.link_df_col_name_to_col(custom_fk['column_2'], col_obj)
+			
+			col_obj.add_table(table_1)
+			col_obj.add_table(table_2)
+
+			self.assign_fk(table_1=table_1, table_2=table_2, column_1_name=custom_fk['column_1'], column_2_name=custom_fk['column_2'])			
 
 		self.exclude_columns_from_data_viz = exclude_columns
 
 		for table in self.tables.values():
-			for column in table.df.columns:
-				if column in global_fks:
-					column_to_add = self.get_common_column_by_name(column)
-					column_to_add.add_table(table)
-				else:
-					column_to_add = Column(name=column, table=table)
-				table.add_column(column_to_add)
-			
+			for col_name in table.df.columns:
+				if col_name not in table.df_col_links:
+					new_column = Column(f'{col_name}_[{table.name}]', shared=False, table=table)
+					table.link_df_col_name_to_col(col_name=col_name, col_obj=new_column)
+					self.columns.append(new_column)
 			table.add_suffix()
 
 	def get_common_column_names(self):
@@ -213,13 +229,6 @@ class DB():
 		common_columns = [k for k, v in column_counts.items() if v > 1]
 		return common_columns
 
-	def get_all_columns(self):
-		column_set = set()
-		for table in self.tables.values():
-			for column in table.columns:
-				column_set.add(column)
-		return list(column_set)
-
 	def assign_global_fks(self, global_fks):
 		# option to supply a list of global fks instead of calling the function over and over
 		for global_fk in global_fks:
@@ -227,11 +236,11 @@ class DB():
 
 	def assign_global_fk(self, global_fk):
 		for table_1, table_2 in itertools.combinations(self.tables.values(), 2):
-			self.assign_fk(table_1, table_2, column_1=global_fk, column_2=global_fk)
+			self.assign_fk(table_1, table_2, column_1_name=global_fk, column_2_name=global_fk)
 
-	def assign_fk(self, table_1, table_2, column_1, column_2):
-		table_1_type = table_1.get_table_type_for_column(column=column_1)
-		table_2_type = table_2.get_table_type_for_column(column=column_2)
+	def assign_fk(self, table_1, table_2, column_1_name, column_2_name):
+		table_1_type = table_1.get_table_type_for_column(column_name=column_1_name)
+		table_2_type = table_2.get_table_type_for_column(column_name=column_2_name)
 		# four options: many:many, many:one, one:many, or one:one. If column is not found then get_table_type_for_columns will return None
 
 		if table_1_type is not None and table_2_type is not None:
@@ -242,12 +251,12 @@ class DB():
 					if table_2_type == TABLE_TYPE_MANY:
 						pass  # do not establish a relationship between these two tables
 					elif table_2_type == TABLE_TYPE_ONE:
-						self.add_parent_child_link(parent_table=table_1, child_table=table_2, parent_column=column_1, child_column=column_2)
+						self.add_parent_child_link(parent_table=table_1, child_table=table_2, parent_column=column_1_name, child_column=column_2_name)
 				elif table_1_type == TABLE_TYPE_ONE:
 					if table_2_type == TABLE_TYPE_MANY:
-						self.add_parent_child_link(parent_table=table_2, child_table=table_1, parent_column=column_2, child_column=column_1)
+						self.add_parent_child_link(parent_table=table_2, child_table=table_1, parent_column=column_2_name, child_column=column_1_name)
 					elif table_2_type == TABLE_TYPE_ONE:
-						self.add_sibling_link(sibling_1_table=table_1, sibling_2_table=table_2, sibling_1_column=column_1, sibling_2_column=column_2)
+						self.add_sibling_link(sibling_1_table=table_1, sibling_2_table=table_2, sibling_1_column=column_1_name, sibling_2_column=column_2_name)
 
 	def add_parent_child_link(self, parent_table, child_table, parent_column, child_column):
 		parent_table.children[child_table] = TableRelation(origin_table=parent_table, other_table=child_table, origin_relation_type=PARENT_TO, origin_column=parent_column, other_column=child_column)
@@ -410,7 +419,7 @@ class DB():
 		else:
 			return None
 		
-		return df_choices[idx]
+		return df_choices[idx], paths[idx]
 
 	def get_biggest_joined_df_option(self, table_1, table_2):
 		# return only the longest df that arises from looking at each possible path
@@ -452,7 +461,7 @@ class DB():
 		
 		# traversed tables represent all the tables I could touch with the columns already included. This means that all their columns are accessible already
 		for table in accessible_tables:
-			for column in table.columns:
+			for column in table.get_columns():
 				accessible_columns.add(column)
 		
 		remaining_tables = [x for x in self.tables.values() if x not in accessible_tables]
@@ -465,23 +474,23 @@ class DB():
 					if len(self.find_paths_between_tables(path[-1], remaining_table)) > 0:
 						found_valid_path = True
 						accessible_tables.add(remaining_table)
-						for column in remaining_table.columns:
+						for column in remaining_table.get_columns():
 							accessible_columns.add(column)
 
 		return list(accessible_columns)
 
 	def get_common_column_by_name(self, column_name):
-		return next((x for x in self.common_columns if x.name == column_name), None)
+		return next((x for x in self.columns if x.name == column_name and x.shared), None)
 
 
 class Table():
 	def __init__(self, name, df):
 		self.name = name
 		self.df = df
-		self.columns = []
 		self.children = {}
 		self.siblings = {}
 		self.parents = {}
+		self.df_col_links = {}
 
 	def __hash__(self):
 		return hash(self.name)
@@ -489,14 +498,11 @@ class Table():
 	def __eq__(self, other):
 		return self.name == other.name
 
+	def link_df_col_name_to_col(self, col_name, col_obj):
+		self.df_col_links[col_name] = col_obj
+
 	def add_suffix(self):
 		self.df = self.df.add_suffix(f'_[{self.name}]')
-
-	def add_column(self, column):
-		self.columns.append(column)
-
-	def get_column_names(self):
-		return [x.name for x in self.columns]
 
 	def has_relation(self, other_table):
 		return other_table.name in self.get_children_names() + self.get_sibling_names() + self.get_parent_names()
@@ -510,14 +516,14 @@ class Table():
 	def get_parent_names(self):
 		return [x.name for x in self.parents.keys()]
 
-	def get_table_type_for_column(self, column):
-		if column not in self.df.columns:
+	def get_table_type_for_column(self, column_name):
+		if column_name not in self.df.columns:
 			return None
 		
-		if len(self.df[column].dropna()) > len(self.df[column].dropna().unique()):
+		if len(self.df[column_name].dropna()) > len(self.df[column_name].dropna().unique()):
 			return TABLE_TYPE_MANY
 
-		if len(self.df[column].dropna()) == len(self.df[column].dropna().unique()):
+		if len(self.df[column_name].dropna()) == len(self.df[column_name].dropna().unique()):
 			return TABLE_TYPE_ONE
 
 		return None
@@ -533,7 +539,10 @@ class Table():
 		return (relation_data.origin_column, relation_data.other_column)
 
 	def get_column_by_name(self, column_name):
-		return next((x for x in self.columns if x.name == column_name), None)
+		return self.df_col_links.get(column_name, None)
+
+	def get_columns(self):
+		return list(self.df_col_links.values())
 
 	def __repr__(self):
 		return self.name
@@ -557,7 +566,8 @@ class Column():
 			self.tables.add(table)
 
 	def __hash__(self):
-		return hash((self.name, tuple(self.tables)))
+		table_hash = tuple(sorted([x.name for x in self.tables]))
+		return hash((self.name, table_hash))
 
 	def __eq__(self, other):
 		return (self.name == other.name) and (self.tables == other.tables)
