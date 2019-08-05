@@ -62,8 +62,8 @@ class DB():
 			except KeyError:
 				print('Incomplete config file - will need to reconfigure')
 
+		common_column_names = self.get_common_column_names()
 		if config_valid is False:
-			common_column_names = self.get_common_column_names()
 			print(common_column_names)
 			global_fks_valid = False
 			while not global_fks_valid:
@@ -180,32 +180,32 @@ class DB():
 				json.dump(config, f, indent=4)
 
 		for global_fk in global_fks:
-			new_column = Column(global_fk, shared=True)
+			new_column = Column(shared=True, repetitive=True)
 			for table in self.tables.values():
 				if global_fk in table.df.columns:
-					new_column.add_table(table)
+					new_column.add_table(table, df_col_header=f'{global_fk}_[{table.name}]')
 					table.link_df_col_name_to_col(col_name=global_fk, col_obj=new_column)
 			self.columns.append(new_column)
 			self.assign_global_fk(global_fk)
 		
 		for custom_fk in custom_fks:
-			# Find first column that already exists in common columns
 			table_1 = self.tables[custom_fk['table_1']]
 			table_2 = self.tables[custom_fk['table_2']]
 
-			col_obj = self.get_common_column_by_name(custom_fk['column_1'])
+			col_obj = self.find_column_by_table_col_name(table_1, custom_fk['column_1'])
 			if col_obj is None:
-				col_obj = self.get_common_column_by_name(custom_fk['column_2'])
+				col_obj = self.find_column_by_table_col_name(table_2, custom_fk['column_2'])
 				if col_obj is None:
 					# If neither columns already exist, then create new shared column, and just use column_1 for its name
-					col_obj = Column(custom_fk['column_1'], shared=True)
+					repetitive = custom_fk['column_1'] in common_column_names or custom_fk['column_2'] in common_column_names
+					col_obj = Column(shared=True, repetitive=repetitive)
 					self.columns.append(col_obj)
 					
 			table_1.link_df_col_name_to_col(custom_fk['column_1'], col_obj)
 			table_2.link_df_col_name_to_col(custom_fk['column_2'], col_obj)
 			
-			col_obj.add_table(table_1)
-			col_obj.add_table(table_2)
+			col_obj.add_table(table_1, f"{custom_fk['column_1']}_[{table_1.name}]")
+			col_obj.add_table(table_2, f"{custom_fk['column_1']}_[{table_2.name}]")
 
 			self.assign_fk(table_1=table_1, table_2=table_2, column_1_name=custom_fk['column_1'], column_2_name=custom_fk['column_2'])			
 
@@ -214,7 +214,8 @@ class DB():
 		for table in self.tables.values():
 			for col_name in table.df.columns:
 				if col_name not in table.df_col_links:
-					new_column = Column(f'{col_name}_[{table.name}]', shared=False, table=table)
+					repetitive = col_name in common_column_names
+					new_column = Column(shared=False, repetitive=repetitive, table=table, df_col_header=f'{col_name}_[{table.name}]')
 					table.link_df_col_name_to_col(col_name=col_name, col_obj=new_column)
 					self.columns.append(new_column)
 			table.add_suffix()
@@ -419,7 +420,7 @@ class DB():
 		else:
 			return None
 		
-		return df_choices[idx], paths[idx]
+		return df_choices[idx]
 
 	def get_biggest_joined_df_option(self, table_1, table_2):
 		# return only the longest df that arises from looking at each possible path
@@ -479,9 +480,12 @@ class DB():
 
 		return list(accessible_columns)
 
-	def get_common_column_by_name(self, column_name):
-		return next((x for x in self.columns if x.name == column_name and x.shared), None)
-
+	def find_column_by_table_col_name(self, table, column_name):
+		for column in self.columns:
+			for table in column.tables:
+				if column.table_links.get(table, None) == f'{column_name}_[{table.name}]':
+					return column
+		return None
 
 class Table():
 	def __init__(self, name, df):
@@ -558,26 +562,45 @@ class TableRelation():
 
 
 class Column():
-	def __init__(self, name, shared=False, table=None):
-		self.name = name
+	def __init__(self, shared=False, repetitive=False, table=None, df_col_header=None):
 		self.shared = shared
+		self.repetitive = repetitive
 		self.tables = set()
+		self.table_links = {}
 		if table is not None:
-			self.tables.add(table)
+			self.add_table(table, df_col_header)
 
 	def __hash__(self):
-		table_hash = tuple(sorted([x.name for x in self.tables]))
-		return hash((self.name, table_hash))
+		sorted_tables = sorted([x for x in self.table_links.keys()], key = lambda y: y.name)
+		sorted_table_names = tuple([x.name for x in sorted_tables])
+		df_col_headers = tuple([self.table_links[x] for x in sorted_tables])
+		return hash((sorted_table_names, df_col_headers))
 
 	def __eq__(self, other):
-		return (self.name == other.name) and (self.tables == other.tables)
+		return self.table_links == other.table_links
 
-	def add_table(self, new_table):
+	@property
+	def display_name(self):
+		first_table = sorted([x for x in self.tables], key = lambda y: y.name)[0]
+		if self.shared:
+			return self.prune_table_from_string(self.table_links[first_table])
+
+		if self.repetitive:
+			return f'{self.table_links[first_table]}'
+
+		return self.prune_table_from_string(self.table_links[first_table])
+
+	def prune_table_from_string(self, to_prune):
+		idx = to_prune.rfind('_[')
+		return to_prune[:idx]
+
+	def add_table(self, new_table, df_col_header):
 		self.tables.add(new_table)
+		self.table_links[new_table] = df_col_header
 
 	def get_table_names(self):
 		table_list = list(self.tables)
 		return [x.name for x in table_list]			 
 
 	def __repr__(self):
-		return f'Column {self.name} in tables {self.tables}'
+		return str(self.table_links)

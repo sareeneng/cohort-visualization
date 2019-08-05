@@ -32,10 +32,8 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 db = DB('TOPICC')
 all_columns = db.columns
+column_dict = {idx: col for idx, col in enumerate(all_columns)}
 exclude_columns = db.exclude_columns_from_data_viz
-column_label_to_obj = {x.name: x for x in all_columns if x.name not in exclude_columns}
-# for x in non_repetitive_columns:
-#	column_label_to_obj[x.name] = x
 
 app.layout = html.Div(
 	className="row",
@@ -72,8 +70,8 @@ app.layout = html.Div(
 
 def get_col_objs(*args):
 	args = [[] if x is None else x for x in args]
-	args = u.flatten(args)	
-	return [column_label_to_obj[x] for x in args]
+	args = u.flatten(args)
+	return [all_columns[x] for x in args]
 	
 
 @app.callback(
@@ -89,13 +87,13 @@ def get_col_objs(*args):
 def update_variable_options(outcome_var_chosen, ind_vars_chosen):
 	if len(ind_vars_chosen) == 0 and outcome_var_chosen is None:
 		# User hasn't chosen anything yet, so both the independent variables and outcome variables will have the same options
-		full_list = sorted([{'label': x, 'value': x} for x in column_label_to_obj.keys() if x not in exclude_columns], key=lambda y: y['label'])
+		full_list = sorted([{'label': v.display_name, 'value': k} for k, v in column_dict.items() if v.display_name not in exclude_columns], key=lambda x: x['label'])
 		return full_list, full_list
 	
 	current_col_obj_list = get_col_objs(outcome_var_chosen, ind_vars_chosen)
 	accessible_col_objs = db.get_still_accessible_columns(include_columns=current_col_obj_list)
 
-	accessible_list = sorted([{'label': x.name, 'value': x.name} for x in accessible_col_objs if x.name not in exclude_columns], key=lambda y: y['label'])
+	accessible_list = sorted([{'label': v.display_name, 'value': k} for k, v in column_dict.items() if v.display_name not in exclude_columns and v in accessible_col_objs], key=lambda x: x['label'])
 
 	return accessible_list, accessible_list
 
@@ -108,53 +106,47 @@ def update_variable_options(outcome_var_chosen, ind_vars_chosen):
 		Input('distribution_type', 'value')
 	]
 )
-def update_graph(outcome_var_chosen, ind_vars_chosen, distribution_type):
-	if len(ind_vars_chosen) == 0:
+def update_graph(outcome_var_chosen_idx, ind_vars_chosen_idxs, distribution_type):
+	if len(ind_vars_chosen_idxs) == 0:
 		return {}
 		
-	current_col_obj_list = get_col_objs(outcome_var_chosen, ind_vars_chosen)
+	current_col_obj_list = get_col_objs(outcome_var_chosen_idx, ind_vars_chosen_idxs)
 	paths = db.find_paths_multi_columns(current_col_obj_list)
-	df, path = db.get_biggest_joined_df_option_from_paths(paths)
+	df = db.get_biggest_joined_df_option_from_paths(paths)
 
-	if outcome_var_chosen is None:
-		all_vars = ind_vars_chosen
+	if outcome_var_chosen_idx is None:
+		all_idxs = ind_vars_chosen_idxs
 	else:
-		all_vars = ind_vars_chosen + [outcome_var_chosen]
-	all_vars_with_table = []
-	ind_vars_with_table = []
-	outcome_var_with_table = None
+		all_idxs = ind_vars_chosen_idxs + [outcome_var_chosen_idx]
 
-	for var in all_vars:
-		col_obj = get_col_objs(var)[0]
-		name_to_add = None
-		if col_obj is not None:
-			if col_obj.shared:
-				for table in col_obj.tables:
-					if table in path:
-						name_to_add = f'{var}_[{table.name}]'
-			else:
-				name_to_add = var
-		if name_to_add is not None:
-			all_vars_with_table.append(name_to_add)
-			if var == outcome_var_chosen:
-				outcome_var_with_table = name_to_add
-			else:
-				ind_vars_with_table.append(name_to_add)
+	# Now need to get the column header for each column
+	all_col_headers = []
+	ind_col_headers = []
+	outcome_col_header = None
+	for idx in all_idxs:
+		col_obj = all_columns[idx]
+		for col_obj_link_name in col_obj.table_links.values():
+			if col_obj_link_name in df.columns:
+				all_col_headers.append(col_obj_link_name)
+				if idx == outcome_var_chosen_idx:
+					outcome_col_header = col_obj_link_name
+				else:
+					ind_col_headers.append(col_obj_link_name)
 
-	df = df.loc[:, all_vars_with_table]
+	df = df.loc[:, all_col_headers]
 
-	if outcome_var_chosen is None:
+	if outcome_var_chosen_idx is None:
 		# just get the counts then
-		distribution = df.groupby(ind_vars_with_table).size().reset_index(name="Count")
+		distribution = df.groupby(ind_col_headers).size().reset_index(name="Count")
 	else:
-		g = df.groupby(ind_vars_with_table)[outcome_var_with_table]
+		g = df.groupby(ind_col_headers)[outcome_col_header]
 		
 		if distribution_type == 'Count':
 			distribution = g.value_counts().unstack().reset_index()
-			outcome_possibilities = [x for x in list(df[outcome_var_with_table].unique()) if not pd.isnull(x)]
+			outcome_possibilities = [x for x in list(df[outcome_col_header].unique()) if not pd.isnull(x)]
 		elif distribution_type == '% within category':
 			distribution = (g.value_counts(normalize=True)*100).round(1).unstack().reset_index()
-			outcome_possibilities = [x for x in list(df[outcome_var_with_table].unique()) if not pd.isnull(x)]
+			outcome_possibilities = [x for x in list(df[outcome_col_header].unique()) if not pd.isnull(x)]
 		elif distribution_type == 'sum':
 			distribution = g.sum().reset_index()
 			outcome_possibilities = None
@@ -170,9 +162,9 @@ def update_graph(outcome_var_chosen, ind_vars_chosen, distribution_type):
 		return_str = return_str[:-1]  # remove trailing underscore
 		return return_str
 	
-	distribution['Breakdown_axis_labels'] = distribution.apply(lambda x: get_breakdown_label(x, ind_vars_with_table), axis=1)
+	distribution['Breakdown_axis_labels'] = distribution.apply(lambda x: get_breakdown_label(x, ind_col_headers), axis=1)
 
-	if outcome_var_chosen is None:
+	if outcome_col_header is None:
 		traces = [go.Bar(x=distribution['Breakdown_axis_labels'], y=distribution["Count"])]
 	else:
 		traces = []
@@ -180,19 +172,19 @@ def update_graph(outcome_var_chosen, ind_vars_chosen, distribution_type):
 			for outcome_possibility in outcome_possibilities:
 				traces.append(go.Bar(x=distribution['Breakdown_axis_labels'], y=distribution[outcome_possibility], name=str(outcome_possibility)))
 		else:
-			traces.append(go.Bar(x=distribution['Breakdown_axis_labels'], y=distribution[outcome_var_with_table], name=str(outcome_var_with_table)))
+			traces.append(go.Bar(x=distribution['Breakdown_axis_labels'], y=distribution[outcome_col_header], name=str(outcome_col_header)))
 
 	graph_data = {
 		'data': traces,
 		'layout': go.Layout(
-			title=f'Outcome {outcome_var_chosen} broken down by {ind_vars_chosen}',
+			title=f'Outcome {outcome_col_header} broken down by {outcome_col_header}',
 			xaxis={
-				'title': f'{ind_vars_chosen}',
+				'title': f'{outcome_col_header}',
 				'titlefont': {'color': 'black', 'size': 14},
 				'tickfont': {'size': 9, 'color': 'black'}
 			},
 			yaxis={
-				'title': f'{distribution_type} of {outcome_var_chosen}',
+				'title': f'{distribution_type} of {outcome_col_header}',
 				'titlefont': {'color': 'black', 'size': 14},
 				'tickfont': {'size': 9, 'color': 'black'}
 			}

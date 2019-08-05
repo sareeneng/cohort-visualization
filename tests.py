@@ -59,9 +59,9 @@ class TestPathFinding(unittest.TestCase):
 		x = self.db.find_paths_multi_tables([self.D, self.C, self.F], fix_first=True)
 		self.assertEqual([[self.D, self.C, self.F]], x)
 
-		colx = self.db.get_common_column_by_name('col1')  # in tables A, C
-		coly = self.db.get_common_column_by_name('col4')  # in tables B, E
-		colz = self.db.tables['F'].get_column_by_name('col8')  # only in table F
+		colx = self.db.find_column_by_table_col_name(self.A, 'col1')  # in tables A, C
+		coly = self.db.find_column_by_table_col_name(self.B, 'col4')  # in tables B, E
+		colz = self.db.find_column_by_table_col_name(self.F, 'col8')  # only in table F
 
 		x = self.db.find_paths_multi_columns([colx, coly, colz])
 		self.assertEqual(len(x), 6)
