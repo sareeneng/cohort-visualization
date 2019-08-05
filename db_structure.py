@@ -177,7 +177,7 @@ class DB():
 			config = {'global_fks': global_fks, 'custom_fks': custom_fks, 'exclude_columns': exclude_columns}
 			config_path = os.path.join(directory_path, f'{data_dir_db}.config')
 			with open(config_path, 'w') as f:
-				json.dump(config, f)
+				json.dump(config, f, indent=4)
 
 		self.assign_global_fks(global_fks)
 		for global_fk in global_fks:
