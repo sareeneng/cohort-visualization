@@ -164,6 +164,9 @@ def update_graph(outcome_var_chosen_idx, ind_vars_chosen_idxs, distribution_type
 	
 	distribution['Breakdown_axis_labels'] = distribution.apply(lambda x: get_breakdown_label(x, ind_col_headers), axis=1)
 
+	ind_display_names = [column_dict[x].display_name for x in ind_vars_chosen_idxs]
+	outcome_display_name = None if outcome_var_chosen_idx is None else column_dict[outcome_var_chosen_idx].display_name
+
 	if outcome_col_header is None:
 		traces = [go.Bar(x=distribution['Breakdown_axis_labels'], y=distribution["Count"])]
 	else:
@@ -172,19 +175,19 @@ def update_graph(outcome_var_chosen_idx, ind_vars_chosen_idxs, distribution_type
 			for outcome_possibility in outcome_possibilities:
 				traces.append(go.Bar(x=distribution['Breakdown_axis_labels'], y=distribution[outcome_possibility], name=str(outcome_possibility)))
 		else:
-			traces.append(go.Bar(x=distribution['Breakdown_axis_labels'], y=distribution[outcome_col_header], name=str(outcome_col_header)))
+			traces.append(go.Bar(x=distribution['Breakdown_axis_labels'], y=distribution[outcome_col_header], name=str(outcome_display_name)))
 
 	graph_data = {
 		'data': traces,
 		'layout': go.Layout(
-			title=f'Outcome {outcome_col_header} broken down by {outcome_col_header}',
+			title=f'Outcome {outcome_display_name} broken down by {ind_display_names}',
 			xaxis={
-				'title': f'{outcome_col_header}',
+				'title': f'{outcome_display_name}',
 				'titlefont': {'color': 'black', 'size': 14},
 				'tickfont': {'size': 9, 'color': 'black'}
 			},
 			yaxis={
-				'title': f'{distribution_type} of {outcome_col_header}',
+				'title': f'{distribution_type} of {outcome_display_name}',
 				'titlefont': {'color': 'black', 'size': 14},
 				'tickfont': {'size': 9, 'color': 'black'}
 			}

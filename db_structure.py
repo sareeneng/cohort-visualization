@@ -58,6 +58,7 @@ class DB():
 				global_fks = config['global_fks']
 				custom_fks = config['custom_fks']
 				exclude_columns = config['exclude_columns']
+				custom_column_names = config['custom_column_names']
 				config_valid = True
 			except KeyError:
 				print('Incomplete config file - will need to reconfigure')
@@ -174,7 +175,7 @@ class DB():
 
 
 			# dump config
-			config = {'global_fks': global_fks, 'custom_fks': custom_fks, 'exclude_columns': exclude_columns}
+			config = {'global_fks': global_fks, 'custom_fks': custom_fks, 'exclude_columns': exclude_columns, 'custom_column_names': {}}
 			config_path = os.path.join(directory_path, f'{data_dir_db}.config')
 			with open(config_path, 'w') as f:
 				json.dump(config, f, indent=4)
@@ -205,7 +206,7 @@ class DB():
 			table_2.link_df_col_name_to_col(custom_fk['column_2'], col_obj)
 			
 			col_obj.add_table(table_1, f"{custom_fk['column_1']}_[{table_1.name}]")
-			col_obj.add_table(table_2, f"{custom_fk['column_1']}_[{table_2.name}]")
+			col_obj.add_table(table_2, f"{custom_fk['column_2']}_[{table_2.name}]")
 
 			self.assign_fk(table_1=table_1, table_2=table_2, column_1_name=custom_fk['column_1'], column_2_name=custom_fk['column_2'])			
 
@@ -219,6 +220,17 @@ class DB():
 					table.link_df_col_name_to_col(col_name=col_name, col_obj=new_column)
 					self.columns.append(new_column)
 			table.add_suffix()
+
+		for table_name, column_relabel_dict in custom_column_names.items():
+			table = self.tables[table_name]
+			for df_col_header, new_custom_name in column_relabel_dict.items():
+				col_obj = table.df_col_links[df_col_header]
+				# warn user if overwriting custom name
+				if col_obj.custom_name is not None:
+					if col_obj.custom_name != new_custom_name:
+						print(f'Warning: changing custom name from {col_obj.custom_name} to {new_custom_name}')
+				col_obj.custom_name = new_custom_name
+			
 
 	def get_common_column_names(self):
 		# find all columns that are found in multiple tables, these are obvious candidates for joining
@@ -562,11 +574,12 @@ class TableRelation():
 
 
 class Column():
-	def __init__(self, shared=False, repetitive=False, table=None, df_col_header=None):
+	def __init__(self, shared=False, repetitive=False, table=None, df_col_header=None, custom_name=None):
 		self.shared = shared
 		self.repetitive = repetitive
 		self.tables = set()
 		self.table_links = {}
+		self.custom_name = None
 		if table is not None:
 			self.add_table(table, df_col_header)
 
@@ -581,6 +594,9 @@ class Column():
 
 	@property
 	def display_name(self):
+		if self.custom_name is not None:
+			return self.custom_name
+		
 		first_table = sorted([x for x in self.tables], key = lambda y: y.name)[0]
 		if self.shared:
 			return self.prune_table_from_string(self.table_links[first_table])
