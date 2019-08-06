@@ -10,25 +10,11 @@ import logging
 import pandas as pd
 import plotly.graph_objs as go
 import time
-
-logger = logging.getLogger()
-formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s', '%Y-%m-%d %H:%M:%S')
-logger.setLevel(logging.DEBUG)
-
-handler_info = logging.FileHandler(filename='info.log', mode='a')
-handler_info.setFormatter(formatter)
-handler_info.setLevel(logging.INFO)
-
-handler_debug = logging.FileHandler(filename='debug.log', mode='w')
-handler_debug.setFormatter(formatter)
-handler_debug.setLevel(logging.DEBUG)
-
-logger.addHandler(handler_info)
-logger.addHandler(handler_debug)
+from web import flask_app
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets, server=flask_app, url_base_pathname='/dash/visualization/')
 
 db = DB('TOPICC')
 all_columns = db.columns
@@ -36,36 +22,44 @@ column_dict = {idx: col for idx, col in enumerate(all_columns)}
 exclude_columns = db.exclude_columns_from_data_viz
 
 app.layout = html.Div(
-	className="row",
 	children=[
-		drc.Card(
-			className="four columns",
-			id="variable_container",
+		html.Div(
+			className="row",
 			children=[
-				drc.NamedDropdown(
-					name="Independent variables",
-					id="ind_variables",
-					options = [],
-					value = [],
-					multi=True
-				),
-				drc.NamedDropdown(
-					name="Outcome",
-					id="outcome_variable"
-				),
-				drc.NamedRadioItems(
-					name="Distribution Type",
-					id="distribution_type",
-					options=[{'label': x, 'value': x} for x in ['Count', '% within category', 'sum', 'mean']],
-					value='Count',
+				drc.Card(
+					className="four columns",
+					id="variable_container",
+					children=[
+						drc.NamedDropdown(
+							name="Independent variables",
+							id="ind_variables",
+							options = [],
+							value = [],
+							multi=True
+						),
+						drc.NamedDropdown(
+							name="Outcome",
+							id="outcome_variable"
+						),
+						drc.NamedRadioItems(
+							name="Distribution Type",
+							id="distribution_type",
+							options=[{'label': x, 'value': x} for x in ['Count', '% within category', 'sum', 'mean']],
+							value='Count',
+						)
+					]
 				)
 			]
 		),
-		dcc.Graph(
-			className="seven columns",
-			id="outcome_graph"
+		html.Div(
+			className="row nine columns",
+			children=[
+				dcc.Graph(
+					id="outcome_graph"
+				)
+			]
 		)
-	]
+	],
 )
 
 def get_col_objs(*args):
@@ -190,7 +184,8 @@ def update_graph(outcome_var_chosen_idx, ind_vars_chosen_idxs, distribution_type
 				'title': f'{distribution_type} of {outcome_display_name}',
 				'titlefont': {'color': 'black', 'size': 14},
 				'tickfont': {'size': 9, 'color': 'black'}
-			}
+			},
+			autosize=False
 		)
 	}
 
