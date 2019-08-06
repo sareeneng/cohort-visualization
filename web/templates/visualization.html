@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+
+<div class="row">
+	<iframe src="{{ url_for('/dash/visualization/') }}" style="width: 100vw; height: 100vh; position: relative;" frameborder="0">
+	</iframe>
+</div>
+{% endblock %}
