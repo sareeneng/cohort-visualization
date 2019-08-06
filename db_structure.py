@@ -603,4 +603,11 @@ class Column():
 		return [x.name for x in table_list]			 
 
 	def __repr__(self):
-		return str(self.table_links)
+		return_str = ''
+		sorted_tables = sorted([x for x in self.tables], key = lambda y: y.name)
+		for table in sorted_tables:
+			table_link = self.table_links[table]
+			return_str += table.name + '->' + self.prune_table_from_string(table_link) + ' & '
+		if len(return_str) > 2:
+			return_str = return_str[:-3]
+		return return_str
