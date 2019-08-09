@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+
+{% block app_content %}
+
+<div class="row">
+	<div class="col-xs-2">
+		<form id="form_choose_dataset">
+			<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+			<select class="form-control" id="dataset_select">
+				<option></option>
+				{% for dataset in datasets %}
+					<option>{{ dataset }}</option>
+				{% endfor %}
+			</select>
+		</form>
+	</div>
+</div>
+<hr>
+<div class="row">
+	<div class="col-xs-4">
+		<select class="form-control" id="table_select">
+		</select>
+	</div>
+</div>
+
+<div class="row">
+	<div class="col-xs-6">
+		<table id="column_rename_table" class="table table-condensed table-bordered table-hover">
+			<thead>
+				<tr>
+					<th class="text-left">Column In File</th>
+					<th class="text-left">Rename To</th>
+				</tr>
+			</thead>
+		</table>
+	</div>
+</div>
+
+<script>
+
+var table_columns = {}
+
+$('#dataset_select').on('change', function(e) {
+	var dataset_name = $("option:selected", this).val();
+	if (dataset_name != ''){
+		send_data = {'form': 'choose_dataset', 'dataset_name': dataset_name}
+		$.ajax({
+			type: "POST",
+			url: "{{ url_for('config') }}",
+			data: JSON.stringify(send_data),
+			dataType: "json",
+			contentType: 'application/json;charset=UTF-8',
+			success: function(return_data){
+				// Got list of tables, now populate the select field
+				table_columns = return_data['table_columns']
+				var option = '<option></option>';
+				$.each(table_columns, function(k, v){
+					console.log(k)
+					console.log(v)
+					option += '<option value="' + k + '">' + k + '</option>';
+				})
+				$('#table_select').html(option)
+			}
+		})
+	}
+})
+
+</script>
+
+{% endblock %}

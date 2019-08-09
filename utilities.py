@@ -1,5 +1,6 @@
 from collections import Iterable
 import itertools
+import os
 
 def remove_duplicated_lists(list_of_lists):
 	# Given list of lists, remove lists that are already seen in the bigger container
@@ -48,3 +49,6 @@ def flatten(l):
             yield from flatten(el)
         else:
             yield el
+
+def find_file_types(directory_path, extension):
+	return [x for x in os.listdir(directory_path) if x.endswith(extension)]
