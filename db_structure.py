@@ -19,6 +19,7 @@ There is no support for many:many relationships.
 
 class DB():
 	def __init__(self, directory_path, arch_file=None, data_file_extension='.csv', delimiter=','):
+		logging.info(f'Loading {directory_path}')
 		self.finalized = False
 		self.directory_path = directory_path
 		self.dataset_name = os.path.split(directory_path)[1]

@@ -17,6 +17,7 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets, server=flask_app, url_base_pathname='/dash/visualization/')
 
+logging.info('Loading DB into memory')
 db = DB(os.path.join('datasets', 'TOPICC'))
 dm = DataManager(db, load_all_data=True)
 all_columns = db.column_display_names
