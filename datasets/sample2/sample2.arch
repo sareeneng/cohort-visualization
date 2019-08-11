@@ -1,0 +1,214 @@
+{
+    "directory_path": "datasets/sample2",
+    "data_file_extension": ".csv",
+    "delimiter": ",",
+    "table_names": [
+        "D",
+        "C",
+        "E",
+        "A",
+        "B",
+        "F"
+    ],
+    "table_metadata": {
+        "D": {
+            "file": "datasets/sample2/D.csv"
+        },
+        "C": {
+            "file": "datasets/sample2/C.csv"
+        },
+        "E": {
+            "file": "datasets/sample2/E.csv"
+        },
+        "A": {
+            "file": "datasets/sample2/A.csv"
+        },
+        "B": {
+            "file": "datasets/sample2/B.csv"
+        },
+        "F": {
+            "file": "datasets/sample2/F.csv"
+        }
+    },
+    "column_metadata": {
+        "D": {
+            "col2": {
+                "type": "ONE"
+            },
+            "col6": {
+                "type": "ONE"
+            }
+        },
+        "C": {
+            "col1": {
+                "type": "ONE"
+            },
+            "col5": {
+                "type": "MANY"
+            },
+            "col6": {
+                "type": "ONE"
+            }
+        },
+        "E": {
+            "col4": {
+                "type": "ONE"
+            },
+            "col7": {
+                "type": "MANY"
+            }
+        },
+        "A": {
+            "col1": {
+                "type": "MANY"
+            },
+            "col2": {
+                "type": "MANY"
+            },
+            "col3": {
+                "type": "ONE"
+            }
+        },
+        "B": {
+            "col3": {
+                "type": "ONE"
+            },
+            "col4": {
+                "type": "MANY"
+            }
+        },
+        "F": {
+            "col5": {
+                "type": "ONE"
+            },
+            "col7": {
+                "type": "ONE"
+            },
+            "col8": {
+                "type": "ONE"
+            }
+        }
+    },
+    "common_column_names": [
+        "col2",
+        "col6",
+        "col1",
+        "col5",
+        "col4",
+        "col7",
+        "col3"
+    ],
+    "global_fks": [
+        "col2",
+        "col6",
+        "col1",
+        "col5",
+        "col4",
+        "col7",
+        "col3"
+    ],
+    "custom_fks": [],
+    "exclude_columns": [],
+    "custom_column_names": {},
+    "column_links": {
+        "0": {
+            "D": "col2",
+            "A": "col2"
+        },
+        "1": {
+            "D": "col6",
+            "C": "col6"
+        },
+        "2": {
+            "C": "col1",
+            "A": "col1"
+        },
+        "3": {
+            "C": "col5",
+            "F": "col5"
+        },
+        "4": {
+            "E": "col4",
+            "B": "col4"
+        },
+        "5": {
+            "E": "col7",
+            "F": "col7"
+        },
+        "6": {
+            "A": "col3",
+            "B": "col3"
+        },
+        "7": {
+            "F": "col8"
+        }
+    },
+    "column_display_names": {
+        "0": "col2",
+        "1": "col6",
+        "2": "col1",
+        "3": "col5",
+        "4": "col4",
+        "5": "col7",
+        "6": "col3",
+        "7": "col8"
+    },
+    "table_relationships": {
+        "D": {
+            "parents": {
+                "A": 0
+            },
+            "children": {},
+            "siblings": {
+                "C": 1
+            }
+        },
+        "C": {
+            "parents": {
+                "A": 2
+            },
+            "children": {
+                "F": 3
+            },
+            "siblings": {
+                "D": 1
+            }
+        },
+        "E": {
+            "parents": {
+                "B": 4
+            },
+            "children": {
+                "F": 5
+            },
+            "siblings": {}
+        },
+        "A": {
+            "parents": {},
+            "children": {
+                "D": 0,
+                "C": 2
+            },
+            "siblings": {
+                "B": 6
+            }
+        },
+        "B": {
+            "parents": {},
+            "children": {
+                "E": 4
+            },
+            "siblings": {
+                "A": 6
+            }
+        },
+        "F": {
+            "parents": {
+                "C": 3,
+                "E": 5
+            },
+            "children": {},
+            "siblings": {}
+        }
+    }
+}

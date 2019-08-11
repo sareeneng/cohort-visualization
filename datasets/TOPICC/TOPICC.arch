@@ -1,0 +1,4901 @@
+{
+    "directory_path": "datasets/TOPICC",
+    "data_file_extension": ".csv",
+    "delimiter": ",",
+    "table_names": [
+        "PHYSIOSTATUS",
+        "PICUDISCHARGE_DISSECONDDX",
+        "PICUADMIT_CHRONICDX",
+        "SURGERY",
+        "PICUDISCHARGE_DISCHRONICDX",
+        "PICUADMIT_AHD",
+        "LIMITOFCARE",
+        "HOSPITALDISCHARGE",
+        "CPR",
+        "CATASTROPHICEVENTS",
+        "CARDIACPROCEDURES",
+        "CARDIACSURGERY",
+        "DEATH",
+        "PICUADMIT_CHD",
+        "HOSPITALADMIT",
+        "PICUADMIT",
+        "HOSPITALADMIT_CE",
+        "CAREPROCESSES",
+        "PICUADMIT_ADMITSECONDDX",
+        "PICUDISCHARGE"
+    ],
+    "table_metadata": {
+        "PHYSIOSTATUS": {
+            "file": "datasets/TOPICC/PHYSIOSTATUS.csv"
+        },
+        "PICUDISCHARGE_DISSECONDDX": {
+            "file": "datasets/TOPICC/PICUDISCHARGE_DISSECONDDX.csv"
+        },
+        "PICUADMIT_CHRONICDX": {
+            "file": "datasets/TOPICC/PICUADMIT_CHRONICDX.csv"
+        },
+        "SURGERY": {
+            "file": "datasets/TOPICC/SURGERY.csv"
+        },
+        "PICUDISCHARGE_DISCHRONICDX": {
+            "file": "datasets/TOPICC/PICUDISCHARGE_DISCHRONICDX.csv"
+        },
+        "PICUADMIT_AHD": {
+            "file": "datasets/TOPICC/PICUADMIT_AHD.csv"
+        },
+        "LIMITOFCARE": {
+            "file": "datasets/TOPICC/LIMITOFCARE.csv"
+        },
+        "HOSPITALDISCHARGE": {
+            "file": "datasets/TOPICC/HOSPITALDISCHARGE.csv"
+        },
+        "CPR": {
+            "file": "datasets/TOPICC/CPR.csv"
+        },
+        "CATASTROPHICEVENTS": {
+            "file": "datasets/TOPICC/CATASTROPHICEVENTS.csv"
+        },
+        "CARDIACPROCEDURES": {
+            "file": "datasets/TOPICC/CARDIACPROCEDURES.csv"
+        },
+        "CARDIACSURGERY": {
+            "file": "datasets/TOPICC/CARDIACSURGERY.csv"
+        },
+        "DEATH": {
+            "file": "datasets/TOPICC/DEATH.csv"
+        },
+        "PICUADMIT_CHD": {
+            "file": "datasets/TOPICC/PICUADMIT_CHD.csv"
+        },
+        "HOSPITALADMIT": {
+            "file": "datasets/TOPICC/HOSPITALADMIT.csv"
+        },
+        "PICUADMIT": {
+            "file": "datasets/TOPICC/PICUADMIT.csv"
+        },
+        "HOSPITALADMIT_CE": {
+            "file": "datasets/TOPICC/HOSPITALADMIT_CE.csv"
+        },
+        "CAREPROCESSES": {
+            "file": "datasets/TOPICC/CAREPROCESSES.csv"
+        },
+        "PICUADMIT_ADMITSECONDDX": {
+            "file": "datasets/TOPICC/PICUADMIT_ADMITSECONDDX.csv"
+        },
+        "PICUDISCHARGE": {
+            "file": "datasets/TOPICC/PICUDISCHARGE.csv"
+        }
+    },
+    "column_metadata": {
+        "PHYSIOSTATUS": {
+            "PudID": {
+                "type": "ONE"
+            },
+            "siteid": {
+                "type": "MANY"
+            },
+            "Occurrence": {
+                "type": "MANY"
+            },
+            "FormStatus": {
+                "type": "MANY"
+            },
+            "ItemGroupRepeatKey": {
+                "type": "MANY"
+            },
+            "LowpH": {
+                "type": "MANY"
+            },
+            "HighpH": {
+                "type": "MANY"
+            },
+            "pHND": {
+                "type": "MANY"
+            },
+            "HighPCO2": {
+                "type": "MANY"
+            },
+            "PCO2ND": {
+                "type": "MANY"
+            },
+            "LowPa02": {
+                "type": "MANY"
+            },
+            "PaO2ND": {
+                "type": "MANY"
+            },
+            "LowIonCalcium": {
+                "type": "MANY"
+            },
+            "HighIonCalcium": {
+                "type": "MANY"
+            },
+            "IonCalciumND": {
+                "type": "MANY"
+            },
+            "LowSodium": {
+                "type": "MANY"
+            },
+            "HighSodium": {
+                "type": "MANY"
+            },
+            "SodiumND": {
+                "type": "MANY"
+            },
+            "HighPotassium": {
+                "type": "MANY"
+            },
+            "PotassiumND": {
+                "type": "MANY"
+            },
+            "HighBUN": {
+                "type": "MANY"
+            },
+            "HighBUNND": {
+                "type": "MANY"
+            },
+            "HighCreatinine": {
+                "type": "MANY"
+            },
+            "CreatinineND": {
+                "type": "MANY"
+            },
+            "LowGlucose": {
+                "type": "MANY"
+            },
+            "HighGlucose": {
+                "type": "MANY"
+            },
+            "GlucoseND": {
+                "type": "MANY"
+            },
+            "LowCO2": {
+                "type": "MANY"
+            },
+            "HighCO2": {
+                "type": "MANY"
+            },
+            "CO2ND": {
+                "type": "MANY"
+            },
+            "LowTotalCalcium": {
+                "type": "MANY"
+            },
+            "HighTotalCalcium": {
+                "type": "MANY"
+            },
+            "TotalCalciumND": {
+                "type": "MANY"
+            },
+            "LowWBC": {
+                "type": "MANY"
+            },
+            "HighWBC": {
+                "type": "MANY"
+            },
+            "WBCND": {
+                "type": "MANY"
+            },
+            "LowHemoglobin": {
+                "type": "MANY"
+            },
+            "HighHemoglobin": {
+                "type": "MANY"
+            },
+            "HemoglobinND": {
+                "type": "MANY"
+            },
+            "LowPlatelets": {
+                "type": "MANY"
+            },
+            "PlateletsND": {
+                "type": "MANY"
+            },
+            "HighPT": {
+                "type": "MANY"
+            },
+            "PTND": {
+                "type": "MANY"
+            },
+            "HighPTT": {
+                "type": "MANY"
+            },
+            "PTTND": {
+                "type": "MANY"
+            },
+            "HighINR": {
+                "type": "MANY"
+            },
+            "INRND": {
+                "type": "MANY"
+            },
+            "HighTemp": {
+                "type": "MANY"
+            },
+            "LowTemp": {
+                "type": "MANY"
+            },
+            "HighRespRate": {
+                "type": "MANY"
+            },
+            "LowRespRate": {
+                "type": "MANY"
+            },
+            "HighHeartRate": {
+                "type": "MANY"
+            },
+            "LowHeartRate": {
+                "type": "MANY"
+            },
+            "HighSBP": {
+                "type": "MANY"
+            },
+            "LowSBP": {
+                "type": "MANY"
+            },
+            "CNSInjury": {
+                "type": "MANY"
+            },
+            "GCSWorstMotor": {
+                "type": "MANY"
+            },
+            "GCSWorstTotal": {
+                "type": "MANY"
+            },
+            "GCSIntub": {
+                "type": "MANY"
+            },
+            "LOCWorst": {
+                "type": "MANY"
+            },
+            "PupilWorst": {
+                "type": "MANY"
+            },
+            "PupilHypo": {
+                "type": "MANY"
+            },
+            "EVENTSTARTDAY": {
+                "type": "MANY"
+            }
+        },
+        "PICUDISCHARGE_DISSECONDDX": {
+            "PudID": {
+                "type": "MANY"
+            },
+            "siteid": {
+                "type": "MANY"
+            },
+            "Occurrence": {
+                "type": "MANY"
+            },
+            "FormStatus": {
+                "type": "MANY"
+            },
+            "ItemGroupRepeatKey": {
+                "type": "MANY"
+            },
+            "PICUDisSecondDxCat": {
+                "type": "MANY"
+            },
+            "PICUDisSecondDxOther": {
+                "type": "MANY"
+            },
+            "EVENTSTARTDAY": {
+                "type": "MANY"
+            }
+        },
+        "PICUADMIT_CHRONICDX": {
+            "PudID": {
+                "type": "MANY"
+            },
+            "siteid": {
+                "type": "MANY"
+            },
+            "Occurrence": {
+                "type": "MANY"
+            },
+            "FormStatus": {
+                "type": "MANY"
+            },
+            "ItemGroupRepeatKey": {
+                "type": "MANY"
+            },
+            "PICUAdmitChronicDxCat": {
+                "type": "MANY"
+            },
+            "PICUAdmitChronicDxOther": {
+                "type": "MANY"
+            },
+            "EVENTSTARTDAY": {
+                "type": "MANY"
+            }
+        },
+        "SURGERY": {
+            "PudID": {
+                "type": "MANY"
+            },
+            "siteid": {
+                "type": "MANY"
+            },
+            "Occurrence": {
+                "type": "MANY"
+            },
+            "FormStatus": {
+                "type": "MANY"
+            },
+            "ItemGroupRepeatKey": {
+                "type": "MANY"
+            },
+            "SurgTime": {
+                "type": "MANY"
+            },
+            "SurgReturnTime": {
+                "type": "MANY"
+            },
+            "SurgCategory": {
+                "type": "MANY"
+            },
+            "SurgType": {
+                "type": "MANY"
+            },
+            "SurgName": {
+                "type": "MANY"
+            },
+            "SurgNPR1": {
+                "type": "MANY"
+            },
+            "SurgNPR2": {
+                "type": "MANY"
+            },
+            "SurgLowpH": {
+                "type": "MANY"
+            },
+            "SurgHighpH": {
+                "type": "MANY"
+            },
+            "SurgpHND": {
+                "type": "MANY"
+            },
+            "SurgHighPCO2": {
+                "type": "MANY"
+            },
+            "SurgPCO2ND": {
+                "type": "MANY"
+            },
+            "SurgLowPa02": {
+                "type": "MANY"
+            },
+            "SurgPaO2ND": {
+                "type": "MANY"
+            },
+            "SurgLowIonCalcium": {
+                "type": "MANY"
+            },
+            "SurgHighIonCalcium": {
+                "type": "MANY"
+            },
+            "SurgIonCalciumND": {
+                "type": "MANY"
+            },
+            "SurgLowSodium": {
+                "type": "MANY"
+            },
+            "SurgHighSodium": {
+                "type": "MANY"
+            },
+            "SurgSodiumND": {
+                "type": "MANY"
+            },
+            "SurgHighPotassium": {
+                "type": "MANY"
+            },
+            "SurgPotassiumND": {
+                "type": "MANY"
+            },
+            "SurgHighBUN": {
+                "type": "MANY"
+            },
+            "SurgHighBUNND": {
+                "type": "MANY"
+            },
+            "SurgHighCreatinine": {
+                "type": "MANY"
+            },
+            "SurgCreatinineND": {
+                "type": "MANY"
+            },
+            "SurgLowGlucose": {
+                "type": "MANY"
+            },
+            "SurgHighGlucose": {
+                "type": "MANY"
+            },
+            "SurgGlucoseND": {
+                "type": "MANY"
+            },
+            "SurgLowCO2": {
+                "type": "MANY"
+            },
+            "SurgHighCO2": {
+                "type": "MANY"
+            },
+            "SurgCO2ND": {
+                "type": "MANY"
+            },
+            "SurgLowTotalCalcium": {
+                "type": "MANY"
+            },
+            "SurgHighTotalCalcium": {
+                "type": "MANY"
+            },
+            "SurgTotalCalciumND": {
+                "type": "MANY"
+            },
+            "SurgLowWBC": {
+                "type": "MANY"
+            },
+            "SurgHighWBC": {
+                "type": "MANY"
+            },
+            "SurgWBCND": {
+                "type": "MANY"
+            },
+            "SurgLowHemoglobin": {
+                "type": "MANY"
+            },
+            "SurgHighHemoglobin": {
+                "type": "MANY"
+            },
+            "SurgHemoglobinND": {
+                "type": "MANY"
+            },
+            "SurgLowPlatelets": {
+                "type": "MANY"
+            },
+            "SurgPlateletsND": {
+                "type": "MANY"
+            },
+            "SurgHighPT": {
+                "type": "MANY"
+            },
+            "SurgPTND": {
+                "type": "MANY"
+            },
+            "SurgHighPTT": {
+                "type": "MANY"
+            },
+            "SurgPTTND": {
+                "type": "MANY"
+            },
+            "SurgHighINR": {
+                "type": "MANY"
+            },
+            "SurgINRND": {
+                "type": "MANY"
+            },
+            "SurgHighTemp": {
+                "type": "MANY"
+            },
+            "SurgLowTemp": {
+                "type": "MANY"
+            },
+            "SurgHighRespRate": {
+                "type": "MANY"
+            },
+            "SurgLowRespRate": {
+                "type": "MANY"
+            },
+            "SurgHighHeartRate": {
+                "type": "MANY"
+            },
+            "SurgLowHeartRate": {
+                "type": "MANY"
+            },
+            "SurgHighSBP": {
+                "type": "MANY"
+            },
+            "SurgLowSBP": {
+                "type": "MANY"
+            },
+            "SurgCNSInjury": {
+                "type": "MANY"
+            },
+            "SurgGCSWorstMotor": {
+                "type": "MANY"
+            },
+            "SurgGCSWorstTotal": {
+                "type": "MANY"
+            },
+            "SurgGCSIntub": {
+                "type": "MANY"
+            },
+            "SurgLOCWorst": {
+                "type": "MANY"
+            },
+            "SurgPupilWorst": {
+                "type": "MANY"
+            },
+            "SurgPupilHypo": {
+                "type": "MANY"
+            },
+            "SurgWBCNC": {
+                "type": "ONE"
+            },
+            "EVENTSTARTDAY": {
+                "type": "MANY"
+            },
+            "SURGDAY": {
+                "type": "MANY"
+            },
+            "SURGRETURNDAY": {
+                "type": "MANY"
+            }
+        },
+        "PICUDISCHARGE_DISCHRONICDX": {
+            "PudID": {
+                "type": "MANY"
+            },
+            "siteid": {
+                "type": "MANY"
+            },
+            "Occurrence": {
+                "type": "MANY"
+            },
+            "FormStatus": {
+                "type": "MANY"
+            },
+            "ItemGroupRepeatKey": {
+                "type": "MANY"
+            },
+            "PICUDisChronicDxCat": {
+                "type": "MANY"
+            },
+            "PICUDisChronicDxOther": {
+                "type": "MANY"
+            },
+            "EVENTSTARTDAY": {
+                "type": "MANY"
+            }
+        },
+        "PICUADMIT_AHD": {
+            "PudID": {
+                "type": "MANY"
+            },
+            "siteid": {
+                "type": "MANY"
+            },
+            "Occurrence": {
+                "type": "MANY"
+            },
+            "FormStatus": {
+                "type": "MANY"
+            },
+            "ItemGroupRepeatKey": {
+                "type": "MANY"
+            },
+            "AcquiredHeartCat": {
+                "type": "MANY"
+            },
+            "AcquiredHeartCatOther": {
+                "type": "MANY"
+            },
+            "EVENTSTARTDAY": {
+                "type": "MANY"
+            }
+        },
+        "LIMITOFCARE": {
+            "PudID": {
+                "type": "ONE"
+            },
+            "siteid": {
+                "type": "MANY"
+            },
+            "Occurrence": {
+                "type": "MANY"
+            },
+            "FormStatus": {
+                "type": "MANY"
+            },
+            "ItemGroupRepeatKey": {
+                "type": "MANY"
+            },
+            "WOCFamilyDiscussTime": {
+                "type": "MANY"
+            },
+            "WOCMedicalRecordTime": {
+                "type": "MANY"
+            },
+            "PalliativeCare": {
+                "type": "MANY"
+            },
+            "PalliativeCareTime": {
+                "type": "MANY"
+            },
+            "PainService": {
+                "type": "MANY"
+            },
+            "PainServiceTime": {
+                "type": "MANY"
+            },
+            "Ethics": {
+                "type": "MANY"
+            },
+            "EthicsTime": {
+                "type": "ONE"
+            },
+            "FutureMechVent": {
+                "type": "MANY"
+            },
+            "FutureVasoMeds": {
+                "type": "MANY"
+            },
+            "FutureCardiacComp": {
+                "type": "MANY"
+            },
+            "FutureECMO": {
+                "type": "MANY"
+            },
+            "FutureDialysis": {
+                "type": "MANY"
+            },
+            "WithdrawMechVent": {
+                "type": "MANY"
+            },
+            "WithdrawVasoMeds": {
+                "type": "MANY"
+            },
+            "WithdrawFeeding": {
+                "type": "MANY"
+            },
+            "WithdrawECMO": {
+                "type": "MANY"
+            },
+            "WithdrawRRT": {
+                "type": "MANY"
+            },
+            "WithdrawOther": {
+                "type": "MANY"
+            },
+            "WithdrawOtherSpecify": {
+                "type": "MANY"
+            },
+            "ETHICSDAY": {
+                "type": "ONE"
+            },
+            "EVENTSTARTDAY": {
+                "type": "MANY"
+            },
+            "PAINSERVICEDAY": {
+                "type": "MANY"
+            },
+            "PALLIATIVECAREDAY": {
+                "type": "MANY"
+            },
+            "WOCFAMILYDISCUSSDAY": {
+                "type": "MANY"
+            },
+            "WOCMEDICALRECORDDAY": {
+                "type": "MANY"
+            }
+        },
+        "HOSPITALDISCHARGE": {
+            "PudID": {
+                "type": "ONE"
+            },
+            "siteid": {
+                "type": "MANY"
+            },
+            "Occurrence": {
+                "type": "MANY"
+            },
+            "FormStatus": {
+                "type": "MANY"
+            },
+            "ItemGroupRepeatKey": {
+                "type": "MANY"
+            },
+            "HospDisTime": {
+                "type": "MANY"
+            },
+            "HospDisReadmit": {
+                "type": "MANY"
+            },
+            "HospCE": {
+                "type": "MANY"
+            },
+            "HospDisAlive": {
+                "type": "MANY"
+            },
+            "HospDisLoc": {
+                "type": "MANY"
+            },
+            "HospDisLocOther": {
+                "type": "MANY"
+            },
+            "HospDisHospice": {
+                "type": "MANY"
+            },
+            "HospDisFSSMental": {
+                "type": "MANY"
+            },
+            "HospDisFSSSensory": {
+                "type": "MANY"
+            },
+            "HospDisFSSCommun": {
+                "type": "MANY"
+            },
+            "HospDisFSSMotor": {
+                "type": "MANY"
+            },
+            "HospDisFSSFeeding": {
+                "type": "MANY"
+            },
+            "HospDisFSSResp": {
+                "type": "MANY"
+            },
+            "HospDisPCPC": {
+                "type": "MANY"
+            },
+            "HospDisPOPC": {
+                "type": "MANY"
+            },
+            "HospDisNeuroBlock": {
+                "type": "MANY"
+            },
+            "HospDisSedative": {
+                "type": "MANY"
+            },
+            "HospDisNarcotic": {
+                "type": "MANY"
+            },
+            "HospDisOtherPain": {
+                "type": "MANY"
+            },
+            "HospDisSleepingAid": {
+                "type": "MANY"
+            },
+            "HospDisOtherDrugs": {
+                "type": "MANY"
+            },
+            "HospDisArmFootBoards": {
+                "type": "MANY"
+            },
+            "HospDisRestraints": {
+                "type": "MANY"
+            },
+            "HospDisBandageCast": {
+                "type": "MANY"
+            },
+            "EVENTSTARTDAY": {
+                "type": "MANY"
+            },
+            "HOSPDISDAY": {
+                "type": "MANY"
+            },
+            "HospDisFSSSource1": {
+                "type": "MANY"
+            },
+            "HospDisFSSSource2": {
+                "type": "MANY"
+            },
+            "HospDisFSSSource3": {
+                "type": "MANY"
+            },
+            "HospDisPCPCInfo1": {
+                "type": "MANY"
+            },
+            "HospDisPCPCInfo2": {
+                "type": "MANY"
+            },
+            "HospDisPCPCInfo3": {
+                "type": "MANY"
+            }
+        },
+        "CPR": {
+            "PudID": {
+                "type": "MANY"
+            },
+            "siteid": {
+                "type": "MANY"
+            },
+            "Occurrence": {
+                "type": "MANY"
+            },
+            "FormStatus": {
+                "type": "MANY"
+            },
+            "ItemGroupRepeatKey": {
+                "type": "MANY"
+            },
+            "CPRTime": {
+                "type": "MANY"
+            },
+            "ChestComp": {
+                "type": "MANY"
+            },
+            "ChestCompStartTime": {
+                "type": "MANY"
+            },
+            "ChestCompStopTime": {
+                "type": "MANY"
+            },
+            "ChestCompReason": {
+                "type": "MANY"
+            },
+            "ChestOpenClosed": {
+                "type": "MANY"
+            },
+            "Defib": {
+                "type": "MANY"
+            },
+            "ROC": {
+                "type": "MANY"
+            },
+            "ECMOToAchieveROC": {
+                "type": "MANY"
+            },
+            "Alive24HrsAfterCPR": {
+                "type": "MANY"
+            },
+            "CPRDAY": {
+                "type": "MANY"
+            },
+            "CHESTCOMPSTARTDAY": {
+                "type": "MANY"
+            },
+            "CHESTCOMPSTOPDAY": {
+                "type": "MANY"
+            },
+            "EVENTSTARTDAY": {
+                "type": "MANY"
+            }
+        },
+        "CATASTROPHICEVENTS": {
+            "PudID": {
+                "type": "MANY"
+            },
+            "siteid": {
+                "type": "MANY"
+            },
+            "Occurrence": {
+                "type": "MANY"
+            },
+            "FormStatus": {
+                "type": "MANY"
+            },
+            "ItemGroupRepeatKey": {
+                "type": "MANY"
+            },
+            "HospCETime": {
+                "type": "MANY"
+            },
+            "HospCEDesc": {
+                "type": "MANY"
+            },
+            "HospCEDescOther": {
+                "type": "ONE"
+            },
+            "EVENTSTARTDAY": {
+                "type": "MANY"
+            },
+            "HOSPCEDAY": {
+                "type": "MANY"
+            }
+        },
+        "CARDIACPROCEDURES": {
+            "PudID": {
+                "type": "MANY"
+            },
+            "siteid": {
+                "type": "MANY"
+            },
+            "Occurrence": {
+                "type": "MANY"
+            },
+            "FormStatus": {
+                "type": "MANY"
+            },
+            "ItemGroupRepeatKey": {
+                "type": "MANY"
+            },
+            "PrimaryProc1": {
+                "type": "MANY"
+            },
+            "PrimaryProc2": {
+                "type": "MANY"
+            },
+            "PrimProcOt": {
+                "type": "ONE"
+            },
+            "SecondProcOt": {
+                "type": "ONE"
+            },
+            "EVENTSTARTDAY": {
+                "type": "MANY"
+            },
+            "SecondProc11": {
+                "type": "MANY"
+            },
+            "SecondProc12": {
+                "type": "MANY"
+            },
+            "SecondProc13": {
+                "type": "MANY"
+            },
+            "SecondProc14": {
+                "type": "MANY"
+            },
+            "SecondProc15": {
+                "type": "MANY"
+            },
+            "SecondProc16": {
+                "type": "MANY"
+            },
+            "SecondProc17": {
+                "type": "MANY"
+            },
+            "SecondProc18": {
+                "type": "MANY"
+            },
+            "SecondProc19": {
+                "type": "MANY"
+            },
+            "SecondProc110": {
+                "type": "MANY"
+            },
+            "SecondProc111": {
+                "type": "MANY"
+            },
+            "SecondProc112": {
+                "type": "MANY"
+            },
+            "SecondProc113": {
+                "type": "MANY"
+            },
+            "SecondProc114": {
+                "type": "MANY"
+            },
+            "SecondProc115": {
+                "type": "MANY"
+            },
+            "SecondProc116": {
+                "type": "MANY"
+            },
+            "SecondProc117": {
+                "type": "MANY"
+            },
+            "SecondProc118": {
+                "type": "MANY"
+            },
+            "SecondProc119": {
+                "type": "MANY"
+            },
+            "SecondProc120": {
+                "type": "MANY"
+            },
+            "SecondProc121": {
+                "type": "MANY"
+            },
+            "SecondProc122": {
+                "type": "MANY"
+            },
+            "SecondProc123": {
+                "type": "MANY"
+            },
+            "SecondProc124": {
+                "type": "MANY"
+            },
+            "SecondProc125": {
+                "type": "MANY"
+            },
+            "SecondProc126": {
+                "type": "MANY"
+            },
+            "SecondProc127": {
+                "type": "MANY"
+            },
+            "SecondProc128": {
+                "type": "MANY"
+            },
+            "SecondProc129": {
+                "type": "MANY"
+            },
+            "SecondProc130": {
+                "type": "MANY"
+            },
+            "SecondProc131": {
+                "type": "MANY"
+            },
+            "SecondProc132": {
+                "type": "MANY"
+            },
+            "SecondProc133": {
+                "type": "MANY"
+            },
+            "SecondProc134": {
+                "type": "MANY"
+            },
+            "SecondProc135": {
+                "type": "MANY"
+            },
+            "SecondProc136": {
+                "type": "MANY"
+            },
+            "SecondProc137": {
+                "type": "MANY"
+            },
+            "SecondProc138": {
+                "type": "MANY"
+            },
+            "SecondProc139": {
+                "type": "MANY"
+            },
+            "SecondProc140": {
+                "type": "MANY"
+            },
+            "SecondProc141": {
+                "type": "MANY"
+            },
+            "SecondProc142": {
+                "type": "MANY"
+            },
+            "SecondProc143": {
+                "type": "MANY"
+            },
+            "SecondProc144": {
+                "type": "MANY"
+            },
+            "SecondProc145": {
+                "type": "MANY"
+            },
+            "SecondProc146": {
+                "type": "MANY"
+            },
+            "SecondProc147": {
+                "type": "MANY"
+            },
+            "SecondProc148": {
+                "type": "MANY"
+            },
+            "SecondProc149": {
+                "type": "MANY"
+            },
+            "SecondProc150": {
+                "type": "MANY"
+            },
+            "SecondProc151": {
+                "type": "MANY"
+            },
+            "SecondProc152": {
+                "type": "MANY"
+            },
+            "SecondProc153": {
+                "type": "MANY"
+            },
+            "SecondProc154": {
+                "type": "MANY"
+            },
+            "SecondProc155": {
+                "type": "MANY"
+            },
+            "SecondProc156": {
+                "type": "MANY"
+            },
+            "SecondProc157": {
+                "type": "MANY"
+            },
+            "SecondProc158": {
+                "type": "MANY"
+            },
+            "SecondProc159": {
+                "type": "MANY"
+            },
+            "SecondProc160": {
+                "type": "MANY"
+            },
+            "SecondProc161": {
+                "type": "MANY"
+            },
+            "SecondProc162": {
+                "type": "MANY"
+            },
+            "SecondProc163": {
+                "type": "MANY"
+            },
+            "SecondProc164": {
+                "type": "MANY"
+            },
+            "SecondProc165": {
+                "type": "MANY"
+            },
+            "SecondProc166": {
+                "type": "MANY"
+            },
+            "SecondProc167": {
+                "type": "MANY"
+            },
+            "SecondProc168": {
+                "type": "MANY"
+            },
+            "SecondProc169": {
+                "type": "MANY"
+            },
+            "SecondProc170": {
+                "type": "MANY"
+            },
+            "SecondProc171": {
+                "type": "MANY"
+            },
+            "SecondProc172": {
+                "type": "MANY"
+            },
+            "SecondProc173": {
+                "type": "MANY"
+            },
+            "SecondProc174": {
+                "type": "MANY"
+            },
+            "SecondProc175": {
+                "type": "MANY"
+            },
+            "SecondProc176": {
+                "type": "MANY"
+            },
+            "SecondProc277": {
+                "type": "MANY"
+            },
+            "SecondProc278": {
+                "type": "MANY"
+            },
+            "SecondProc279": {
+                "type": "MANY"
+            },
+            "SecondProc280": {
+                "type": "MANY"
+            },
+            "SecondProc281": {
+                "type": "MANY"
+            },
+            "SecondProc282": {
+                "type": "MANY"
+            },
+            "SecondProc283": {
+                "type": "MANY"
+            },
+            "SecondProc284": {
+                "type": "MANY"
+            },
+            "SecondProc285": {
+                "type": "MANY"
+            },
+            "SecondProc286": {
+                "type": "MANY"
+            },
+            "SecondProc287": {
+                "type": "MANY"
+            },
+            "SecondProc288": {
+                "type": "MANY"
+            },
+            "SecondProc289": {
+                "type": "MANY"
+            },
+            "SecondProc290": {
+                "type": "MANY"
+            },
+            "SecondProc291": {
+                "type": "MANY"
+            },
+            "SecondProc292": {
+                "type": "MANY"
+            },
+            "SecondProc293": {
+                "type": "MANY"
+            },
+            "SecondProc294": {
+                "type": "MANY"
+            },
+            "SecondProc295": {
+                "type": "MANY"
+            },
+            "SecondProc296": {
+                "type": "MANY"
+            },
+            "SecondProc297": {
+                "type": "MANY"
+            },
+            "SecondProc298": {
+                "type": "MANY"
+            },
+            "SecondProc299": {
+                "type": "MANY"
+            },
+            "SecondProc2100": {
+                "type": "MANY"
+            },
+            "SecondProc2101": {
+                "type": "MANY"
+            },
+            "SecondProc2102": {
+                "type": "MANY"
+            },
+            "SecondProc2103": {
+                "type": "MANY"
+            },
+            "SecondProc2104": {
+                "type": "MANY"
+            },
+            "SecondProc2105": {
+                "type": "MANY"
+            },
+            "SecondProc2106": {
+                "type": "MANY"
+            },
+            "SecondProc2107": {
+                "type": "MANY"
+            },
+            "SecondProc2108": {
+                "type": "MANY"
+            },
+            "SecondProc2109": {
+                "type": "MANY"
+            },
+            "SecondProc2110": {
+                "type": "MANY"
+            },
+            "SecondProc2111": {
+                "type": "MANY"
+            },
+            "SecondProc2112": {
+                "type": "MANY"
+            },
+            "SecondProc2113": {
+                "type": "MANY"
+            },
+            "SecondProc2114": {
+                "type": "MANY"
+            },
+            "SecondProc2115": {
+                "type": "MANY"
+            },
+            "SecondProc2116": {
+                "type": "MANY"
+            },
+            "SecondProc2117": {
+                "type": "MANY"
+            },
+            "SecondProc2118": {
+                "type": "MANY"
+            },
+            "SecondProc2119": {
+                "type": "MANY"
+            },
+            "SecondProc2120": {
+                "type": "MANY"
+            },
+            "SecondProc2121": {
+                "type": "MANY"
+            },
+            "SecondProc2122": {
+                "type": "MANY"
+            },
+            "SecondProc2123": {
+                "type": "MANY"
+            },
+            "SecondProc2124": {
+                "type": "MANY"
+            },
+            "SecondProc2125": {
+                "type": "MANY"
+            },
+            "SecondProc2126": {
+                "type": "MANY"
+            },
+            "SecondProc2127": {
+                "type": "MANY"
+            },
+            "SecondProc2128": {
+                "type": "MANY"
+            },
+            "SecondProc2129": {
+                "type": "MANY"
+            },
+            "SecondProc2130": {
+                "type": "MANY"
+            },
+            "SecondProc2131": {
+                "type": "MANY"
+            },
+            "SecondProc2132": {
+                "type": "MANY"
+            },
+            "SecondProc2133": {
+                "type": "MANY"
+            },
+            "SecondProc2134": {
+                "type": "MANY"
+            },
+            "SecondProc2135": {
+                "type": "MANY"
+            },
+            "SecondProc2136": {
+                "type": "MANY"
+            },
+            "SecondProc2137": {
+                "type": "MANY"
+            },
+            "SecondProc2138": {
+                "type": "MANY"
+            },
+            "SecondProc2139": {
+                "type": "MANY"
+            },
+            "SecondProc2140": {
+                "type": "MANY"
+            },
+            "SecondProc2141": {
+                "type": "MANY"
+            },
+            "SecondProc2142": {
+                "type": "MANY"
+            },
+            "SecondProc2143": {
+                "type": "MANY"
+            },
+            "SecondProc2144": {
+                "type": "MANY"
+            },
+            "SecondProc2145": {
+                "type": "MANY"
+            },
+            "SecondProc2146": {
+                "type": "MANY"
+            },
+            "SecondProc2147": {
+                "type": "MANY"
+            },
+            "SecondProc2148": {
+                "type": "MANY"
+            },
+            "SecondProc2149": {
+                "type": "MANY"
+            },
+            "SecondProc2150": {
+                "type": "MANY"
+            },
+            "SecondProc2151": {
+                "type": "MANY"
+            },
+            "SecondProc2152": {
+                "type": "MANY"
+            },
+            "SecondProc2153": {
+                "type": "MANY"
+            },
+            "SecondProc2154": {
+                "type": "MANY"
+            },
+            "SecondProc2155": {
+                "type": "MANY"
+            },
+            "SecondProc2156": {
+                "type": "MANY"
+            },
+            "SecondProc2157": {
+                "type": "MANY"
+            }
+        },
+        "CARDIACSURGERY": {
+            "PudID": {
+                "type": "MANY"
+            },
+            "siteid": {
+                "type": "MANY"
+            },
+            "Occurrence": {
+                "type": "MANY"
+            },
+            "FormStatus": {
+                "type": "MANY"
+            },
+            "ItemGroupRepeatKey": {
+                "type": "MANY"
+            },
+            "CardiacSurgTime": {
+                "type": "MANY"
+            },
+            "CardiacSurgOccur": {
+                "type": "MANY"
+            },
+            "Bypass": {
+                "type": "MANY"
+            },
+            "BypassTime": {
+                "type": "MANY"
+            },
+            "CrossClamp": {
+                "type": "MANY"
+            },
+            "CrossClampTime": {
+                "type": "MANY"
+            },
+            "HypoArrest": {
+                "type": "MANY"
+            },
+            "HypoArrestTime": {
+                "type": "MANY"
+            },
+            "UnplanArrest": {
+                "type": "MANY"
+            },
+            "ORDisVasoDrips": {
+                "type": "MANY"
+            },
+            "ORDisECMO": {
+                "type": "MANY"
+            },
+            "ORDisVAD": {
+                "type": "MANY"
+            },
+            "ORDisChestOpen": {
+                "type": "MANY"
+            },
+            "PostSurgLactate": {
+                "type": "MANY"
+            },
+            "PostSurgpH": {
+                "type": "MANY"
+            },
+            "CARDIACSURGDAY": {
+                "type": "MANY"
+            },
+            "EVENTSTARTDAY": {
+                "type": "MANY"
+            },
+            "ORDisVasoDripDrugs1": {
+                "type": "MANY"
+            },
+            "ORDisVasoDripDrugs2": {
+                "type": "MANY"
+            },
+            "ORDisVasoDripDrugs3": {
+                "type": "MANY"
+            },
+            "ORDisVasoDripDrugs4": {
+                "type": "MANY"
+            },
+            "ORDisVasoDripDrugs5": {
+                "type": "MANY"
+            },
+            "ORDisVasoDripDrugs6": {
+                "type": "MANY"
+            },
+            "ORDisVasoDripDrugs7": {
+                "type": "MANY"
+            },
+            "ORDisVasoDripDrugs8": {
+                "type": "MANY"
+            },
+            "ORDisVasoDripDrugs9": {
+                "type": "MANY"
+            },
+            "ORDisVasoDripDrugs10": {
+                "type": "MANY"
+            }
+        },
+        "DEATH": {
+            "PudID": {
+                "type": "ONE"
+            },
+            "siteid": {
+                "type": "MANY"
+            },
+            "Occurrence": {
+                "type": "MANY"
+            },
+            "FormStatus": {
+                "type": "MANY"
+            },
+            "ItemGroupRepeatKey": {
+                "type": "MANY"
+            },
+            "DeathTime": {
+                "type": "MANY"
+            },
+            "DeathLoc": {
+                "type": "MANY"
+            },
+            "CPRAdmin": {
+                "type": "MANY"
+            },
+            "DeathMode": {
+                "type": "MANY"
+            },
+            "MECase": {
+                "type": "MANY"
+            },
+            "AutopsyRequest": {
+                "type": "MANY"
+            },
+            "AutopsyDone": {
+                "type": "MANY"
+            },
+            "AutopsyLoc": {
+                "type": "MANY"
+            },
+            "ReasonNoAutopsy": {
+                "type": "MANY"
+            },
+            "DonationOffer": {
+                "type": "MANY"
+            },
+            "DonationOccur": {
+                "type": "MANY"
+            },
+            "DonationFollow": {
+                "type": "MANY"
+            },
+            "DEATHDAY": {
+                "type": "MANY"
+            },
+            "EVENTSTARTDAY": {
+                "type": "MANY"
+            },
+            "DonationOrgan1": {
+                "type": "MANY"
+            },
+            "DonationOrgan2": {
+                "type": "MANY"
+            },
+            "DonationOrgan3": {
+                "type": "MANY"
+            },
+            "DonationOrgan4": {
+                "type": "MANY"
+            },
+            "DonationOrgan5": {
+                "type": "MANY"
+            },
+            "DonationOrgan90": {
+                "type": "MANY"
+            }
+        },
+        "PICUADMIT_CHD": {
+            "PudID": {
+                "type": "MANY"
+            },
+            "siteid": {
+                "type": "MANY"
+            },
+            "Occurrence": {
+                "type": "MANY"
+            },
+            "FormStatus": {
+                "type": "MANY"
+            },
+            "ItemGroupRepeatKey": {
+                "type": "MANY"
+            },
+            "CHDCat": {
+                "type": "MANY"
+            },
+            "EVENTSTARTDAY": {
+                "type": "MANY"
+            }
+        },
+        "HOSPITALADMIT": {
+            "PudID": {
+                "type": "ONE"
+            },
+            "siteid": {
+                "type": "MANY"
+            },
+            "Occurrence": {
+                "type": "MANY"
+            },
+            "FormStatus": {
+                "type": "MANY"
+            },
+            "ItemGroupRepeatKey": {
+                "type": "MANY"
+            },
+            "PreviousEnroll": {
+                "type": "MANY"
+            },
+            "Sex": {
+                "type": "MANY"
+            },
+            "Ethnicity": {
+                "type": "MANY"
+            },
+            "Payer": {
+                "type": "MANY"
+            },
+            "HospAdmitTime": {
+                "type": "MANY"
+            },
+            "BaselineCE": {
+                "type": "MANY"
+            },
+            "DevelopDelay": {
+                "type": "MANY"
+            },
+            "AdmitThroughED": {
+                "type": "MANY"
+            },
+            "EDArrivalTime": {
+                "type": "MANY"
+            },
+            "BaselineFSSMental": {
+                "type": "MANY"
+            },
+            "BaselineFSSSensory": {
+                "type": "MANY"
+            },
+            "BaselineFSSCommun": {
+                "type": "MANY"
+            },
+            "BaselineFSSMotor": {
+                "type": "MANY"
+            },
+            "BaselineFSSFeeding": {
+                "type": "MANY"
+            },
+            "BaselineFSSResp": {
+                "type": "MANY"
+            },
+            "BaselinePCPC": {
+                "type": "MANY"
+            },
+            "BaselinePOPC": {
+                "type": "MANY"
+            },
+            "BIRTHDAY": {
+                "type": "MANY"
+            },
+            "EDARRIVALDAY": {
+                "type": "MANY"
+            },
+            "EVENTSTARTDAY": {
+                "type": "MANY"
+            },
+            "HOSPADMITDAY": {
+                "type": "MANY"
+            },
+            "Race1": {
+                "type": "MANY"
+            },
+            "Race2": {
+                "type": "MANY"
+            },
+            "Race3": {
+                "type": "MANY"
+            },
+            "Race4": {
+                "type": "MANY"
+            },
+            "Race5": {
+                "type": "MANY"
+            },
+            "Race92": {
+                "type": "MANY"
+            },
+            "BaselineFSSSource1": {
+                "type": "MANY"
+            },
+            "BaselineFSSSource2": {
+                "type": "MANY"
+            },
+            "BaselinePCPCSource1": {
+                "type": "MANY"
+            },
+            "BaselinePCPCSource2": {
+                "type": "MANY"
+            },
+            "OriginalPUDID": {
+                "type": "MANY"
+            }
+        },
+        "PICUADMIT": {
+            "PudID": {
+                "type": "ONE"
+            },
+            "siteid": {
+                "type": "MANY"
+            },
+            "Occurrence": {
+                "type": "MANY"
+            },
+            "FormStatus": {
+                "type": "MANY"
+            },
+            "ItemGroupRepeatKey": {
+                "type": "MANY"
+            },
+            "PICUAdmitTime": {
+                "type": "MANY"
+            },
+            "PICUAdmitStatus": {
+                "type": "MANY"
+            },
+            "PICUAdmittedTo": {
+                "type": "MANY"
+            },
+            "PICUPostOp": {
+                "type": "MANY"
+            },
+            "PICUPostOpType": {
+                "type": "MANY"
+            },
+            "PICUPostOpTypeOther": {
+                "type": "MANY"
+            },
+            "PICUPostOpSurgName": {
+                "type": "MANY"
+            },
+            "PICUAdmitClinicalService": {
+                "type": "MANY"
+            },
+            "PICUAdmitSource": {
+                "type": "MANY"
+            },
+            "PICUAdmitNPR1": {
+                "type": "MANY"
+            },
+            "PICUAdmitNPR2": {
+                "type": "MANY"
+            },
+            "PICUAdmitPrimaryDx": {
+                "type": "MANY"
+            },
+            "PICUAdmitPrimaryDxOther": {
+                "type": "MANY"
+            },
+            "PICUAdmitSecondDx": {
+                "type": "MANY"
+            },
+            "PICUAdmitChronicDx": {
+                "type": "MANY"
+            },
+            "CHD": {
+                "type": "MANY"
+            },
+            "AcquiredHeart": {
+                "type": "MANY"
+            },
+            "EVENTSTARTDAY": {
+                "type": "MANY"
+            },
+            "PICUADMITDAY": {
+                "type": "MANY"
+            }
+        },
+        "HOSPITALADMIT_CE": {
+            "PudID": {
+                "type": "MANY"
+            },
+            "siteid": {
+                "type": "MANY"
+            },
+            "Occurrence": {
+                "type": "MANY"
+            },
+            "FormStatus": {
+                "type": "MANY"
+            },
+            "ItemGroupRepeatKey": {
+                "type": "MANY"
+            },
+            "BaselineCEDesc": {
+                "type": "MANY"
+            },
+            "BaselineCEDescOther": {
+                "type": "MANY"
+            },
+            "BaselineCEInterval": {
+                "type": "MANY"
+            },
+            "EVENTSTARTDAY": {
+                "type": "MANY"
+            }
+        },
+        "CAREPROCESSES": {
+            "PudID": {
+                "type": "ONE"
+            },
+            "siteid": {
+                "type": "MANY"
+            },
+            "Occurrence": {
+                "type": "MANY"
+            },
+            "FormStatus": {
+                "type": "MANY"
+            },
+            "ItemGroupRepeatKey": {
+                "type": "MANY"
+            },
+            "MechVent": {
+                "type": "MANY"
+            },
+            "HFOV": {
+                "type": "MANY"
+            },
+            "NOX": {
+                "type": "MANY"
+            },
+            "ICP": {
+                "type": "MANY"
+            },
+            "TherapeuticHypo": {
+                "type": "MANY"
+            },
+            "VasoInf": {
+                "type": "MANY"
+            },
+            "AbxAdmin": {
+                "type": "MANY"
+            },
+            "SteroidAdmin": {
+                "type": "MANY"
+            },
+            "NeuroBlock": {
+                "type": "MANY"
+            },
+            "ECMO": {
+                "type": "MANY"
+            },
+            "RenalReplace": {
+                "type": "MANY"
+            },
+            "ParentNutrition": {
+                "type": "MANY"
+            },
+            "EVENTSTARTDAY": {
+                "type": "MANY"
+            }
+        },
+        "PICUADMIT_ADMITSECONDDX": {
+            "PudID": {
+                "type": "MANY"
+            },
+            "siteid": {
+                "type": "MANY"
+            },
+            "Occurrence": {
+                "type": "MANY"
+            },
+            "FormStatus": {
+                "type": "MANY"
+            },
+            "ItemGroupRepeatKey": {
+                "type": "MANY"
+            },
+            "PICUAdmitSecondDxCat": {
+                "type": "MANY"
+            },
+            "PICUAdmitSecondDxOther": {
+                "type": "MANY"
+            },
+            "EVENTSTARTDAY": {
+                "type": "MANY"
+            }
+        },
+        "PICUDISCHARGE": {
+            "PudID": {
+                "type": "ONE"
+            },
+            "siteid": {
+                "type": "MANY"
+            },
+            "Occurrence": {
+                "type": "MANY"
+            },
+            "FormStatus": {
+                "type": "MANY"
+            },
+            "ItemGroupRepeatKey": {
+                "type": "MANY"
+            },
+            "PICUDisTime": {
+                "type": "MANY"
+            },
+            "PICUDisSurgProc": {
+                "type": "MANY"
+            },
+            "PICUDisCPR": {
+                "type": "MANY"
+            },
+            "WOCFamilyDiscuss": {
+                "type": "MANY"
+            },
+            "AlivePICUDis": {
+                "type": "MANY"
+            },
+            "PICUDisClinicalService": {
+                "type": "MANY"
+            },
+            "PICUTransferLoc": {
+                "type": "MANY"
+            },
+            "PICUDisPrimaryDx": {
+                "type": "MANY"
+            },
+            "PICUDisPrimaryDxOther": {
+                "type": "MANY"
+            },
+            "PICUDisSecondDx": {
+                "type": "MANY"
+            },
+            "PICUDisNewChronicDx": {
+                "type": "MANY"
+            },
+            "PICUDisFSSMental": {
+                "type": "MANY"
+            },
+            "PICUDisFSSSensory": {
+                "type": "MANY"
+            },
+            "PICUDisFSSCommun": {
+                "type": "MANY"
+            },
+            "PICUDisFSSMotor": {
+                "type": "MANY"
+            },
+            "PICUDisFSSFeeding": {
+                "type": "MANY"
+            },
+            "PICUDisFSSResp": {
+                "type": "MANY"
+            },
+            "PICUDisPCPC": {
+                "type": "MANY"
+            },
+            "PICUDisPOPC": {
+                "type": "MANY"
+            },
+            "PICUDisNeuroBlock": {
+                "type": "MANY"
+            },
+            "PICUDisSedative": {
+                "type": "MANY"
+            },
+            "PICUDisNarcotic": {
+                "type": "MANY"
+            },
+            "PICUDisOtherPain": {
+                "type": "MANY"
+            },
+            "PICUDisSleepingAid": {
+                "type": "MANY"
+            },
+            "PICUDisOtherDrugs": {
+                "type": "MANY"
+            },
+            "PICUDisArmFootBoards": {
+                "type": "MANY"
+            },
+            "PICUDisRestraints": {
+                "type": "MANY"
+            },
+            "PICUDisBandageCast": {
+                "type": "MANY"
+            },
+            "EVENTSTARTDAY": {
+                "type": "MANY"
+            },
+            "PICUDISDAY": {
+                "type": "MANY"
+            },
+            "PICUDisFSSSource1": {
+                "type": "MANY"
+            },
+            "PICUDisFSSSource2": {
+                "type": "MANY"
+            },
+            "PICUDisFSSSource3": {
+                "type": "MANY"
+            },
+            "PICUDisPCPCSource1": {
+                "type": "MANY"
+            },
+            "PICUDisPCPCSource2": {
+                "type": "MANY"
+            },
+            "PICUDisPCPCSource3": {
+                "type": "MANY"
+            }
+        }
+    },
+    "common_column_names": [
+        "PudID",
+        "siteid",
+        "Occurrence",
+        "FormStatus",
+        "ItemGroupRepeatKey",
+        "EVENTSTARTDAY"
+    ],
+    "global_fks": [
+        "PudID"
+    ],
+    "custom_fks": [],
+    "exclude_columns": [],
+    "custom_column_names": {},
+    "column_links": {
+        "0": {
+            "PHYSIOSTATUS": "PudID",
+            "PICUDISCHARGE_DISSECONDDX": "PudID",
+            "PICUADMIT_CHRONICDX": "PudID",
+            "SURGERY": "PudID",
+            "PICUDISCHARGE_DISCHRONICDX": "PudID",
+            "PICUADMIT_AHD": "PudID",
+            "LIMITOFCARE": "PudID",
+            "HOSPITALDISCHARGE": "PudID",
+            "CPR": "PudID",
+            "CATASTROPHICEVENTS": "PudID",
+            "CARDIACPROCEDURES": "PudID",
+            "CARDIACSURGERY": "PudID",
+            "DEATH": "PudID",
+            "PICUADMIT_CHD": "PudID",
+            "HOSPITALADMIT": "PudID",
+            "PICUADMIT": "PudID",
+            "HOSPITALADMIT_CE": "PudID",
+            "CAREPROCESSES": "PudID",
+            "PICUADMIT_ADMITSECONDDX": "PudID",
+            "PICUDISCHARGE": "PudID"
+        },
+        "1": {
+            "PHYSIOSTATUS": "siteid"
+        },
+        "2": {
+            "PHYSIOSTATUS": "Occurrence"
+        },
+        "3": {
+            "PHYSIOSTATUS": "FormStatus"
+        },
+        "4": {
+            "PHYSIOSTATUS": "ItemGroupRepeatKey"
+        },
+        "5": {
+            "PHYSIOSTATUS": "LowpH"
+        },
+        "6": {
+            "PHYSIOSTATUS": "HighpH"
+        },
+        "7": {
+            "PHYSIOSTATUS": "pHND"
+        },
+        "8": {
+            "PHYSIOSTATUS": "HighPCO2"
+        },
+        "9": {
+            "PHYSIOSTATUS": "PCO2ND"
+        },
+        "10": {
+            "PHYSIOSTATUS": "LowPa02"
+        },
+        "11": {
+            "PHYSIOSTATUS": "PaO2ND"
+        },
+        "12": {
+            "PHYSIOSTATUS": "LowIonCalcium"
+        },
+        "13": {
+            "PHYSIOSTATUS": "HighIonCalcium"
+        },
+        "14": {
+            "PHYSIOSTATUS": "IonCalciumND"
+        },
+        "15": {
+            "PHYSIOSTATUS": "LowSodium"
+        },
+        "16": {
+            "PHYSIOSTATUS": "HighSodium"
+        },
+        "17": {
+            "PHYSIOSTATUS": "SodiumND"
+        },
+        "18": {
+            "PHYSIOSTATUS": "HighPotassium"
+        },
+        "19": {
+            "PHYSIOSTATUS": "PotassiumND"
+        },
+        "20": {
+            "PHYSIOSTATUS": "HighBUN"
+        },
+        "21": {
+            "PHYSIOSTATUS": "HighBUNND"
+        },
+        "22": {
+            "PHYSIOSTATUS": "HighCreatinine"
+        },
+        "23": {
+            "PHYSIOSTATUS": "CreatinineND"
+        },
+        "24": {
+            "PHYSIOSTATUS": "LowGlucose"
+        },
+        "25": {
+            "PHYSIOSTATUS": "HighGlucose"
+        },
+        "26": {
+            "PHYSIOSTATUS": "GlucoseND"
+        },
+        "27": {
+            "PHYSIOSTATUS": "LowCO2"
+        },
+        "28": {
+            "PHYSIOSTATUS": "HighCO2"
+        },
+        "29": {
+            "PHYSIOSTATUS": "CO2ND"
+        },
+        "30": {
+            "PHYSIOSTATUS": "LowTotalCalcium"
+        },
+        "31": {
+            "PHYSIOSTATUS": "HighTotalCalcium"
+        },
+        "32": {
+            "PHYSIOSTATUS": "TotalCalciumND"
+        },
+        "33": {
+            "PHYSIOSTATUS": "LowWBC"
+        },
+        "34": {
+            "PHYSIOSTATUS": "HighWBC"
+        },
+        "35": {
+            "PHYSIOSTATUS": "WBCND"
+        },
+        "36": {
+            "PHYSIOSTATUS": "LowHemoglobin"
+        },
+        "37": {
+            "PHYSIOSTATUS": "HighHemoglobin"
+        },
+        "38": {
+            "PHYSIOSTATUS": "HemoglobinND"
+        },
+        "39": {
+            "PHYSIOSTATUS": "LowPlatelets"
+        },
+        "40": {
+            "PHYSIOSTATUS": "PlateletsND"
+        },
+        "41": {
+            "PHYSIOSTATUS": "HighPT"
+        },
+        "42": {
+            "PHYSIOSTATUS": "PTND"
+        },
+        "43": {
+            "PHYSIOSTATUS": "HighPTT"
+        },
+        "44": {
+            "PHYSIOSTATUS": "PTTND"
+        },
+        "45": {
+            "PHYSIOSTATUS": "HighINR"
+        },
+        "46": {
+            "PHYSIOSTATUS": "INRND"
+        },
+        "47": {
+            "PHYSIOSTATUS": "HighTemp"
+        },
+        "48": {
+            "PHYSIOSTATUS": "LowTemp"
+        },
+        "49": {
+            "PHYSIOSTATUS": "HighRespRate"
+        },
+        "50": {
+            "PHYSIOSTATUS": "LowRespRate"
+        },
+        "51": {
+            "PHYSIOSTATUS": "HighHeartRate"
+        },
+        "52": {
+            "PHYSIOSTATUS": "LowHeartRate"
+        },
+        "53": {
+            "PHYSIOSTATUS": "HighSBP"
+        },
+        "54": {
+            "PHYSIOSTATUS": "LowSBP"
+        },
+        "55": {
+            "PHYSIOSTATUS": "CNSInjury"
+        },
+        "56": {
+            "PHYSIOSTATUS": "GCSWorstMotor"
+        },
+        "57": {
+            "PHYSIOSTATUS": "GCSWorstTotal"
+        },
+        "58": {
+            "PHYSIOSTATUS": "GCSIntub"
+        },
+        "59": {
+            "PHYSIOSTATUS": "LOCWorst"
+        },
+        "60": {
+            "PHYSIOSTATUS": "PupilWorst"
+        },
+        "61": {
+            "PHYSIOSTATUS": "PupilHypo"
+        },
+        "62": {
+            "PHYSIOSTATUS": "EVENTSTARTDAY"
+        },
+        "63": {
+            "PICUDISCHARGE_DISSECONDDX": "siteid"
+        },
+        "64": {
+            "PICUDISCHARGE_DISSECONDDX": "Occurrence"
+        },
+        "65": {
+            "PICUDISCHARGE_DISSECONDDX": "FormStatus"
+        },
+        "66": {
+            "PICUDISCHARGE_DISSECONDDX": "ItemGroupRepeatKey"
+        },
+        "67": {
+            "PICUDISCHARGE_DISSECONDDX": "PICUDisSecondDxCat"
+        },
+        "68": {
+            "PICUDISCHARGE_DISSECONDDX": "PICUDisSecondDxOther"
+        },
+        "69": {
+            "PICUDISCHARGE_DISSECONDDX": "EVENTSTARTDAY"
+        },
+        "70": {
+            "PICUADMIT_CHRONICDX": "siteid"
+        },
+        "71": {
+            "PICUADMIT_CHRONICDX": "Occurrence"
+        },
+        "72": {
+            "PICUADMIT_CHRONICDX": "FormStatus"
+        },
+        "73": {
+            "PICUADMIT_CHRONICDX": "ItemGroupRepeatKey"
+        },
+        "74": {
+            "PICUADMIT_CHRONICDX": "PICUAdmitChronicDxCat"
+        },
+        "75": {
+            "PICUADMIT_CHRONICDX": "PICUAdmitChronicDxOther"
+        },
+        "76": {
+            "PICUADMIT_CHRONICDX": "EVENTSTARTDAY"
+        },
+        "77": {
+            "SURGERY": "siteid"
+        },
+        "78": {
+            "SURGERY": "Occurrence"
+        },
+        "79": {
+            "SURGERY": "FormStatus"
+        },
+        "80": {
+            "SURGERY": "ItemGroupRepeatKey"
+        },
+        "81": {
+            "SURGERY": "SurgTime"
+        },
+        "82": {
+            "SURGERY": "SurgReturnTime"
+        },
+        "83": {
+            "SURGERY": "SurgCategory"
+        },
+        "84": {
+            "SURGERY": "SurgType"
+        },
+        "85": {
+            "SURGERY": "SurgName"
+        },
+        "86": {
+            "SURGERY": "SurgNPR1"
+        },
+        "87": {
+            "SURGERY": "SurgNPR2"
+        },
+        "88": {
+            "SURGERY": "SurgLowpH"
+        },
+        "89": {
+            "SURGERY": "SurgHighpH"
+        },
+        "90": {
+            "SURGERY": "SurgpHND"
+        },
+        "91": {
+            "SURGERY": "SurgHighPCO2"
+        },
+        "92": {
+            "SURGERY": "SurgPCO2ND"
+        },
+        "93": {
+            "SURGERY": "SurgLowPa02"
+        },
+        "94": {
+            "SURGERY": "SurgPaO2ND"
+        },
+        "95": {
+            "SURGERY": "SurgLowIonCalcium"
+        },
+        "96": {
+            "SURGERY": "SurgHighIonCalcium"
+        },
+        "97": {
+            "SURGERY": "SurgIonCalciumND"
+        },
+        "98": {
+            "SURGERY": "SurgLowSodium"
+        },
+        "99": {
+            "SURGERY": "SurgHighSodium"
+        },
+        "100": {
+            "SURGERY": "SurgSodiumND"
+        },
+        "101": {
+            "SURGERY": "SurgHighPotassium"
+        },
+        "102": {
+            "SURGERY": "SurgPotassiumND"
+        },
+        "103": {
+            "SURGERY": "SurgHighBUN"
+        },
+        "104": {
+            "SURGERY": "SurgHighBUNND"
+        },
+        "105": {
+            "SURGERY": "SurgHighCreatinine"
+        },
+        "106": {
+            "SURGERY": "SurgCreatinineND"
+        },
+        "107": {
+            "SURGERY": "SurgLowGlucose"
+        },
+        "108": {
+            "SURGERY": "SurgHighGlucose"
+        },
+        "109": {
+            "SURGERY": "SurgGlucoseND"
+        },
+        "110": {
+            "SURGERY": "SurgLowCO2"
+        },
+        "111": {
+            "SURGERY": "SurgHighCO2"
+        },
+        "112": {
+            "SURGERY": "SurgCO2ND"
+        },
+        "113": {
+            "SURGERY": "SurgLowTotalCalcium"
+        },
+        "114": {
+            "SURGERY": "SurgHighTotalCalcium"
+        },
+        "115": {
+            "SURGERY": "SurgTotalCalciumND"
+        },
+        "116": {
+            "SURGERY": "SurgLowWBC"
+        },
+        "117": {
+            "SURGERY": "SurgHighWBC"
+        },
+        "118": {
+            "SURGERY": "SurgWBCND"
+        },
+        "119": {
+            "SURGERY": "SurgLowHemoglobin"
+        },
+        "120": {
+            "SURGERY": "SurgHighHemoglobin"
+        },
+        "121": {
+            "SURGERY": "SurgHemoglobinND"
+        },
+        "122": {
+            "SURGERY": "SurgLowPlatelets"
+        },
+        "123": {
+            "SURGERY": "SurgPlateletsND"
+        },
+        "124": {
+            "SURGERY": "SurgHighPT"
+        },
+        "125": {
+            "SURGERY": "SurgPTND"
+        },
+        "126": {
+            "SURGERY": "SurgHighPTT"
+        },
+        "127": {
+            "SURGERY": "SurgPTTND"
+        },
+        "128": {
+            "SURGERY": "SurgHighINR"
+        },
+        "129": {
+            "SURGERY": "SurgINRND"
+        },
+        "130": {
+            "SURGERY": "SurgHighTemp"
+        },
+        "131": {
+            "SURGERY": "SurgLowTemp"
+        },
+        "132": {
+            "SURGERY": "SurgHighRespRate"
+        },
+        "133": {
+            "SURGERY": "SurgLowRespRate"
+        },
+        "134": {
+            "SURGERY": "SurgHighHeartRate"
+        },
+        "135": {
+            "SURGERY": "SurgLowHeartRate"
+        },
+        "136": {
+            "SURGERY": "SurgHighSBP"
+        },
+        "137": {
+            "SURGERY": "SurgLowSBP"
+        },
+        "138": {
+            "SURGERY": "SurgCNSInjury"
+        },
+        "139": {
+            "SURGERY": "SurgGCSWorstMotor"
+        },
+        "140": {
+            "SURGERY": "SurgGCSWorstTotal"
+        },
+        "141": {
+            "SURGERY": "SurgGCSIntub"
+        },
+        "142": {
+            "SURGERY": "SurgLOCWorst"
+        },
+        "143": {
+            "SURGERY": "SurgPupilWorst"
+        },
+        "144": {
+            "SURGERY": "SurgPupilHypo"
+        },
+        "145": {
+            "SURGERY": "SurgWBCNC"
+        },
+        "146": {
+            "SURGERY": "EVENTSTARTDAY"
+        },
+        "147": {
+            "SURGERY": "SURGDAY"
+        },
+        "148": {
+            "SURGERY": "SURGRETURNDAY"
+        },
+        "149": {
+            "PICUDISCHARGE_DISCHRONICDX": "siteid"
+        },
+        "150": {
+            "PICUDISCHARGE_DISCHRONICDX": "Occurrence"
+        },
+        "151": {
+            "PICUDISCHARGE_DISCHRONICDX": "FormStatus"
+        },
+        "152": {
+            "PICUDISCHARGE_DISCHRONICDX": "ItemGroupRepeatKey"
+        },
+        "153": {
+            "PICUDISCHARGE_DISCHRONICDX": "PICUDisChronicDxCat"
+        },
+        "154": {
+            "PICUDISCHARGE_DISCHRONICDX": "PICUDisChronicDxOther"
+        },
+        "155": {
+            "PICUDISCHARGE_DISCHRONICDX": "EVENTSTARTDAY"
+        },
+        "156": {
+            "PICUADMIT_AHD": "siteid"
+        },
+        "157": {
+            "PICUADMIT_AHD": "Occurrence"
+        },
+        "158": {
+            "PICUADMIT_AHD": "FormStatus"
+        },
+        "159": {
+            "PICUADMIT_AHD": "ItemGroupRepeatKey"
+        },
+        "160": {
+            "PICUADMIT_AHD": "AcquiredHeartCat"
+        },
+        "161": {
+            "PICUADMIT_AHD": "AcquiredHeartCatOther"
+        },
+        "162": {
+            "PICUADMIT_AHD": "EVENTSTARTDAY"
+        },
+        "163": {
+            "LIMITOFCARE": "siteid"
+        },
+        "164": {
+            "LIMITOFCARE": "Occurrence"
+        },
+        "165": {
+            "LIMITOFCARE": "FormStatus"
+        },
+        "166": {
+            "LIMITOFCARE": "ItemGroupRepeatKey"
+        },
+        "167": {
+            "LIMITOFCARE": "WOCFamilyDiscussTime"
+        },
+        "168": {
+            "LIMITOFCARE": "WOCMedicalRecordTime"
+        },
+        "169": {
+            "LIMITOFCARE": "PalliativeCare"
+        },
+        "170": {
+            "LIMITOFCARE": "PalliativeCareTime"
+        },
+        "171": {
+            "LIMITOFCARE": "PainService"
+        },
+        "172": {
+            "LIMITOFCARE": "PainServiceTime"
+        },
+        "173": {
+            "LIMITOFCARE": "Ethics"
+        },
+        "174": {
+            "LIMITOFCARE": "EthicsTime"
+        },
+        "175": {
+            "LIMITOFCARE": "FutureMechVent"
+        },
+        "176": {
+            "LIMITOFCARE": "FutureVasoMeds"
+        },
+        "177": {
+            "LIMITOFCARE": "FutureCardiacComp"
+        },
+        "178": {
+            "LIMITOFCARE": "FutureECMO"
+        },
+        "179": {
+            "LIMITOFCARE": "FutureDialysis"
+        },
+        "180": {
+            "LIMITOFCARE": "WithdrawMechVent"
+        },
+        "181": {
+            "LIMITOFCARE": "WithdrawVasoMeds"
+        },
+        "182": {
+            "LIMITOFCARE": "WithdrawFeeding"
+        },
+        "183": {
+            "LIMITOFCARE": "WithdrawECMO"
+        },
+        "184": {
+            "LIMITOFCARE": "WithdrawRRT"
+        },
+        "185": {
+            "LIMITOFCARE": "WithdrawOther"
+        },
+        "186": {
+            "LIMITOFCARE": "WithdrawOtherSpecify"
+        },
+        "187": {
+            "LIMITOFCARE": "ETHICSDAY"
+        },
+        "188": {
+            "LIMITOFCARE": "EVENTSTARTDAY"
+        },
+        "189": {
+            "LIMITOFCARE": "PAINSERVICEDAY"
+        },
+        "190": {
+            "LIMITOFCARE": "PALLIATIVECAREDAY"
+        },
+        "191": {
+            "LIMITOFCARE": "WOCFAMILYDISCUSSDAY"
+        },
+        "192": {
+            "LIMITOFCARE": "WOCMEDICALRECORDDAY"
+        },
+        "193": {
+            "HOSPITALDISCHARGE": "siteid"
+        },
+        "194": {
+            "HOSPITALDISCHARGE": "Occurrence"
+        },
+        "195": {
+            "HOSPITALDISCHARGE": "FormStatus"
+        },
+        "196": {
+            "HOSPITALDISCHARGE": "ItemGroupRepeatKey"
+        },
+        "197": {
+            "HOSPITALDISCHARGE": "HospDisTime"
+        },
+        "198": {
+            "HOSPITALDISCHARGE": "HospDisReadmit"
+        },
+        "199": {
+            "HOSPITALDISCHARGE": "HospCE"
+        },
+        "200": {
+            "HOSPITALDISCHARGE": "HospDisAlive"
+        },
+        "201": {
+            "HOSPITALDISCHARGE": "HospDisLoc"
+        },
+        "202": {
+            "HOSPITALDISCHARGE": "HospDisLocOther"
+        },
+        "203": {
+            "HOSPITALDISCHARGE": "HospDisHospice"
+        },
+        "204": {
+            "HOSPITALDISCHARGE": "HospDisFSSMental"
+        },
+        "205": {
+            "HOSPITALDISCHARGE": "HospDisFSSSensory"
+        },
+        "206": {
+            "HOSPITALDISCHARGE": "HospDisFSSCommun"
+        },
+        "207": {
+            "HOSPITALDISCHARGE": "HospDisFSSMotor"
+        },
+        "208": {
+            "HOSPITALDISCHARGE": "HospDisFSSFeeding"
+        },
+        "209": {
+            "HOSPITALDISCHARGE": "HospDisFSSResp"
+        },
+        "210": {
+            "HOSPITALDISCHARGE": "HospDisPCPC"
+        },
+        "211": {
+            "HOSPITALDISCHARGE": "HospDisPOPC"
+        },
+        "212": {
+            "HOSPITALDISCHARGE": "HospDisNeuroBlock"
+        },
+        "213": {
+            "HOSPITALDISCHARGE": "HospDisSedative"
+        },
+        "214": {
+            "HOSPITALDISCHARGE": "HospDisNarcotic"
+        },
+        "215": {
+            "HOSPITALDISCHARGE": "HospDisOtherPain"
+        },
+        "216": {
+            "HOSPITALDISCHARGE": "HospDisSleepingAid"
+        },
+        "217": {
+            "HOSPITALDISCHARGE": "HospDisOtherDrugs"
+        },
+        "218": {
+            "HOSPITALDISCHARGE": "HospDisArmFootBoards"
+        },
+        "219": {
+            "HOSPITALDISCHARGE": "HospDisRestraints"
+        },
+        "220": {
+            "HOSPITALDISCHARGE": "HospDisBandageCast"
+        },
+        "221": {
+            "HOSPITALDISCHARGE": "EVENTSTARTDAY"
+        },
+        "222": {
+            "HOSPITALDISCHARGE": "HOSPDISDAY"
+        },
+        "223": {
+            "HOSPITALDISCHARGE": "HospDisFSSSource1"
+        },
+        "224": {
+            "HOSPITALDISCHARGE": "HospDisFSSSource2"
+        },
+        "225": {
+            "HOSPITALDISCHARGE": "HospDisFSSSource3"
+        },
+        "226": {
+            "HOSPITALDISCHARGE": "HospDisPCPCInfo1"
+        },
+        "227": {
+            "HOSPITALDISCHARGE": "HospDisPCPCInfo2"
+        },
+        "228": {
+            "HOSPITALDISCHARGE": "HospDisPCPCInfo3"
+        },
+        "229": {
+            "CPR": "siteid"
+        },
+        "230": {
+            "CPR": "Occurrence"
+        },
+        "231": {
+            "CPR": "FormStatus"
+        },
+        "232": {
+            "CPR": "ItemGroupRepeatKey"
+        },
+        "233": {
+            "CPR": "CPRTime"
+        },
+        "234": {
+            "CPR": "ChestComp"
+        },
+        "235": {
+            "CPR": "ChestCompStartTime"
+        },
+        "236": {
+            "CPR": "ChestCompStopTime"
+        },
+        "237": {
+            "CPR": "ChestCompReason"
+        },
+        "238": {
+            "CPR": "ChestOpenClosed"
+        },
+        "239": {
+            "CPR": "Defib"
+        },
+        "240": {
+            "CPR": "ROC"
+        },
+        "241": {
+            "CPR": "ECMOToAchieveROC"
+        },
+        "242": {
+            "CPR": "Alive24HrsAfterCPR"
+        },
+        "243": {
+            "CPR": "CPRDAY"
+        },
+        "244": {
+            "CPR": "CHESTCOMPSTARTDAY"
+        },
+        "245": {
+            "CPR": "CHESTCOMPSTOPDAY"
+        },
+        "246": {
+            "CPR": "EVENTSTARTDAY"
+        },
+        "247": {
+            "CATASTROPHICEVENTS": "siteid"
+        },
+        "248": {
+            "CATASTROPHICEVENTS": "Occurrence"
+        },
+        "249": {
+            "CATASTROPHICEVENTS": "FormStatus"
+        },
+        "250": {
+            "CATASTROPHICEVENTS": "ItemGroupRepeatKey"
+        },
+        "251": {
+            "CATASTROPHICEVENTS": "HospCETime"
+        },
+        "252": {
+            "CATASTROPHICEVENTS": "HospCEDesc"
+        },
+        "253": {
+            "CATASTROPHICEVENTS": "HospCEDescOther"
+        },
+        "254": {
+            "CATASTROPHICEVENTS": "EVENTSTARTDAY"
+        },
+        "255": {
+            "CATASTROPHICEVENTS": "HOSPCEDAY"
+        },
+        "256": {
+            "CARDIACPROCEDURES": "siteid"
+        },
+        "257": {
+            "CARDIACPROCEDURES": "Occurrence"
+        },
+        "258": {
+            "CARDIACPROCEDURES": "FormStatus"
+        },
+        "259": {
+            "CARDIACPROCEDURES": "ItemGroupRepeatKey"
+        },
+        "260": {
+            "CARDIACPROCEDURES": "PrimaryProc1"
+        },
+        "261": {
+            "CARDIACPROCEDURES": "PrimaryProc2"
+        },
+        "262": {
+            "CARDIACPROCEDURES": "PrimProcOt"
+        },
+        "263": {
+            "CARDIACPROCEDURES": "SecondProcOt"
+        },
+        "264": {
+            "CARDIACPROCEDURES": "EVENTSTARTDAY"
+        },
+        "265": {
+            "CARDIACPROCEDURES": "SecondProc11"
+        },
+        "266": {
+            "CARDIACPROCEDURES": "SecondProc12"
+        },
+        "267": {
+            "CARDIACPROCEDURES": "SecondProc13"
+        },
+        "268": {
+            "CARDIACPROCEDURES": "SecondProc14"
+        },
+        "269": {
+            "CARDIACPROCEDURES": "SecondProc15"
+        },
+        "270": {
+            "CARDIACPROCEDURES": "SecondProc16"
+        },
+        "271": {
+            "CARDIACPROCEDURES": "SecondProc17"
+        },
+        "272": {
+            "CARDIACPROCEDURES": "SecondProc18"
+        },
+        "273": {
+            "CARDIACPROCEDURES": "SecondProc19"
+        },
+        "274": {
+            "CARDIACPROCEDURES": "SecondProc110"
+        },
+        "275": {
+            "CARDIACPROCEDURES": "SecondProc111"
+        },
+        "276": {
+            "CARDIACPROCEDURES": "SecondProc112"
+        },
+        "277": {
+            "CARDIACPROCEDURES": "SecondProc113"
+        },
+        "278": {
+            "CARDIACPROCEDURES": "SecondProc114"
+        },
+        "279": {
+            "CARDIACPROCEDURES": "SecondProc115"
+        },
+        "280": {
+            "CARDIACPROCEDURES": "SecondProc116"
+        },
+        "281": {
+            "CARDIACPROCEDURES": "SecondProc117"
+        },
+        "282": {
+            "CARDIACPROCEDURES": "SecondProc118"
+        },
+        "283": {
+            "CARDIACPROCEDURES": "SecondProc119"
+        },
+        "284": {
+            "CARDIACPROCEDURES": "SecondProc120"
+        },
+        "285": {
+            "CARDIACPROCEDURES": "SecondProc121"
+        },
+        "286": {
+            "CARDIACPROCEDURES": "SecondProc122"
+        },
+        "287": {
+            "CARDIACPROCEDURES": "SecondProc123"
+        },
+        "288": {
+            "CARDIACPROCEDURES": "SecondProc124"
+        },
+        "289": {
+            "CARDIACPROCEDURES": "SecondProc125"
+        },
+        "290": {
+            "CARDIACPROCEDURES": "SecondProc126"
+        },
+        "291": {
+            "CARDIACPROCEDURES": "SecondProc127"
+        },
+        "292": {
+            "CARDIACPROCEDURES": "SecondProc128"
+        },
+        "293": {
+            "CARDIACPROCEDURES": "SecondProc129"
+        },
+        "294": {
+            "CARDIACPROCEDURES": "SecondProc130"
+        },
+        "295": {
+            "CARDIACPROCEDURES": "SecondProc131"
+        },
+        "296": {
+            "CARDIACPROCEDURES": "SecondProc132"
+        },
+        "297": {
+            "CARDIACPROCEDURES": "SecondProc133"
+        },
+        "298": {
+            "CARDIACPROCEDURES": "SecondProc134"
+        },
+        "299": {
+            "CARDIACPROCEDURES": "SecondProc135"
+        },
+        "300": {
+            "CARDIACPROCEDURES": "SecondProc136"
+        },
+        "301": {
+            "CARDIACPROCEDURES": "SecondProc137"
+        },
+        "302": {
+            "CARDIACPROCEDURES": "SecondProc138"
+        },
+        "303": {
+            "CARDIACPROCEDURES": "SecondProc139"
+        },
+        "304": {
+            "CARDIACPROCEDURES": "SecondProc140"
+        },
+        "305": {
+            "CARDIACPROCEDURES": "SecondProc141"
+        },
+        "306": {
+            "CARDIACPROCEDURES": "SecondProc142"
+        },
+        "307": {
+            "CARDIACPROCEDURES": "SecondProc143"
+        },
+        "308": {
+            "CARDIACPROCEDURES": "SecondProc144"
+        },
+        "309": {
+            "CARDIACPROCEDURES": "SecondProc145"
+        },
+        "310": {
+            "CARDIACPROCEDURES": "SecondProc146"
+        },
+        "311": {
+            "CARDIACPROCEDURES": "SecondProc147"
+        },
+        "312": {
+            "CARDIACPROCEDURES": "SecondProc148"
+        },
+        "313": {
+            "CARDIACPROCEDURES": "SecondProc149"
+        },
+        "314": {
+            "CARDIACPROCEDURES": "SecondProc150"
+        },
+        "315": {
+            "CARDIACPROCEDURES": "SecondProc151"
+        },
+        "316": {
+            "CARDIACPROCEDURES": "SecondProc152"
+        },
+        "317": {
+            "CARDIACPROCEDURES": "SecondProc153"
+        },
+        "318": {
+            "CARDIACPROCEDURES": "SecondProc154"
+        },
+        "319": {
+            "CARDIACPROCEDURES": "SecondProc155"
+        },
+        "320": {
+            "CARDIACPROCEDURES": "SecondProc156"
+        },
+        "321": {
+            "CARDIACPROCEDURES": "SecondProc157"
+        },
+        "322": {
+            "CARDIACPROCEDURES": "SecondProc158"
+        },
+        "323": {
+            "CARDIACPROCEDURES": "SecondProc159"
+        },
+        "324": {
+            "CARDIACPROCEDURES": "SecondProc160"
+        },
+        "325": {
+            "CARDIACPROCEDURES": "SecondProc161"
+        },
+        "326": {
+            "CARDIACPROCEDURES": "SecondProc162"
+        },
+        "327": {
+            "CARDIACPROCEDURES": "SecondProc163"
+        },
+        "328": {
+            "CARDIACPROCEDURES": "SecondProc164"
+        },
+        "329": {
+            "CARDIACPROCEDURES": "SecondProc165"
+        },
+        "330": {
+            "CARDIACPROCEDURES": "SecondProc166"
+        },
+        "331": {
+            "CARDIACPROCEDURES": "SecondProc167"
+        },
+        "332": {
+            "CARDIACPROCEDURES": "SecondProc168"
+        },
+        "333": {
+            "CARDIACPROCEDURES": "SecondProc169"
+        },
+        "334": {
+            "CARDIACPROCEDURES": "SecondProc170"
+        },
+        "335": {
+            "CARDIACPROCEDURES": "SecondProc171"
+        },
+        "336": {
+            "CARDIACPROCEDURES": "SecondProc172"
+        },
+        "337": {
+            "CARDIACPROCEDURES": "SecondProc173"
+        },
+        "338": {
+            "CARDIACPROCEDURES": "SecondProc174"
+        },
+        "339": {
+            "CARDIACPROCEDURES": "SecondProc175"
+        },
+        "340": {
+            "CARDIACPROCEDURES": "SecondProc176"
+        },
+        "341": {
+            "CARDIACPROCEDURES": "SecondProc277"
+        },
+        "342": {
+            "CARDIACPROCEDURES": "SecondProc278"
+        },
+        "343": {
+            "CARDIACPROCEDURES": "SecondProc279"
+        },
+        "344": {
+            "CARDIACPROCEDURES": "SecondProc280"
+        },
+        "345": {
+            "CARDIACPROCEDURES": "SecondProc281"
+        },
+        "346": {
+            "CARDIACPROCEDURES": "SecondProc282"
+        },
+        "347": {
+            "CARDIACPROCEDURES": "SecondProc283"
+        },
+        "348": {
+            "CARDIACPROCEDURES": "SecondProc284"
+        },
+        "349": {
+            "CARDIACPROCEDURES": "SecondProc285"
+        },
+        "350": {
+            "CARDIACPROCEDURES": "SecondProc286"
+        },
+        "351": {
+            "CARDIACPROCEDURES": "SecondProc287"
+        },
+        "352": {
+            "CARDIACPROCEDURES": "SecondProc288"
+        },
+        "353": {
+            "CARDIACPROCEDURES": "SecondProc289"
+        },
+        "354": {
+            "CARDIACPROCEDURES": "SecondProc290"
+        },
+        "355": {
+            "CARDIACPROCEDURES": "SecondProc291"
+        },
+        "356": {
+            "CARDIACPROCEDURES": "SecondProc292"
+        },
+        "357": {
+            "CARDIACPROCEDURES": "SecondProc293"
+        },
+        "358": {
+            "CARDIACPROCEDURES": "SecondProc294"
+        },
+        "359": {
+            "CARDIACPROCEDURES": "SecondProc295"
+        },
+        "360": {
+            "CARDIACPROCEDURES": "SecondProc296"
+        },
+        "361": {
+            "CARDIACPROCEDURES": "SecondProc297"
+        },
+        "362": {
+            "CARDIACPROCEDURES": "SecondProc298"
+        },
+        "363": {
+            "CARDIACPROCEDURES": "SecondProc299"
+        },
+        "364": {
+            "CARDIACPROCEDURES": "SecondProc2100"
+        },
+        "365": {
+            "CARDIACPROCEDURES": "SecondProc2101"
+        },
+        "366": {
+            "CARDIACPROCEDURES": "SecondProc2102"
+        },
+        "367": {
+            "CARDIACPROCEDURES": "SecondProc2103"
+        },
+        "368": {
+            "CARDIACPROCEDURES": "SecondProc2104"
+        },
+        "369": {
+            "CARDIACPROCEDURES": "SecondProc2105"
+        },
+        "370": {
+            "CARDIACPROCEDURES": "SecondProc2106"
+        },
+        "371": {
+            "CARDIACPROCEDURES": "SecondProc2107"
+        },
+        "372": {
+            "CARDIACPROCEDURES": "SecondProc2108"
+        },
+        "373": {
+            "CARDIACPROCEDURES": "SecondProc2109"
+        },
+        "374": {
+            "CARDIACPROCEDURES": "SecondProc2110"
+        },
+        "375": {
+            "CARDIACPROCEDURES": "SecondProc2111"
+        },
+        "376": {
+            "CARDIACPROCEDURES": "SecondProc2112"
+        },
+        "377": {
+            "CARDIACPROCEDURES": "SecondProc2113"
+        },
+        "378": {
+            "CARDIACPROCEDURES": "SecondProc2114"
+        },
+        "379": {
+            "CARDIACPROCEDURES": "SecondProc2115"
+        },
+        "380": {
+            "CARDIACPROCEDURES": "SecondProc2116"
+        },
+        "381": {
+            "CARDIACPROCEDURES": "SecondProc2117"
+        },
+        "382": {
+            "CARDIACPROCEDURES": "SecondProc2118"
+        },
+        "383": {
+            "CARDIACPROCEDURES": "SecondProc2119"
+        },
+        "384": {
+            "CARDIACPROCEDURES": "SecondProc2120"
+        },
+        "385": {
+            "CARDIACPROCEDURES": "SecondProc2121"
+        },
+        "386": {
+            "CARDIACPROCEDURES": "SecondProc2122"
+        },
+        "387": {
+            "CARDIACPROCEDURES": "SecondProc2123"
+        },
+        "388": {
+            "CARDIACPROCEDURES": "SecondProc2124"
+        },
+        "389": {
+            "CARDIACPROCEDURES": "SecondProc2125"
+        },
+        "390": {
+            "CARDIACPROCEDURES": "SecondProc2126"
+        },
+        "391": {
+            "CARDIACPROCEDURES": "SecondProc2127"
+        },
+        "392": {
+            "CARDIACPROCEDURES": "SecondProc2128"
+        },
+        "393": {
+            "CARDIACPROCEDURES": "SecondProc2129"
+        },
+        "394": {
+            "CARDIACPROCEDURES": "SecondProc2130"
+        },
+        "395": {
+            "CARDIACPROCEDURES": "SecondProc2131"
+        },
+        "396": {
+            "CARDIACPROCEDURES": "SecondProc2132"
+        },
+        "397": {
+            "CARDIACPROCEDURES": "SecondProc2133"
+        },
+        "398": {
+            "CARDIACPROCEDURES": "SecondProc2134"
+        },
+        "399": {
+            "CARDIACPROCEDURES": "SecondProc2135"
+        },
+        "400": {
+            "CARDIACPROCEDURES": "SecondProc2136"
+        },
+        "401": {
+            "CARDIACPROCEDURES": "SecondProc2137"
+        },
+        "402": {
+            "CARDIACPROCEDURES": "SecondProc2138"
+        },
+        "403": {
+            "CARDIACPROCEDURES": "SecondProc2139"
+        },
+        "404": {
+            "CARDIACPROCEDURES": "SecondProc2140"
+        },
+        "405": {
+            "CARDIACPROCEDURES": "SecondProc2141"
+        },
+        "406": {
+            "CARDIACPROCEDURES": "SecondProc2142"
+        },
+        "407": {
+            "CARDIACPROCEDURES": "SecondProc2143"
+        },
+        "408": {
+            "CARDIACPROCEDURES": "SecondProc2144"
+        },
+        "409": {
+            "CARDIACPROCEDURES": "SecondProc2145"
+        },
+        "410": {
+            "CARDIACPROCEDURES": "SecondProc2146"
+        },
+        "411": {
+            "CARDIACPROCEDURES": "SecondProc2147"
+        },
+        "412": {
+            "CARDIACPROCEDURES": "SecondProc2148"
+        },
+        "413": {
+            "CARDIACPROCEDURES": "SecondProc2149"
+        },
+        "414": {
+            "CARDIACPROCEDURES": "SecondProc2150"
+        },
+        "415": {
+            "CARDIACPROCEDURES": "SecondProc2151"
+        },
+        "416": {
+            "CARDIACPROCEDURES": "SecondProc2152"
+        },
+        "417": {
+            "CARDIACPROCEDURES": "SecondProc2153"
+        },
+        "418": {
+            "CARDIACPROCEDURES": "SecondProc2154"
+        },
+        "419": {
+            "CARDIACPROCEDURES": "SecondProc2155"
+        },
+        "420": {
+            "CARDIACPROCEDURES": "SecondProc2156"
+        },
+        "421": {
+            "CARDIACPROCEDURES": "SecondProc2157"
+        },
+        "422": {
+            "CARDIACSURGERY": "siteid"
+        },
+        "423": {
+            "CARDIACSURGERY": "Occurrence"
+        },
+        "424": {
+            "CARDIACSURGERY": "FormStatus"
+        },
+        "425": {
+            "CARDIACSURGERY": "ItemGroupRepeatKey"
+        },
+        "426": {
+            "CARDIACSURGERY": "CardiacSurgTime"
+        },
+        "427": {
+            "CARDIACSURGERY": "CardiacSurgOccur"
+        },
+        "428": {
+            "CARDIACSURGERY": "Bypass"
+        },
+        "429": {
+            "CARDIACSURGERY": "BypassTime"
+        },
+        "430": {
+            "CARDIACSURGERY": "CrossClamp"
+        },
+        "431": {
+            "CARDIACSURGERY": "CrossClampTime"
+        },
+        "432": {
+            "CARDIACSURGERY": "HypoArrest"
+        },
+        "433": {
+            "CARDIACSURGERY": "HypoArrestTime"
+        },
+        "434": {
+            "CARDIACSURGERY": "UnplanArrest"
+        },
+        "435": {
+            "CARDIACSURGERY": "ORDisVasoDrips"
+        },
+        "436": {
+            "CARDIACSURGERY": "ORDisECMO"
+        },
+        "437": {
+            "CARDIACSURGERY": "ORDisVAD"
+        },
+        "438": {
+            "CARDIACSURGERY": "ORDisChestOpen"
+        },
+        "439": {
+            "CARDIACSURGERY": "PostSurgLactate"
+        },
+        "440": {
+            "CARDIACSURGERY": "PostSurgpH"
+        },
+        "441": {
+            "CARDIACSURGERY": "CARDIACSURGDAY"
+        },
+        "442": {
+            "CARDIACSURGERY": "EVENTSTARTDAY"
+        },
+        "443": {
+            "CARDIACSURGERY": "ORDisVasoDripDrugs1"
+        },
+        "444": {
+            "CARDIACSURGERY": "ORDisVasoDripDrugs2"
+        },
+        "445": {
+            "CARDIACSURGERY": "ORDisVasoDripDrugs3"
+        },
+        "446": {
+            "CARDIACSURGERY": "ORDisVasoDripDrugs4"
+        },
+        "447": {
+            "CARDIACSURGERY": "ORDisVasoDripDrugs5"
+        },
+        "448": {
+            "CARDIACSURGERY": "ORDisVasoDripDrugs6"
+        },
+        "449": {
+            "CARDIACSURGERY": "ORDisVasoDripDrugs7"
+        },
+        "450": {
+            "CARDIACSURGERY": "ORDisVasoDripDrugs8"
+        },
+        "451": {
+            "CARDIACSURGERY": "ORDisVasoDripDrugs9"
+        },
+        "452": {
+            "CARDIACSURGERY": "ORDisVasoDripDrugs10"
+        },
+        "453": {
+            "DEATH": "siteid"
+        },
+        "454": {
+            "DEATH": "Occurrence"
+        },
+        "455": {
+            "DEATH": "FormStatus"
+        },
+        "456": {
+            "DEATH": "ItemGroupRepeatKey"
+        },
+        "457": {
+            "DEATH": "DeathTime"
+        },
+        "458": {
+            "DEATH": "DeathLoc"
+        },
+        "459": {
+            "DEATH": "CPRAdmin"
+        },
+        "460": {
+            "DEATH": "DeathMode"
+        },
+        "461": {
+            "DEATH": "MECase"
+        },
+        "462": {
+            "DEATH": "AutopsyRequest"
+        },
+        "463": {
+            "DEATH": "AutopsyDone"
+        },
+        "464": {
+            "DEATH": "AutopsyLoc"
+        },
+        "465": {
+            "DEATH": "ReasonNoAutopsy"
+        },
+        "466": {
+            "DEATH": "DonationOffer"
+        },
+        "467": {
+            "DEATH": "DonationOccur"
+        },
+        "468": {
+            "DEATH": "DonationFollow"
+        },
+        "469": {
+            "DEATH": "DEATHDAY"
+        },
+        "470": {
+            "DEATH": "EVENTSTARTDAY"
+        },
+        "471": {
+            "DEATH": "DonationOrgan1"
+        },
+        "472": {
+            "DEATH": "DonationOrgan2"
+        },
+        "473": {
+            "DEATH": "DonationOrgan3"
+        },
+        "474": {
+            "DEATH": "DonationOrgan4"
+        },
+        "475": {
+            "DEATH": "DonationOrgan5"
+        },
+        "476": {
+            "DEATH": "DonationOrgan90"
+        },
+        "477": {
+            "PICUADMIT_CHD": "siteid"
+        },
+        "478": {
+            "PICUADMIT_CHD": "Occurrence"
+        },
+        "479": {
+            "PICUADMIT_CHD": "FormStatus"
+        },
+        "480": {
+            "PICUADMIT_CHD": "ItemGroupRepeatKey"
+        },
+        "481": {
+            "PICUADMIT_CHD": "CHDCat"
+        },
+        "482": {
+            "PICUADMIT_CHD": "EVENTSTARTDAY"
+        },
+        "483": {
+            "HOSPITALADMIT": "siteid"
+        },
+        "484": {
+            "HOSPITALADMIT": "Occurrence"
+        },
+        "485": {
+            "HOSPITALADMIT": "FormStatus"
+        },
+        "486": {
+            "HOSPITALADMIT": "ItemGroupRepeatKey"
+        },
+        "487": {
+            "HOSPITALADMIT": "PreviousEnroll"
+        },
+        "488": {
+            "HOSPITALADMIT": "Sex"
+        },
+        "489": {
+            "HOSPITALADMIT": "Ethnicity"
+        },
+        "490": {
+            "HOSPITALADMIT": "Payer"
+        },
+        "491": {
+            "HOSPITALADMIT": "HospAdmitTime"
+        },
+        "492": {
+            "HOSPITALADMIT": "BaselineCE"
+        },
+        "493": {
+            "HOSPITALADMIT": "DevelopDelay"
+        },
+        "494": {
+            "HOSPITALADMIT": "AdmitThroughED"
+        },
+        "495": {
+            "HOSPITALADMIT": "EDArrivalTime"
+        },
+        "496": {
+            "HOSPITALADMIT": "BaselineFSSMental"
+        },
+        "497": {
+            "HOSPITALADMIT": "BaselineFSSSensory"
+        },
+        "498": {
+            "HOSPITALADMIT": "BaselineFSSCommun"
+        },
+        "499": {
+            "HOSPITALADMIT": "BaselineFSSMotor"
+        },
+        "500": {
+            "HOSPITALADMIT": "BaselineFSSFeeding"
+        },
+        "501": {
+            "HOSPITALADMIT": "BaselineFSSResp"
+        },
+        "502": {
+            "HOSPITALADMIT": "BaselinePCPC"
+        },
+        "503": {
+            "HOSPITALADMIT": "BaselinePOPC"
+        },
+        "504": {
+            "HOSPITALADMIT": "BIRTHDAY"
+        },
+        "505": {
+            "HOSPITALADMIT": "EDARRIVALDAY"
+        },
+        "506": {
+            "HOSPITALADMIT": "EVENTSTARTDAY"
+        },
+        "507": {
+            "HOSPITALADMIT": "HOSPADMITDAY"
+        },
+        "508": {
+            "HOSPITALADMIT": "Race1"
+        },
+        "509": {
+            "HOSPITALADMIT": "Race2"
+        },
+        "510": {
+            "HOSPITALADMIT": "Race3"
+        },
+        "511": {
+            "HOSPITALADMIT": "Race4"
+        },
+        "512": {
+            "HOSPITALADMIT": "Race5"
+        },
+        "513": {
+            "HOSPITALADMIT": "Race92"
+        },
+        "514": {
+            "HOSPITALADMIT": "BaselineFSSSource1"
+        },
+        "515": {
+            "HOSPITALADMIT": "BaselineFSSSource2"
+        },
+        "516": {
+            "HOSPITALADMIT": "BaselinePCPCSource1"
+        },
+        "517": {
+            "HOSPITALADMIT": "BaselinePCPCSource2"
+        },
+        "518": {
+            "HOSPITALADMIT": "OriginalPUDID"
+        },
+        "519": {
+            "PICUADMIT": "siteid"
+        },
+        "520": {
+            "PICUADMIT": "Occurrence"
+        },
+        "521": {
+            "PICUADMIT": "FormStatus"
+        },
+        "522": {
+            "PICUADMIT": "ItemGroupRepeatKey"
+        },
+        "523": {
+            "PICUADMIT": "PICUAdmitTime"
+        },
+        "524": {
+            "PICUADMIT": "PICUAdmitStatus"
+        },
+        "525": {
+            "PICUADMIT": "PICUAdmittedTo"
+        },
+        "526": {
+            "PICUADMIT": "PICUPostOp"
+        },
+        "527": {
+            "PICUADMIT": "PICUPostOpType"
+        },
+        "528": {
+            "PICUADMIT": "PICUPostOpTypeOther"
+        },
+        "529": {
+            "PICUADMIT": "PICUPostOpSurgName"
+        },
+        "530": {
+            "PICUADMIT": "PICUAdmitClinicalService"
+        },
+        "531": {
+            "PICUADMIT": "PICUAdmitSource"
+        },
+        "532": {
+            "PICUADMIT": "PICUAdmitNPR1"
+        },
+        "533": {
+            "PICUADMIT": "PICUAdmitNPR2"
+        },
+        "534": {
+            "PICUADMIT": "PICUAdmitPrimaryDx"
+        },
+        "535": {
+            "PICUADMIT": "PICUAdmitPrimaryDxOther"
+        },
+        "536": {
+            "PICUADMIT": "PICUAdmitSecondDx"
+        },
+        "537": {
+            "PICUADMIT": "PICUAdmitChronicDx"
+        },
+        "538": {
+            "PICUADMIT": "CHD"
+        },
+        "539": {
+            "PICUADMIT": "AcquiredHeart"
+        },
+        "540": {
+            "PICUADMIT": "EVENTSTARTDAY"
+        },
+        "541": {
+            "PICUADMIT": "PICUADMITDAY"
+        },
+        "542": {
+            "HOSPITALADMIT_CE": "siteid"
+        },
+        "543": {
+            "HOSPITALADMIT_CE": "Occurrence"
+        },
+        "544": {
+            "HOSPITALADMIT_CE": "FormStatus"
+        },
+        "545": {
+            "HOSPITALADMIT_CE": "ItemGroupRepeatKey"
+        },
+        "546": {
+            "HOSPITALADMIT_CE": "BaselineCEDesc"
+        },
+        "547": {
+            "HOSPITALADMIT_CE": "BaselineCEDescOther"
+        },
+        "548": {
+            "HOSPITALADMIT_CE": "BaselineCEInterval"
+        },
+        "549": {
+            "HOSPITALADMIT_CE": "EVENTSTARTDAY"
+        },
+        "550": {
+            "CAREPROCESSES": "siteid"
+        },
+        "551": {
+            "CAREPROCESSES": "Occurrence"
+        },
+        "552": {
+            "CAREPROCESSES": "FormStatus"
+        },
+        "553": {
+            "CAREPROCESSES": "ItemGroupRepeatKey"
+        },
+        "554": {
+            "CAREPROCESSES": "MechVent"
+        },
+        "555": {
+            "CAREPROCESSES": "HFOV"
+        },
+        "556": {
+            "CAREPROCESSES": "NOX"
+        },
+        "557": {
+            "CAREPROCESSES": "ICP"
+        },
+        "558": {
+            "CAREPROCESSES": "TherapeuticHypo"
+        },
+        "559": {
+            "CAREPROCESSES": "VasoInf"
+        },
+        "560": {
+            "CAREPROCESSES": "AbxAdmin"
+        },
+        "561": {
+            "CAREPROCESSES": "SteroidAdmin"
+        },
+        "562": {
+            "CAREPROCESSES": "NeuroBlock"
+        },
+        "563": {
+            "CAREPROCESSES": "ECMO"
+        },
+        "564": {
+            "CAREPROCESSES": "RenalReplace"
+        },
+        "565": {
+            "CAREPROCESSES": "ParentNutrition"
+        },
+        "566": {
+            "CAREPROCESSES": "EVENTSTARTDAY"
+        },
+        "567": {
+            "PICUADMIT_ADMITSECONDDX": "siteid"
+        },
+        "568": {
+            "PICUADMIT_ADMITSECONDDX": "Occurrence"
+        },
+        "569": {
+            "PICUADMIT_ADMITSECONDDX": "FormStatus"
+        },
+        "570": {
+            "PICUADMIT_ADMITSECONDDX": "ItemGroupRepeatKey"
+        },
+        "571": {
+            "PICUADMIT_ADMITSECONDDX": "PICUAdmitSecondDxCat"
+        },
+        "572": {
+            "PICUADMIT_ADMITSECONDDX": "PICUAdmitSecondDxOther"
+        },
+        "573": {
+            "PICUADMIT_ADMITSECONDDX": "EVENTSTARTDAY"
+        },
+        "574": {
+            "PICUDISCHARGE": "siteid"
+        },
+        "575": {
+            "PICUDISCHARGE": "Occurrence"
+        },
+        "576": {
+            "PICUDISCHARGE": "FormStatus"
+        },
+        "577": {
+            "PICUDISCHARGE": "ItemGroupRepeatKey"
+        },
+        "578": {
+            "PICUDISCHARGE": "PICUDisTime"
+        },
+        "579": {
+            "PICUDISCHARGE": "PICUDisSurgProc"
+        },
+        "580": {
+            "PICUDISCHARGE": "PICUDisCPR"
+        },
+        "581": {
+            "PICUDISCHARGE": "WOCFamilyDiscuss"
+        },
+        "582": {
+            "PICUDISCHARGE": "AlivePICUDis"
+        },
+        "583": {
+            "PICUDISCHARGE": "PICUDisClinicalService"
+        },
+        "584": {
+            "PICUDISCHARGE": "PICUTransferLoc"
+        },
+        "585": {
+            "PICUDISCHARGE": "PICUDisPrimaryDx"
+        },
+        "586": {
+            "PICUDISCHARGE": "PICUDisPrimaryDxOther"
+        },
+        "587": {
+            "PICUDISCHARGE": "PICUDisSecondDx"
+        },
+        "588": {
+            "PICUDISCHARGE": "PICUDisNewChronicDx"
+        },
+        "589": {
+            "PICUDISCHARGE": "PICUDisFSSMental"
+        },
+        "590": {
+            "PICUDISCHARGE": "PICUDisFSSSensory"
+        },
+        "591": {
+            "PICUDISCHARGE": "PICUDisFSSCommun"
+        },
+        "592": {
+            "PICUDISCHARGE": "PICUDisFSSMotor"
+        },
+        "593": {
+            "PICUDISCHARGE": "PICUDisFSSFeeding"
+        },
+        "594": {
+            "PICUDISCHARGE": "PICUDisFSSResp"
+        },
+        "595": {
+            "PICUDISCHARGE": "PICUDisPCPC"
+        },
+        "596": {
+            "PICUDISCHARGE": "PICUDisPOPC"
+        },
+        "597": {
+            "PICUDISCHARGE": "PICUDisNeuroBlock"
+        },
+        "598": {
+            "PICUDISCHARGE": "PICUDisSedative"
+        },
+        "599": {
+            "PICUDISCHARGE": "PICUDisNarcotic"
+        },
+        "600": {
+            "PICUDISCHARGE": "PICUDisOtherPain"
+        },
+        "601": {
+            "PICUDISCHARGE": "PICUDisSleepingAid"
+        },
+        "602": {
+            "PICUDISCHARGE": "PICUDisOtherDrugs"
+        },
+        "603": {
+            "PICUDISCHARGE": "PICUDisArmFootBoards"
+        },
+        "604": {
+            "PICUDISCHARGE": "PICUDisRestraints"
+        },
+        "605": {
+            "PICUDISCHARGE": "PICUDisBandageCast"
+        },
+        "606": {
+            "PICUDISCHARGE": "EVENTSTARTDAY"
+        },
+        "607": {
+            "PICUDISCHARGE": "PICUDISDAY"
+        },
+        "608": {
+            "PICUDISCHARGE": "PICUDisFSSSource1"
+        },
+        "609": {
+            "PICUDISCHARGE": "PICUDisFSSSource2"
+        },
+        "610": {
+            "PICUDISCHARGE": "PICUDisFSSSource3"
+        },
+        "611": {
+            "PICUDISCHARGE": "PICUDisPCPCSource1"
+        },
+        "612": {
+            "PICUDISCHARGE": "PICUDisPCPCSource2"
+        },
+        "613": {
+            "PICUDISCHARGE": "PICUDisPCPCSource3"
+        }
+    },
+    "column_display_names": {
+        "0": "PudID",
+        "1": "siteid_[PHYSIOSTATUS]",
+        "2": "Occurrence_[PHYSIOSTATUS]",
+        "3": "FormStatus_[PHYSIOSTATUS]",
+        "4": "ItemGroupRepeatKey_[PHYSIOSTATUS]",
+        "5": "LowpH",
+        "6": "HighpH",
+        "7": "pHND",
+        "8": "HighPCO2",
+        "9": "PCO2ND",
+        "10": "LowPa02",
+        "11": "PaO2ND",
+        "12": "LowIonCalcium",
+        "13": "HighIonCalcium",
+        "14": "IonCalciumND",
+        "15": "LowSodium",
+        "16": "HighSodium",
+        "17": "SodiumND",
+        "18": "HighPotassium",
+        "19": "PotassiumND",
+        "20": "HighBUN",
+        "21": "HighBUNND",
+        "22": "HighCreatinine",
+        "23": "CreatinineND",
+        "24": "LowGlucose",
+        "25": "HighGlucose",
+        "26": "GlucoseND",
+        "27": "LowCO2",
+        "28": "HighCO2",
+        "29": "CO2ND",
+        "30": "LowTotalCalcium",
+        "31": "HighTotalCalcium",
+        "32": "TotalCalciumND",
+        "33": "LowWBC",
+        "34": "HighWBC",
+        "35": "WBCND",
+        "36": "LowHemoglobin",
+        "37": "HighHemoglobin",
+        "38": "HemoglobinND",
+        "39": "LowPlatelets",
+        "40": "PlateletsND",
+        "41": "HighPT",
+        "42": "PTND",
+        "43": "HighPTT",
+        "44": "PTTND",
+        "45": "HighINR",
+        "46": "INRND",
+        "47": "HighTemp",
+        "48": "LowTemp",
+        "49": "HighRespRate",
+        "50": "LowRespRate",
+        "51": "HighHeartRate",
+        "52": "LowHeartRate",
+        "53": "HighSBP",
+        "54": "LowSBP",
+        "55": "CNSInjury",
+        "56": "GCSWorstMotor",
+        "57": "GCSWorstTotal",
+        "58": "GCSIntub",
+        "59": "LOCWorst",
+        "60": "PupilWorst",
+        "61": "PupilHypo",
+        "62": "EVENTSTARTDAY_[PHYSIOSTATUS]",
+        "63": "siteid_[PICUDISCHARGE_DISSECONDDX]",
+        "64": "Occurrence_[PICUDISCHARGE_DISSECONDDX]",
+        "65": "FormStatus_[PICUDISCHARGE_DISSECONDDX]",
+        "66": "ItemGroupRepeatKey_[PICUDISCHARGE_DISSECONDDX]",
+        "67": "PICUDisSecondDxCat",
+        "68": "PICUDisSecondDxOther",
+        "69": "EVENTSTARTDAY_[PICUDISCHARGE_DISSECONDDX]",
+        "70": "siteid_[PICUADMIT_CHRONICDX]",
+        "71": "Occurrence_[PICUADMIT_CHRONICDX]",
+        "72": "FormStatus_[PICUADMIT_CHRONICDX]",
+        "73": "ItemGroupRepeatKey_[PICUADMIT_CHRONICDX]",
+        "74": "PICUAdmitChronicDxCat",
+        "75": "PICUAdmitChronicDxOther",
+        "76": "EVENTSTARTDAY_[PICUADMIT_CHRONICDX]",
+        "77": "siteid_[SURGERY]",
+        "78": "Occurrence_[SURGERY]",
+        "79": "FormStatus_[SURGERY]",
+        "80": "ItemGroupRepeatKey_[SURGERY]",
+        "81": "SurgTime",
+        "82": "SurgReturnTime",
+        "83": "SurgCategory",
+        "84": "SurgType",
+        "85": "SurgName",
+        "86": "SurgNPR1",
+        "87": "SurgNPR2",
+        "88": "SurgLowpH",
+        "89": "SurgHighpH",
+        "90": "SurgpHND",
+        "91": "SurgHighPCO2",
+        "92": "SurgPCO2ND",
+        "93": "SurgLowPa02",
+        "94": "SurgPaO2ND",
+        "95": "SurgLowIonCalcium",
+        "96": "SurgHighIonCalcium",
+        "97": "SurgIonCalciumND",
+        "98": "SurgLowSodium",
+        "99": "SurgHighSodium",
+        "100": "SurgSodiumND",
+        "101": "SurgHighPotassium",
+        "102": "SurgPotassiumND",
+        "103": "SurgHighBUN",
+        "104": "SurgHighBUNND",
+        "105": "SurgHighCreatinine",
+        "106": "SurgCreatinineND",
+        "107": "SurgLowGlucose",
+        "108": "SurgHighGlucose",
+        "109": "SurgGlucoseND",
+        "110": "SurgLowCO2",
+        "111": "SurgHighCO2",
+        "112": "SurgCO2ND",
+        "113": "SurgLowTotalCalcium",
+        "114": "SurgHighTotalCalcium",
+        "115": "SurgTotalCalciumND",
+        "116": "SurgLowWBC",
+        "117": "SurgHighWBC",
+        "118": "SurgWBCND",
+        "119": "SurgLowHemoglobin",
+        "120": "SurgHighHemoglobin",
+        "121": "SurgHemoglobinND",
+        "122": "SurgLowPlatelets",
+        "123": "SurgPlateletsND",
+        "124": "SurgHighPT",
+        "125": "SurgPTND",
+        "126": "SurgHighPTT",
+        "127": "SurgPTTND",
+        "128": "SurgHighINR",
+        "129": "SurgINRND",
+        "130": "SurgHighTemp",
+        "131": "SurgLowTemp",
+        "132": "SurgHighRespRate",
+        "133": "SurgLowRespRate",
+        "134": "SurgHighHeartRate",
+        "135": "SurgLowHeartRate",
+        "136": "SurgHighSBP",
+        "137": "SurgLowSBP",
+        "138": "SurgCNSInjury",
+        "139": "SurgGCSWorstMotor",
+        "140": "SurgGCSWorstTotal",
+        "141": "SurgGCSIntub",
+        "142": "SurgLOCWorst",
+        "143": "SurgPupilWorst",
+        "144": "SurgPupilHypo",
+        "145": "SurgWBCNC",
+        "146": "EVENTSTARTDAY_[SURGERY]",
+        "147": "SURGDAY",
+        "148": "SURGRETURNDAY",
+        "149": "siteid_[PICUDISCHARGE_DISCHRONICDX]",
+        "150": "Occurrence_[PICUDISCHARGE_DISCHRONICDX]",
+        "151": "FormStatus_[PICUDISCHARGE_DISCHRONICDX]",
+        "152": "ItemGroupRepeatKey_[PICUDISCHARGE_DISCHRONICDX]",
+        "153": "PICUDisChronicDxCat",
+        "154": "PICUDisChronicDxOther",
+        "155": "EVENTSTARTDAY_[PICUDISCHARGE_DISCHRONICDX]",
+        "156": "siteid_[PICUADMIT_AHD]",
+        "157": "Occurrence_[PICUADMIT_AHD]",
+        "158": "FormStatus_[PICUADMIT_AHD]",
+        "159": "ItemGroupRepeatKey_[PICUADMIT_AHD]",
+        "160": "AcquiredHeartCat",
+        "161": "AcquiredHeartCatOther",
+        "162": "EVENTSTARTDAY_[PICUADMIT_AHD]",
+        "163": "siteid_[LIMITOFCARE]",
+        "164": "Occurrence_[LIMITOFCARE]",
+        "165": "FormStatus_[LIMITOFCARE]",
+        "166": "ItemGroupRepeatKey_[LIMITOFCARE]",
+        "167": "WOCFamilyDiscussTime",
+        "168": "WOCMedicalRecordTime",
+        "169": "PalliativeCare",
+        "170": "PalliativeCareTime",
+        "171": "PainService",
+        "172": "PainServiceTime",
+        "173": "Ethics",
+        "174": "EthicsTime",
+        "175": "FutureMechVent",
+        "176": "FutureVasoMeds",
+        "177": "FutureCardiacComp",
+        "178": "FutureECMO",
+        "179": "FutureDialysis",
+        "180": "WithdrawMechVent",
+        "181": "WithdrawVasoMeds",
+        "182": "WithdrawFeeding",
+        "183": "WithdrawECMO",
+        "184": "WithdrawRRT",
+        "185": "WithdrawOther",
+        "186": "WithdrawOtherSpecify",
+        "187": "ETHICSDAY",
+        "188": "EVENTSTARTDAY_[LIMITOFCARE]",
+        "189": "PAINSERVICEDAY",
+        "190": "PALLIATIVECAREDAY",
+        "191": "WOCFAMILYDISCUSSDAY",
+        "192": "WOCMEDICALRECORDDAY",
+        "193": "siteid_[HOSPITALDISCHARGE]",
+        "194": "Occurrence_[HOSPITALDISCHARGE]",
+        "195": "FormStatus_[HOSPITALDISCHARGE]",
+        "196": "ItemGroupRepeatKey_[HOSPITALDISCHARGE]",
+        "197": "HospDisTime",
+        "198": "HospDisReadmit",
+        "199": "HospCE",
+        "200": "HospDisAlive",
+        "201": "HospDisLoc",
+        "202": "HospDisLocOther",
+        "203": "HospDisHospice",
+        "204": "HospDisFSSMental",
+        "205": "HospDisFSSSensory",
+        "206": "HospDisFSSCommun",
+        "207": "HospDisFSSMotor",
+        "208": "HospDisFSSFeeding",
+        "209": "HospDisFSSResp",
+        "210": "HospDisPCPC",
+        "211": "HospDisPOPC",
+        "212": "HospDisNeuroBlock",
+        "213": "HospDisSedative",
+        "214": "HospDisNarcotic",
+        "215": "HospDisOtherPain",
+        "216": "HospDisSleepingAid",
+        "217": "HospDisOtherDrugs",
+        "218": "HospDisArmFootBoards",
+        "219": "HospDisRestraints",
+        "220": "HospDisBandageCast",
+        "221": "EVENTSTARTDAY_[HOSPITALDISCHARGE]",
+        "222": "HOSPDISDAY",
+        "223": "HospDisFSSSource1",
+        "224": "HospDisFSSSource2",
+        "225": "HospDisFSSSource3",
+        "226": "HospDisPCPCInfo1",
+        "227": "HospDisPCPCInfo2",
+        "228": "HospDisPCPCInfo3",
+        "229": "siteid_[CPR]",
+        "230": "Occurrence_[CPR]",
+        "231": "FormStatus_[CPR]",
+        "232": "ItemGroupRepeatKey_[CPR]",
+        "233": "CPRTime",
+        "234": "ChestComp",
+        "235": "ChestCompStartTime",
+        "236": "ChestCompStopTime",
+        "237": "ChestCompReason",
+        "238": "ChestOpenClosed",
+        "239": "Defib",
+        "240": "ROC",
+        "241": "ECMOToAchieveROC",
+        "242": "Alive24HrsAfterCPR",
+        "243": "CPRDAY",
+        "244": "CHESTCOMPSTARTDAY",
+        "245": "CHESTCOMPSTOPDAY",
+        "246": "EVENTSTARTDAY_[CPR]",
+        "247": "siteid_[CATASTROPHICEVENTS]",
+        "248": "Occurrence_[CATASTROPHICEVENTS]",
+        "249": "FormStatus_[CATASTROPHICEVENTS]",
+        "250": "ItemGroupRepeatKey_[CATASTROPHICEVENTS]",
+        "251": "HospCETime",
+        "252": "HospCEDesc",
+        "253": "HospCEDescOther",
+        "254": "EVENTSTARTDAY_[CATASTROPHICEVENTS]",
+        "255": "HOSPCEDAY",
+        "256": "siteid_[CARDIACPROCEDURES]",
+        "257": "Occurrence_[CARDIACPROCEDURES]",
+        "258": "FormStatus_[CARDIACPROCEDURES]",
+        "259": "ItemGroupRepeatKey_[CARDIACPROCEDURES]",
+        "260": "PrimaryProc1",
+        "261": "PrimaryProc2",
+        "262": "PrimProcOt",
+        "263": "SecondProcOt",
+        "264": "EVENTSTARTDAY_[CARDIACPROCEDURES]",
+        "265": "SecondProc11",
+        "266": "SecondProc12",
+        "267": "SecondProc13",
+        "268": "SecondProc14",
+        "269": "SecondProc15",
+        "270": "SecondProc16",
+        "271": "SecondProc17",
+        "272": "SecondProc18",
+        "273": "SecondProc19",
+        "274": "SecondProc110",
+        "275": "SecondProc111",
+        "276": "SecondProc112",
+        "277": "SecondProc113",
+        "278": "SecondProc114",
+        "279": "SecondProc115",
+        "280": "SecondProc116",
+        "281": "SecondProc117",
+        "282": "SecondProc118",
+        "283": "SecondProc119",
+        "284": "SecondProc120",
+        "285": "SecondProc121",
+        "286": "SecondProc122",
+        "287": "SecondProc123",
+        "288": "SecondProc124",
+        "289": "SecondProc125",
+        "290": "SecondProc126",
+        "291": "SecondProc127",
+        "292": "SecondProc128",
+        "293": "SecondProc129",
+        "294": "SecondProc130",
+        "295": "SecondProc131",
+        "296": "SecondProc132",
+        "297": "SecondProc133",
+        "298": "SecondProc134",
+        "299": "SecondProc135",
+        "300": "SecondProc136",
+        "301": "SecondProc137",
+        "302": "SecondProc138",
+        "303": "SecondProc139",
+        "304": "SecondProc140",
+        "305": "SecondProc141",
+        "306": "SecondProc142",
+        "307": "SecondProc143",
+        "308": "SecondProc144",
+        "309": "SecondProc145",
+        "310": "SecondProc146",
+        "311": "SecondProc147",
+        "312": "SecondProc148",
+        "313": "SecondProc149",
+        "314": "SecondProc150",
+        "315": "SecondProc151",
+        "316": "SecondProc152",
+        "317": "SecondProc153",
+        "318": "SecondProc154",
+        "319": "SecondProc155",
+        "320": "SecondProc156",
+        "321": "SecondProc157",
+        "322": "SecondProc158",
+        "323": "SecondProc159",
+        "324": "SecondProc160",
+        "325": "SecondProc161",
+        "326": "SecondProc162",
+        "327": "SecondProc163",
+        "328": "SecondProc164",
+        "329": "SecondProc165",
+        "330": "SecondProc166",
+        "331": "SecondProc167",
+        "332": "SecondProc168",
+        "333": "SecondProc169",
+        "334": "SecondProc170",
+        "335": "SecondProc171",
+        "336": "SecondProc172",
+        "337": "SecondProc173",
+        "338": "SecondProc174",
+        "339": "SecondProc175",
+        "340": "SecondProc176",
+        "341": "SecondProc277",
+        "342": "SecondProc278",
+        "343": "SecondProc279",
+        "344": "SecondProc280",
+        "345": "SecondProc281",
+        "346": "SecondProc282",
+        "347": "SecondProc283",
+        "348": "SecondProc284",
+        "349": "SecondProc285",
+        "350": "SecondProc286",
+        "351": "SecondProc287",
+        "352": "SecondProc288",
+        "353": "SecondProc289",
+        "354": "SecondProc290",
+        "355": "SecondProc291",
+        "356": "SecondProc292",
+        "357": "SecondProc293",
+        "358": "SecondProc294",
+        "359": "SecondProc295",
+        "360": "SecondProc296",
+        "361": "SecondProc297",
+        "362": "SecondProc298",
+        "363": "SecondProc299",
+        "364": "SecondProc2100",
+        "365": "SecondProc2101",
+        "366": "SecondProc2102",
+        "367": "SecondProc2103",
+        "368": "SecondProc2104",
+        "369": "SecondProc2105",
+        "370": "SecondProc2106",
+        "371": "SecondProc2107",
+        "372": "SecondProc2108",
+        "373": "SecondProc2109",
+        "374": "SecondProc2110",
+        "375": "SecondProc2111",
+        "376": "SecondProc2112",
+        "377": "SecondProc2113",
+        "378": "SecondProc2114",
+        "379": "SecondProc2115",
+        "380": "SecondProc2116",
+        "381": "SecondProc2117",
+        "382": "SecondProc2118",
+        "383": "SecondProc2119",
+        "384": "SecondProc2120",
+        "385": "SecondProc2121",
+        "386": "SecondProc2122",
+        "387": "SecondProc2123",
+        "388": "SecondProc2124",
+        "389": "SecondProc2125",
+        "390": "SecondProc2126",
+        "391": "SecondProc2127",
+        "392": "SecondProc2128",
+        "393": "SecondProc2129",
+        "394": "SecondProc2130",
+        "395": "SecondProc2131",
+        "396": "SecondProc2132",
+        "397": "SecondProc2133",
+        "398": "SecondProc2134",
+        "399": "SecondProc2135",
+        "400": "SecondProc2136",
+        "401": "SecondProc2137",
+        "402": "SecondProc2138",
+        "403": "SecondProc2139",
+        "404": "SecondProc2140",
+        "405": "SecondProc2141",
+        "406": "SecondProc2142",
+        "407": "SecondProc2143",
+        "408": "SecondProc2144",
+        "409": "SecondProc2145",
+        "410": "SecondProc2146",
+        "411": "SecondProc2147",
+        "412": "SecondProc2148",
+        "413": "SecondProc2149",
+        "414": "SecondProc2150",
+        "415": "SecondProc2151",
+        "416": "SecondProc2152",
+        "417": "SecondProc2153",
+        "418": "SecondProc2154",
+        "419": "SecondProc2155",
+        "420": "SecondProc2156",
+        "421": "SecondProc2157",
+        "422": "siteid_[CARDIACSURGERY]",
+        "423": "Occurrence_[CARDIACSURGERY]",
+        "424": "FormStatus_[CARDIACSURGERY]",
+        "425": "ItemGroupRepeatKey_[CARDIACSURGERY]",
+        "426": "CardiacSurgTime",
+        "427": "CardiacSurgOccur",
+        "428": "Bypass",
+        "429": "BypassTime",
+        "430": "CrossClamp",
+        "431": "CrossClampTime",
+        "432": "HypoArrest",
+        "433": "HypoArrestTime",
+        "434": "UnplanArrest",
+        "435": "ORDisVasoDrips",
+        "436": "ORDisECMO",
+        "437": "ORDisVAD",
+        "438": "ORDisChestOpen",
+        "439": "PostSurgLactate",
+        "440": "PostSurgpH",
+        "441": "CARDIACSURGDAY",
+        "442": "EVENTSTARTDAY_[CARDIACSURGERY]",
+        "443": "ORDisVasoDripDrugs1",
+        "444": "ORDisVasoDripDrugs2",
+        "445": "ORDisVasoDripDrugs3",
+        "446": "ORDisVasoDripDrugs4",
+        "447": "ORDisVasoDripDrugs5",
+        "448": "ORDisVasoDripDrugs6",
+        "449": "ORDisVasoDripDrugs7",
+        "450": "ORDisVasoDripDrugs8",
+        "451": "ORDisVasoDripDrugs9",
+        "452": "ORDisVasoDripDrugs10",
+        "453": "siteid_[DEATH]",
+        "454": "Occurrence_[DEATH]",
+        "455": "FormStatus_[DEATH]",
+        "456": "ItemGroupRepeatKey_[DEATH]",
+        "457": "DeathTime",
+        "458": "DeathLoc",
+        "459": "CPRAdmin",
+        "460": "DeathMode",
+        "461": "MECase",
+        "462": "AutopsyRequest",
+        "463": "AutopsyDone",
+        "464": "AutopsyLoc",
+        "465": "ReasonNoAutopsy",
+        "466": "DonationOffer",
+        "467": "DonationOccur",
+        "468": "DonationFollow",
+        "469": "DEATHDAY",
+        "470": "EVENTSTARTDAY_[DEATH]",
+        "471": "DonationOrgan1",
+        "472": "DonationOrgan2",
+        "473": "DonationOrgan3",
+        "474": "DonationOrgan4",
+        "475": "DonationOrgan5",
+        "476": "DonationOrgan90",
+        "477": "siteid_[PICUADMIT_CHD]",
+        "478": "Occurrence_[PICUADMIT_CHD]",
+        "479": "FormStatus_[PICUADMIT_CHD]",
+        "480": "ItemGroupRepeatKey_[PICUADMIT_CHD]",
+        "481": "CHDCat",
+        "482": "EVENTSTARTDAY_[PICUADMIT_CHD]",
+        "483": "siteid_[HOSPITALADMIT]",
+        "484": "Occurrence_[HOSPITALADMIT]",
+        "485": "FormStatus_[HOSPITALADMIT]",
+        "486": "ItemGroupRepeatKey_[HOSPITALADMIT]",
+        "487": "PreviousEnroll",
+        "488": "Sex",
+        "489": "Ethnicity",
+        "490": "Payer",
+        "491": "HospAdmitTime",
+        "492": "BaselineCE",
+        "493": "DevelopDelay",
+        "494": "AdmitThroughED",
+        "495": "EDArrivalTime",
+        "496": "BaselineFSSMental",
+        "497": "BaselineFSSSensory",
+        "498": "BaselineFSSCommun",
+        "499": "BaselineFSSMotor",
+        "500": "BaselineFSSFeeding",
+        "501": "BaselineFSSResp",
+        "502": "BaselinePCPC",
+        "503": "BaselinePOPC",
+        "504": "BIRTHDAY",
+        "505": "EDARRIVALDAY",
+        "506": "EVENTSTARTDAY_[HOSPITALADMIT]",
+        "507": "HOSPADMITDAY",
+        "508": "Race1",
+        "509": "Race2",
+        "510": "Race3",
+        "511": "Race4",
+        "512": "Race5",
+        "513": "Race92",
+        "514": "BaselineFSSSource1",
+        "515": "BaselineFSSSource2",
+        "516": "BaselinePCPCSource1",
+        "517": "BaselinePCPCSource2",
+        "518": "OriginalPUDID",
+        "519": "siteid_[PICUADMIT]",
+        "520": "Occurrence_[PICUADMIT]",
+        "521": "FormStatus_[PICUADMIT]",
+        "522": "ItemGroupRepeatKey_[PICUADMIT]",
+        "523": "PICUAdmitTime",
+        "524": "PICUAdmitStatus",
+        "525": "PICUAdmittedTo",
+        "526": "PICUPostOp",
+        "527": "PICUPostOpType",
+        "528": "PICUPostOpTypeOther",
+        "529": "PICUPostOpSurgName",
+        "530": "PICUAdmitClinicalService",
+        "531": "PICUAdmitSource",
+        "532": "PICUAdmitNPR1",
+        "533": "PICUAdmitNPR2",
+        "534": "PICUAdmitPrimaryDx",
+        "535": "PICUAdmitPrimaryDxOther",
+        "536": "PICUAdmitSecondDx",
+        "537": "PICUAdmitChronicDx",
+        "538": "CHD",
+        "539": "AcquiredHeart",
+        "540": "EVENTSTARTDAY_[PICUADMIT]",
+        "541": "PICUADMITDAY",
+        "542": "siteid_[HOSPITALADMIT_CE]",
+        "543": "Occurrence_[HOSPITALADMIT_CE]",
+        "544": "FormStatus_[HOSPITALADMIT_CE]",
+        "545": "ItemGroupRepeatKey_[HOSPITALADMIT_CE]",
+        "546": "BaselineCEDesc",
+        "547": "BaselineCEDescOther",
+        "548": "BaselineCEInterval",
+        "549": "EVENTSTARTDAY_[HOSPITALADMIT_CE]",
+        "550": "siteid_[CAREPROCESSES]",
+        "551": "Occurrence_[CAREPROCESSES]",
+        "552": "FormStatus_[CAREPROCESSES]",
+        "553": "ItemGroupRepeatKey_[CAREPROCESSES]",
+        "554": "MechVent",
+        "555": "HFOV",
+        "556": "NOX",
+        "557": "ICP",
+        "558": "TherapeuticHypo",
+        "559": "VasoInf",
+        "560": "AbxAdmin",
+        "561": "SteroidAdmin",
+        "562": "NeuroBlock",
+        "563": "ECMO",
+        "564": "RenalReplace",
+        "565": "ParentNutrition",
+        "566": "EVENTSTARTDAY_[CAREPROCESSES]",
+        "567": "siteid_[PICUADMIT_ADMITSECONDDX]",
+        "568": "Occurrence_[PICUADMIT_ADMITSECONDDX]",
+        "569": "FormStatus_[PICUADMIT_ADMITSECONDDX]",
+        "570": "ItemGroupRepeatKey_[PICUADMIT_ADMITSECONDDX]",
+        "571": "PICUAdmitSecondDxCat",
+        "572": "PICUAdmitSecondDxOther",
+        "573": "EVENTSTARTDAY_[PICUADMIT_ADMITSECONDDX]",
+        "574": "siteid_[PICUDISCHARGE]",
+        "575": "Occurrence_[PICUDISCHARGE]",
+        "576": "FormStatus_[PICUDISCHARGE]",
+        "577": "ItemGroupRepeatKey_[PICUDISCHARGE]",
+        "578": "PICUDisTime",
+        "579": "PICUDisSurgProc",
+        "580": "PICUDisCPR",
+        "581": "WOCFamilyDiscuss",
+        "582": "AlivePICUDis",
+        "583": "PICUDisClinicalService",
+        "584": "PICUTransferLoc",
+        "585": "PICUDisPrimaryDx",
+        "586": "PICUDisPrimaryDxOther",
+        "587": "PICUDisSecondDx",
+        "588": "PICUDisNewChronicDx",
+        "589": "PICUDisFSSMental",
+        "590": "PICUDisFSSSensory",
+        "591": "PICUDisFSSCommun",
+        "592": "PICUDisFSSMotor",
+        "593": "PICUDisFSSFeeding",
+        "594": "PICUDisFSSResp",
+        "595": "PICUDisPCPC",
+        "596": "PICUDisPOPC",
+        "597": "PICUDisNeuroBlock",
+        "598": "PICUDisSedative",
+        "599": "PICUDisNarcotic",
+        "600": "PICUDisOtherPain",
+        "601": "PICUDisSleepingAid",
+        "602": "PICUDisOtherDrugs",
+        "603": "PICUDisArmFootBoards",
+        "604": "PICUDisRestraints",
+        "605": "PICUDisBandageCast",
+        "606": "EVENTSTARTDAY_[PICUDISCHARGE]",
+        "607": "PICUDISDAY",
+        "608": "PICUDisFSSSource1",
+        "609": "PICUDisFSSSource2",
+        "610": "PICUDisFSSSource3",
+        "611": "PICUDisPCPCSource1",
+        "612": "PICUDisPCPCSource2",
+        "613": "PICUDisPCPCSource3"
+    },
+    "table_relationships": {
+        "PHYSIOSTATUS": {
+            "parents": {
+                "PICUDISCHARGE_DISSECONDDX": 0,
+                "PICUADMIT_CHRONICDX": 0,
+                "SURGERY": 0,
+                "PICUDISCHARGE_DISCHRONICDX": 0,
+                "PICUADMIT_AHD": 0,
+                "CPR": 0,
+                "CATASTROPHICEVENTS": 0,
+                "CARDIACPROCEDURES": 0,
+                "CARDIACSURGERY": 0,
+                "PICUADMIT_CHD": 0,
+                "HOSPITALADMIT_CE": 0,
+                "PICUADMIT_ADMITSECONDDX": 0
+            },
+            "children": {},
+            "siblings": {
+                "LIMITOFCARE": 0,
+                "HOSPITALDISCHARGE": 0,
+                "DEATH": 0,
+                "HOSPITALADMIT": 0,
+                "PICUADMIT": 0,
+                "CAREPROCESSES": 0,
+                "PICUDISCHARGE": 0
+            }
+        },
+        "PICUDISCHARGE_DISSECONDDX": {
+            "parents": {},
+            "children": {
+                "PHYSIOSTATUS": 0,
+                "LIMITOFCARE": 0,
+                "HOSPITALDISCHARGE": 0,
+                "DEATH": 0,
+                "HOSPITALADMIT": 0,
+                "PICUADMIT": 0,
+                "CAREPROCESSES": 0,
+                "PICUDISCHARGE": 0
+            },
+            "siblings": {}
+        },
+        "PICUADMIT_CHRONICDX": {
+            "parents": {},
+            "children": {
+                "PHYSIOSTATUS": 0,
+                "LIMITOFCARE": 0,
+                "HOSPITALDISCHARGE": 0,
+                "DEATH": 0,
+                "HOSPITALADMIT": 0,
+                "PICUADMIT": 0,
+                "CAREPROCESSES": 0,
+                "PICUDISCHARGE": 0
+            },
+            "siblings": {}
+        },
+        "SURGERY": {
+            "parents": {},
+            "children": {
+                "PHYSIOSTATUS": 0,
+                "LIMITOFCARE": 0,
+                "HOSPITALDISCHARGE": 0,
+                "DEATH": 0,
+                "HOSPITALADMIT": 0,
+                "PICUADMIT": 0,
+                "CAREPROCESSES": 0,
+                "PICUDISCHARGE": 0
+            },
+            "siblings": {}
+        },
+        "PICUDISCHARGE_DISCHRONICDX": {
+            "parents": {},
+            "children": {
+                "PHYSIOSTATUS": 0,
+                "LIMITOFCARE": 0,
+                "HOSPITALDISCHARGE": 0,
+                "DEATH": 0,
+                "HOSPITALADMIT": 0,
+                "PICUADMIT": 0,
+                "CAREPROCESSES": 0,
+                "PICUDISCHARGE": 0
+            },
+            "siblings": {}
+        },
+        "PICUADMIT_AHD": {
+            "parents": {},
+            "children": {
+                "PHYSIOSTATUS": 0,
+                "LIMITOFCARE": 0,
+                "HOSPITALDISCHARGE": 0,
+                "DEATH": 0,
+                "HOSPITALADMIT": 0,
+                "PICUADMIT": 0,
+                "CAREPROCESSES": 0,
+                "PICUDISCHARGE": 0
+            },
+            "siblings": {}
+        },
+        "LIMITOFCARE": {
+            "parents": {
+                "PICUDISCHARGE_DISSECONDDX": 0,
+                "PICUADMIT_CHRONICDX": 0,
+                "SURGERY": 0,
+                "PICUDISCHARGE_DISCHRONICDX": 0,
+                "PICUADMIT_AHD": 0,
+                "CPR": 0,
+                "CATASTROPHICEVENTS": 0,
+                "CARDIACPROCEDURES": 0,
+                "CARDIACSURGERY": 0,
+                "PICUADMIT_CHD": 0,
+                "HOSPITALADMIT_CE": 0,
+                "PICUADMIT_ADMITSECONDDX": 0
+            },
+            "children": {},
+            "siblings": {
+                "PHYSIOSTATUS": 0,
+                "HOSPITALDISCHARGE": 0,
+                "DEATH": 0,
+                "HOSPITALADMIT": 0,
+                "PICUADMIT": 0,
+                "CAREPROCESSES": 0,
+                "PICUDISCHARGE": 0
+            }
+        },
+        "HOSPITALDISCHARGE": {
+            "parents": {
+                "PICUDISCHARGE_DISSECONDDX": 0,
+                "PICUADMIT_CHRONICDX": 0,
+                "SURGERY": 0,
+                "PICUDISCHARGE_DISCHRONICDX": 0,
+                "PICUADMIT_AHD": 0,
+                "CPR": 0,
+                "CATASTROPHICEVENTS": 0,
+                "CARDIACPROCEDURES": 0,
+                "CARDIACSURGERY": 0,
+                "PICUADMIT_CHD": 0,
+                "HOSPITALADMIT_CE": 0,
+                "PICUADMIT_ADMITSECONDDX": 0
+            },
+            "children": {},
+            "siblings": {
+                "PHYSIOSTATUS": 0,
+                "LIMITOFCARE": 0,
+                "DEATH": 0,
+                "HOSPITALADMIT": 0,
+                "PICUADMIT": 0,
+                "CAREPROCESSES": 0,
+                "PICUDISCHARGE": 0
+            }
+        },
+        "CPR": {
+            "parents": {},
+            "children": {
+                "PHYSIOSTATUS": 0,
+                "LIMITOFCARE": 0,
+                "HOSPITALDISCHARGE": 0,
+                "DEATH": 0,
+                "HOSPITALADMIT": 0,
+                "PICUADMIT": 0,
+                "CAREPROCESSES": 0,
+                "PICUDISCHARGE": 0
+            },
+            "siblings": {}
+        },
+        "CATASTROPHICEVENTS": {
+            "parents": {},
+            "children": {
+                "PHYSIOSTATUS": 0,
+                "LIMITOFCARE": 0,
+                "HOSPITALDISCHARGE": 0,
+                "DEATH": 0,
+                "HOSPITALADMIT": 0,
+                "PICUADMIT": 0,
+                "CAREPROCESSES": 0,
+                "PICUDISCHARGE": 0
+            },
+            "siblings": {}
+        },
+        "CARDIACPROCEDURES": {
+            "parents": {},
+            "children": {
+                "PHYSIOSTATUS": 0,
+                "LIMITOFCARE": 0,
+                "HOSPITALDISCHARGE": 0,
+                "DEATH": 0,
+                "HOSPITALADMIT": 0,
+                "PICUADMIT": 0,
+                "CAREPROCESSES": 0,
+                "PICUDISCHARGE": 0
+            },
+            "siblings": {}
+        },
+        "CARDIACSURGERY": {
+            "parents": {},
+            "children": {
+                "PHYSIOSTATUS": 0,
+                "LIMITOFCARE": 0,
+                "HOSPITALDISCHARGE": 0,
+                "DEATH": 0,
+                "HOSPITALADMIT": 0,
+                "PICUADMIT": 0,
+                "CAREPROCESSES": 0,
+                "PICUDISCHARGE": 0
+            },
+            "siblings": {}
+        },
+        "DEATH": {
+            "parents": {
+                "PICUDISCHARGE_DISSECONDDX": 0,
+                "PICUADMIT_CHRONICDX": 0,
+                "SURGERY": 0,
+                "PICUDISCHARGE_DISCHRONICDX": 0,
+                "PICUADMIT_AHD": 0,
+                "CPR": 0,
+                "CATASTROPHICEVENTS": 0,
+                "CARDIACPROCEDURES": 0,
+                "CARDIACSURGERY": 0,
+                "PICUADMIT_CHD": 0,
+                "HOSPITALADMIT_CE": 0,
+                "PICUADMIT_ADMITSECONDDX": 0
+            },
+            "children": {},
+            "siblings": {
+                "PHYSIOSTATUS": 0,
+                "LIMITOFCARE": 0,
+                "HOSPITALDISCHARGE": 0,
+                "HOSPITALADMIT": 0,
+                "PICUADMIT": 0,
+                "CAREPROCESSES": 0,
+                "PICUDISCHARGE": 0
+            }
+        },
+        "PICUADMIT_CHD": {
+            "parents": {},
+            "children": {
+                "PHYSIOSTATUS": 0,
+                "LIMITOFCARE": 0,
+                "HOSPITALDISCHARGE": 0,
+                "DEATH": 0,
+                "HOSPITALADMIT": 0,
+                "PICUADMIT": 0,
+                "CAREPROCESSES": 0,
+                "PICUDISCHARGE": 0
+            },
+            "siblings": {}
+        },
+        "HOSPITALADMIT": {
+            "parents": {
+                "PICUDISCHARGE_DISSECONDDX": 0,
+                "PICUADMIT_CHRONICDX": 0,
+                "SURGERY": 0,
+                "PICUDISCHARGE_DISCHRONICDX": 0,
+                "PICUADMIT_AHD": 0,
+                "CPR": 0,
+                "CATASTROPHICEVENTS": 0,
+                "CARDIACPROCEDURES": 0,
+                "CARDIACSURGERY": 0,
+                "PICUADMIT_CHD": 0,
+                "HOSPITALADMIT_CE": 0,
+                "PICUADMIT_ADMITSECONDDX": 0
+            },
+            "children": {},
+            "siblings": {
+                "PHYSIOSTATUS": 0,
+                "LIMITOFCARE": 0,
+                "HOSPITALDISCHARGE": 0,
+                "DEATH": 0,
+                "PICUADMIT": 0,
+                "CAREPROCESSES": 0,
+                "PICUDISCHARGE": 0
+            }
+        },
+        "PICUADMIT": {
+            "parents": {
+                "PICUDISCHARGE_DISSECONDDX": 0,
+                "PICUADMIT_CHRONICDX": 0,
+                "SURGERY": 0,
+                "PICUDISCHARGE_DISCHRONICDX": 0,
+                "PICUADMIT_AHD": 0,
+                "CPR": 0,
+                "CATASTROPHICEVENTS": 0,
+                "CARDIACPROCEDURES": 0,
+                "CARDIACSURGERY": 0,
+                "PICUADMIT_CHD": 0,
+                "HOSPITALADMIT_CE": 0,
+                "PICUADMIT_ADMITSECONDDX": 0
+            },
+            "children": {},
+            "siblings": {
+                "PHYSIOSTATUS": 0,
+                "LIMITOFCARE": 0,
+                "HOSPITALDISCHARGE": 0,
+                "DEATH": 0,
+                "HOSPITALADMIT": 0,
+                "CAREPROCESSES": 0,
+                "PICUDISCHARGE": 0
+            }
+        },
+        "HOSPITALADMIT_CE": {
+            "parents": {},
+            "children": {
+                "PHYSIOSTATUS": 0,
+                "LIMITOFCARE": 0,
+                "HOSPITALDISCHARGE": 0,
+                "DEATH": 0,
+                "HOSPITALADMIT": 0,
+                "PICUADMIT": 0,
+                "CAREPROCESSES": 0,
+                "PICUDISCHARGE": 0
+            },
+            "siblings": {}
+        },
+        "CAREPROCESSES": {
+            "parents": {
+                "PICUDISCHARGE_DISSECONDDX": 0,
+                "PICUADMIT_CHRONICDX": 0,
+                "SURGERY": 0,
+                "PICUDISCHARGE_DISCHRONICDX": 0,
+                "PICUADMIT_AHD": 0,
+                "CPR": 0,
+                "CATASTROPHICEVENTS": 0,
+                "CARDIACPROCEDURES": 0,
+                "CARDIACSURGERY": 0,
+                "PICUADMIT_CHD": 0,
+                "HOSPITALADMIT_CE": 0,
+                "PICUADMIT_ADMITSECONDDX": 0
+            },
+            "children": {},
+            "siblings": {
+                "PHYSIOSTATUS": 0,
+                "LIMITOFCARE": 0,
+                "HOSPITALDISCHARGE": 0,
+                "DEATH": 0,
+                "HOSPITALADMIT": 0,
+                "PICUADMIT": 0,
+                "PICUDISCHARGE": 0
+            }
+        },
+        "PICUADMIT_ADMITSECONDDX": {
+            "parents": {},
+            "children": {
+                "PHYSIOSTATUS": 0,
+                "LIMITOFCARE": 0,
+                "HOSPITALDISCHARGE": 0,
+                "DEATH": 0,
+                "HOSPITALADMIT": 0,
+                "PICUADMIT": 0,
+                "CAREPROCESSES": 0,
+                "PICUDISCHARGE": 0
+            },
+            "siblings": {}
+        },
+        "PICUDISCHARGE": {
+            "parents": {
+                "PICUDISCHARGE_DISSECONDDX": 0,
+                "PICUADMIT_CHRONICDX": 0,
+                "SURGERY": 0,
+                "PICUDISCHARGE_DISCHRONICDX": 0,
+                "PICUADMIT_AHD": 0,
+                "CPR": 0,
+                "CATASTROPHICEVENTS": 0,
+                "CARDIACPROCEDURES": 0,
+                "CARDIACSURGERY": 0,
+                "PICUADMIT_CHD": 0,
+                "HOSPITALADMIT_CE": 0,
+                "PICUADMIT_ADMITSECONDDX": 0
+            },
+            "children": {},
+            "siblings": {
+                "PHYSIOSTATUS": 0,
+                "LIMITOFCARE": 0,
+                "HOSPITALDISCHARGE": 0,
+                "DEATH": 0,
+                "HOSPITALADMIT": 0,
+                "PICUADMIT": 0,
+                "CAREPROCESSES": 0
+            }
+        }
+    }
+}

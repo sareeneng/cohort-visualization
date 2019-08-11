@@ -3,7 +3,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_reusable_components as drc
 from dash.dependencies import Input, Output
-from db_structure import DB
+from db_structure import DB, DataManager
 import utilities as u
 
 import logging
@@ -18,7 +18,8 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets, server=flask_app, url_base_pathname='/dash/visualization/')
 
 db = DB(os.path.join('datasets', 'TOPICC'))
-all_columns = db.struct.column_factory.columns
+dm = DataManager(db, load_all_data=True)
+all_columns = db.column_display_names
 # exclude_columns = db.exclude_columns_from_data_viz
 exclude_columns = ['PudID']
 
@@ -82,7 +83,7 @@ def get_col_objs(*args):
 def update_variable_options(outcome_var_chosen, ind_vars_chosen):
 	if len(ind_vars_chosen) == 0 and outcome_var_chosen is None:
 		# User hasn't chosen anything yet, so both the independent variables and outcome variables will have the same options
-		full_list = sorted([{'label': v.display_name, 'value': k} for k, v in all_columns.items() if v.display_name not in exclude_columns], key=lambda x: x['label'])
+		full_list = sorted([{'label': v, 'value': k} for k, v in all_columns.items() if v not in exclude_columns], key=lambda x: x['label'])
 		return full_list, full_list
 	
 	if outcome_var_chosen is None:
@@ -90,9 +91,9 @@ def update_variable_options(outcome_var_chosen, ind_vars_chosen):
 	else:
 		all_col_idxs = [outcome_var_chosen] + ind_vars_chosen
 	
-	accessible_col_idxs = db.struct.get_still_accessible_columns(include_column_idxs=all_col_idxs)
+	accessible_col_idxs = db.find_column_idxs_still_accessible_idxs(include_column_idxs=all_col_idxs)
 
-	accessible_list = sorted([{'label': all_columns[x].display_name, 'value': x} for x in accessible_col_idxs if all_columns[x].display_name not in exclude_columns], key=lambda x: x['label']) 
+	accessible_list = sorted([{'label': all_columns[x], 'value': x} for x in accessible_col_idxs if all_columns[x] not in exclude_columns], key=lambda x: x['label']) 
 
 	return accessible_list, accessible_list
 
@@ -114,15 +115,15 @@ def update_graph(outcome_var_chosen_idx, ind_vars_chosen_idxs, distribution_type
 	else:
 		all_col_idxs = [outcome_var_chosen_idx] + ind_vars_chosen_idxs
 
-	paths = db.struct.find_paths_multi_columns(all_col_idxs)
-	df = db.get_biggest_joined_df_option_from_paths(paths)
+	paths = db.find_paths_multi_columns(all_col_idxs)
+	df = dm.get_biggest_joined_df_option_from_paths(paths)
 
 	# Now need to get the column header for each column
 	all_col_headers = []
 	ind_col_headers = []
 	outcome_col_header = None
 	for idx in all_col_idxs:
-		for table, column in db.struct.column_links[idx].items():
+		for table, column in db.column_links[idx].items():
 			df_col_header = f'{column}_[{table}]'
 			if df_col_header in df.columns:
 				all_col_headers.append(df_col_header)
@@ -162,8 +163,8 @@ def update_graph(outcome_var_chosen_idx, ind_vars_chosen_idxs, distribution_type
 	
 	distribution['Breakdown_axis_labels'] = distribution.apply(lambda x: get_breakdown_label(x, ind_col_headers), axis=1)
 
-	ind_display_names = [all_columns[x].display_name for x in ind_vars_chosen_idxs]
-	outcome_display_name = None if outcome_var_chosen_idx is None else all_columns[outcome_var_chosen_idx].display_name
+	ind_display_names = [all_columns[x] for x in ind_vars_chosen_idxs]
+	outcome_display_name = None if outcome_var_chosen_idx is None else all_columns[outcome_var_chosen_idx]
 
 	if outcome_col_header is None:
 		traces = [go.Bar(x=distribution['Breakdown_axis_labels'], y=distribution["Count"])]
