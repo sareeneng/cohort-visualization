@@ -1,12 +1,11 @@
+from gevent import monkey
+monkey.patch_all()
+from gevent.pywsgi import WSGIServer
 from web import flask_app
-from visualization import app as dash_app_visualization
-from werkzeug.wsgi import DispatcherMiddleware
-from werkzeug.serving import run_simple
 import logging
 
-application = DispatcherMiddleware(flask_app, {
-	'/dash_cohort_visualization': dash_app_visualization.server
-})
-
-logging.info('Start local server')
-run_simple('127.0.0.1', 5000, application)
+if __name__ == '__main__':
+	logging.info('Starting externally accessible server')
+	LISTEN = ('0.0.0.0', 5000)
+	http_server = WSGIServer(LISTEN, flask_app)
+	http_server.serve_forever()

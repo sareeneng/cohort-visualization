@@ -343,6 +343,16 @@ class DB():
 	def get_tables_by_col_idx(self, idx):
 		return sorted(list(self.column_links[idx].keys()))
 
+	def get_df_col_headers_by_idx(self, idx, table=None):
+		if table is not None:
+			column = self.column_links[idx][table]
+			return f'{column}_[{table}]'
+		
+		col_headers = []
+		for table, column in self.column_links[idx].items():
+			col_headers.append(f'{column}_[{table}]')
+		
+		return col_headers
 	def get_joining_col_idx(self, table_1, table_2):
 		col_idx_1 = self.get_table_col_idxs(table_1)
 		col_idx_2 = self.get_table_col_idxs(table_2)
@@ -364,6 +374,9 @@ class DB():
 				else:
 					self.column_display_names[idx] = first_table_column_name
 
+	def get_all_column_display_names(self):
+		return self.column_display_names
+	
 	###############
 	# Pathfinding functions, determines whether relationships exist and how to get from one column/table to another
 	###############
@@ -583,9 +596,10 @@ class DataManager():
 			logging.debug(f'Loading file {file_path}')
 			self.table_dfs[table] = pd.read_csv(file_path, delimiter=self.db.delimiter).add_suffix(f'_[{table}]')
 
-	def get_joined_df_options_from_paths(self, paths):
+	def get_joined_df_options_from_paths(self, paths, filter_col_idxs=None):
 		# given a list of paths, get all dfs that could arise
 		df_choices = []
+
 		for path in paths:
 			df = self.table_dfs[path[0]]  # paths returns a list of tables. Initialize with the first table obj in the path
 			previous_table = path[0]
@@ -603,11 +617,19 @@ class DataManager():
 						df = pd.merge(df, self.table_dfs[next_table], left_on=left_column, right_on=right_column)
 						added_tables.append(next_table)
 					previous_table = next_table
+			
+			if filter_col_idxs is not None:
+				col_headers = []
+				for idx in filter_col_idxs:
+					idx_all_headers = self.db.get_df_col_headers_by_idx(idx)
+					common_headers = [x for x in idx_all_headers if x in df.columns]
+					col_headers += common_headers
+				df = df.loc[:, col_headers]			
 			df_choices.append(df)
 		return df_choices
 
-	def get_biggest_joined_df_option_from_paths(self, paths):
-		df_choices = self.get_joined_df_options_from_paths(paths)
+	def get_biggest_joined_df_option_from_paths(self, paths, filter_col_idxs=None):
+		df_choices = self.get_joined_df_options_from_paths(paths, filter_col_idxs)
 
 		idx = 0
 		longest_length = 0
@@ -622,6 +644,44 @@ class DataManager():
 			return None
 		
 		return df_choices[idx]
+
+	def aggregate_df(self, df, groupby_col_idxs, aggregate_col_idx=None, aggregate_fxn='Count'):
+		groupby_col_headers = []
+		aggregate_col_header = None
+		for idx in groupby_col_idxs:
+			col_headers = self.db.get_df_col_headers_by_idx(idx)
+			groupby_col_headers += [x for x in col_headers if x in df.columns]
+		if aggregate_col_idx is not None:
+			col_headers = self.db.get_df_col_headers_by_idx(aggregate_col_idx)
+			aggregate_col_header = next(x for x in col_headers if x in df.columns)
+
+		def get_breakdown_label(row, ind_variables):
+			return_str = ''
+			for x in ind_variables:
+				return_str += str(row[x]) + '_'
+			return_str = return_str[:-1]  # remove trailing underscore
+			return return_str
+
+		if aggregate_col_header is None:
+			# just get the counts then
+			df = df.groupby(groupby_col_headers).size().reset_index(name="Count")
+		else:
+			g = df.groupby(groupby_col_headers)[aggregate_col_header]
+
+			if aggregate_fxn == 'Count':
+				df = g.value_counts().unstack().reset_index()
+			elif aggregate_fxn == 'Percents':
+				df = (g.value_counts(normalize=True)*100).round(1).unstack().reset_index()
+			elif aggregate_fxn == 'Sum':
+				df = g.sum().reset_index()
+			elif aggregate_fxn == 'Mean':
+				df = (g.mean()).round(2).reset_index()
+		
+		df['groupby_labels'] = df.apply(lambda x: get_breakdown_label(x, groupby_col_headers), axis=1)
+		df = df.drop(columns=groupby_col_headers)
+		
+		return df
+
 
 class ColumnFactory():
 	def __init__(self, custom_column_names):

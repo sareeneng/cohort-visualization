@@ -16,6 +16,8 @@
 	<link href="static/vendor/sbadmin2/css/sb-admin-2.min.css" rel="stylesheet">
 	<!--DataTables style-->
 	<link href="static/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+	<!--Bootstrap select-->
+	<link href="static/vendor/bootstrap-select/dist/css/bootstrap-select.min.css" rel="stylesheet">
 
 </head>
 
@@ -88,8 +90,12 @@
 	<script src="static/vendor/datatables/jquery.dataTables.min.js"></script>
 	<script src="static/vendor/datatables/dataTables.bootstrap4.min.js"></script>
 
-	<!--Moment-->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
+	<!--Chart.js-->
+	<script src="static/vendor/chart.js/Chart.bundle.min.js"></script>
+	<script src="static/vendor/chart.js/chartjs-plugin-colorschemes.min.js"></script>
+
+	<!--Bootstrap select-->
+	<script src="static/vendor/bootstrap-select/dist/js/bootstrap-select.min.js"></script>
 
 	<script type="text/javascript">
 		var csrf_token = "{{ csrf_token() }}";
@@ -102,6 +108,8 @@
 			}
 		});
 	</script>
+	{% block app_scripts %}
+	{% endblock %}
 
 </body>
 

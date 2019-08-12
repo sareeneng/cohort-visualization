@@ -1,9 +1,187 @@
 {% extends "base.html" %}
 
 {% block app_content %}
+<div class="card col-4">
+	<div class="card-body">
+		<div class="form-group">
+			<label for="dataset_select" >Choose dataset</label>
+			<select class="form-control" id="dataset_select">
+				<option selected disabled hidden style='display: none' value=''></option>
+				{% for dataset in datasets %}
+				<option>{{ dataset}}</option>
+				{% endfor %}
+			</select>
+		</div>
 
-<div class="row">
-	<iframe src="{{ url_for('/dash/visualization/') }}" style="width: 100vw; height: 100vh; position: relative;" frameborder="0">
-	</iframe>
+		<label for="ind_variables">Independent variables</label>
+		<div class="form-row">
+			<div class="form-group col-9">
+				<select class="selectpicker form-control" multiple id="ind_variables" data-live-search="true" title="Choose up to 3..." data-max-options="3"></select>
+			</div>
+			<div class="form-group col-3">
+				<button type="button" class="btn btn-primary" id="add_ind_variable_btn">Add</button>
+			</div>
+		</div>
+
+		<label for="outcome_variable">Outcome</label>
+		<div class="form-row">
+			<div class="form-group col-9">
+				<select class="selectpicker form-control show-tick" id="outcome_variable" data-live-search="true"></select>
+			</div>
+			<div class="form-group col-3">
+				<button type="button" class="btn btn-primary" id="clear_outcome_btn">Clear</button>
+			</div>
+		</div>
+		<div class="form-row" id="distribution_choice_row">
+			{% for distribution_choice in distribution_choices %}
+				<div class="form-check form-check-inline">
+					<input class="form-check-input" type="radio" name="distribution_choice" id="distribution_choice_{{loop.index}}" value="{{distribution_choice}}" {% if loop.index == 1 %} checked="checked" {% endif %} disabled>
+					<label class="form-check-label" for="distribution_choice_{{loop.index}}">{{ distribution_choice }}</label>
+				</div>
+			{% endfor %}
+		</div>
+	</div>
 </div>
+<canvas id="graph"></canvas>
+{% endblock %}
+
+{% block app_scripts %}
+<script>
+	var myChart
+
+	$('#dataset_select').change(function(){
+		get_dropdown_items(with_result='populate')
+	})
+
+	$('#ind_variables').change(function(){
+		get_dropdown_items(with_result='filter')
+		update_graph()
+	})
+
+	$('#outcome_variable').change(function(){
+		if ($(this).val() == ''){
+			$('#distribution_choice_1').prop('checked', true)
+			$('#distribution_choice_row input:radio').attr('disabled', true)
+		}
+		else {
+			$('#distribution_choice_row input:radio').attr('disabled', false)
+		}
+		get_dropdown_items(with_result='filter')
+		update_graph()
+	})
+
+	$('#distribution_choice_row').change(function(){
+		update_graph()
+	})
+
+	function update_graph(){
+		selected_ind_var_idxs = $('#ind_variables').val()
+		selected_outcome_var_idx = $('#outcome_variable').val()
+		send_data = {
+			'chosen_dataset': $('#dataset_select').val(),
+			'chosen_ind_idxs': selected_ind_var_idxs,
+			'chosen_outcome_idx': selected_outcome_var_idx,
+			'aggregate_fxn': $("input[name='distribution_choice']:checked").val()
+		}
+		$.ajax({
+			type: "GET",
+			url: "{{ url_for('get_graph_data') }}",
+			data: send_data,
+			dataType: "json",
+			contentType: 'application/json;charset=UTF-8',
+			success: function(return_data){
+				console.log(return_data)
+				var graph = $('#graph');
+				if (myChart){myChart.destroy()}
+				myChart = new Chart(graph, {
+					type: 'bar',
+					data: {
+						labels: return_data.labels,
+						datasets: return_data.datasets
+					},
+					options: {
+						plugins: {
+							colorschemes: {
+								scheme: 'tableau.ColorBlind10'
+							}
+						},
+						spanGaps: true,  // handle null data
+						title: {
+							display: true,
+							text: return_data.title
+						},
+						scales: {
+							xAxes: [{
+								scaleLabel: {
+									display: true,
+									labelString: return_data.xaxis_label
+								}
+							}],
+							yAxes: [{
+								scaleLabel: {
+									display: true,
+									labelString: return_data.yaxis_label
+								}
+							}]
+						}
+					}
+				})
+			}
+		})
+	}
+
+	function get_dropdown_items(with_result){
+		selected_ind_var_idxs = $('#ind_variables').val()
+		selected_outcome_var_idx = $('#outcome_variable').val()
+		send_data = {
+			'chosen_dataset': $('#dataset_select').val(),
+			'chosen_ind_idxs': selected_ind_var_idxs,
+			'chosen_outcome_idx': selected_outcome_var_idx
+		}
+		$.ajax({
+			type: "GET",
+			url: "{{ url_for('get_accessible_variables') }}",
+			data: send_data,
+			dataType: "json",
+			contentType: 'application/json;charset=UTF-8',
+			success: function(return_data){
+				if (with_result == 'populate'){
+					populate_dropdowns(return_data.accessible_columns_list)
+				}
+				else if (with_result == 'filter'){
+					filter_dropdowns(return_data.accessible_columns_list)
+				}
+			}
+		})
+	}
+
+	function populate_dropdowns(list_of_idx_name_pairs){
+		$('#ind_variables').html("")
+		$('#outcome_variable').html("<option></option>")
+
+		// Each element is essentially a tuple of (idx, column_name)
+		$.each(list_of_idx_name_pairs, function() {
+			new_option = $("<option />",{
+				val: this[0],
+				text: this[1]
+			})
+			// https://stackoverflow.com/questions/3636401/jquery-append-to-multiple-elements-fails
+			$('#ind_variables').append(new_option.clone())
+			$('#outcome_variable').append(new_option.clone())
+		})
+		$('#ind_variables').selectpicker('refresh');
+		$('#outcome_variable').selectpicker('refresh');
+	}
+
+	function filter_dropdowns(list_of_idx_name_pairs){
+		$.each(list_of_idx_name_pairs, function(){
+			$('#ind_variables').find('[value=' + this[0]+']').prop('disabled', !this[2])
+			$('#outcome_variable').find('[value=' + this[0]+']').prop('disabled', !this[2])
+			
+		})
+		$('#ind_variables').selectpicker('refresh')
+		$('#outcome_variable').selectpicker('refresh')
+	}
+</script>
+
 {% endblock %}
