@@ -48,12 +48,22 @@
 {% block app_scripts %}
 <script>
 	var myChart
+	var ordered_groupby_idxs = []
 
 	$('#dataset_select').change(function(){
+		clear_dropdowns()
 		get_dropdown_items(with_result='populate')
 	})
 
-	$('#ind_variables').change(function(){
+	$('#ind_variables').on('changed.bs.select', function(e, clickedIndex, isSelected, previousValue){
+		clicked_value = $(this).find('option').eq(clickedIndex).val()
+		if(isSelected){
+			ordered_groupby_idxs.push(clicked_value)
+		}
+		else{
+			var index = ordered_groupby_idxs.indexOf(clicked_value);
+			ordered_groupby_idxs.splice(index, 1);
+		}
 		get_dropdown_items(with_result='filter')
 		update_graph()
 	})
@@ -75,11 +85,10 @@
 	})
 
 	function update_graph(){
-		selected_ind_var_idxs = $('#ind_variables').val()
 		selected_outcome_var_idx = $('#outcome_variable').val()
 		send_data = {
 			'chosen_dataset': $('#dataset_select').val(),
-			'chosen_ind_idxs': selected_ind_var_idxs,
+			'chosen_ind_idxs': ordered_groupby_idxs,
 			'chosen_outcome_idx': selected_outcome_var_idx,
 			'aggregate_fxn': $("input[name='distribution_choice']:checked").val()
 		}
@@ -90,7 +99,6 @@
 			dataType: "json",
 			contentType: 'application/json;charset=UTF-8',
 			success: function(return_data){
-				console.log(return_data)
 				var graph = $('#graph');
 				if (myChart){myChart.destroy()}
 				myChart = new Chart(graph, {
@@ -131,11 +139,10 @@
 	}
 
 	function get_dropdown_items(with_result){
-		selected_ind_var_idxs = $('#ind_variables').val()
 		selected_outcome_var_idx = $('#outcome_variable').val()
 		send_data = {
 			'chosen_dataset': $('#dataset_select').val(),
-			'chosen_ind_idxs': selected_ind_var_idxs,
+			'chosen_ind_idxs': ordered_groupby_idxs,
 			'chosen_outcome_idx': selected_outcome_var_idx
 		}
 		$.ajax({
@@ -155,9 +162,15 @@
 		})
 	}
 
-	function populate_dropdowns(list_of_idx_name_pairs){
+	function clear_dropdowns(){
 		$('#ind_variables').html("")
 		$('#outcome_variable').html("<option></option>")
+		ordered_groupby_idxs = []
+		if (myChart){myChart.destroy()}
+	}
+
+	function populate_dropdowns(list_of_idx_name_pairs){
+		clear_dropdowns()
 
 		// Each element is essentially a tuple of (idx, column_name)
 		$.each(list_of_idx_name_pairs, function() {
