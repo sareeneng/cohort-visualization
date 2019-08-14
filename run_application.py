@@ -5,7 +5,7 @@ from web import flask_app
 import logging
 
 if __name__ == '__main__':
-	logging.info('Starting externally accessible server')
-	LISTEN = ('0.0.0.0', 5000)
-	http_server = WSGIServer(LISTEN, flask_app)
-	http_server.serve_forever()
+    logging.info('Starting externally accessible server')
+    LISTEN = ('0.0.0.0', 5000)
+    http_server = WSGIServer(LISTEN, flask_app)
+    http_server.serve_forever()

@@ -3,113 +3,113 @@
 
 
 <head>
-	<title>Cohort Visualization</title>
-	
-	<!-- Required meta tags -->
+    <title>Cohort Visualization</title>
+    
+    <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
 
-	<!--FontAwesome style-->
-	<link href="static/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
-	<!--SBAdmin 2 style-->
-	<link href="static/vendor/sbadmin2/css/sb-admin-2.min.css" rel="stylesheet">
-	<!--DataTables style-->
-	<link href="static/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
-	<!--Bootstrap select-->
-	<link href="static/vendor/bootstrap-select/dist/css/bootstrap-select.min.css" rel="stylesheet">
+    <!--FontAwesome style-->
+    <link href="static/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <!--SBAdmin 2 style-->
+    <link href="static/vendor/sbadmin2/css/sb-admin-2.min.css" rel="stylesheet">
+    <!--DataTables style-->
+    <link href="static/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+    <!--Bootstrap select-->
+    <link href="static/vendor/bootstrap-select/dist/css/bootstrap-select.min.css" rel="stylesheet">
 
 </head>
 
 <body>
-	<!-- Page Wrapper -->
-	<div id="wrapper">
-		
-		<!-- Sidebar -->
-		<ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark">
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+        
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark">
 
-		<!-- Sidebar - Brand -->
-		<a class="sidebar-brand d-flex align-items-center justify-content-center" href="index.html">
-			<div class="sidebar-brand-icon rotate-n-15">
-			<i class="fas fa-laugh-wink"></i>
-			</div>
-			<div class="sidebar-brand-text mx-3">Data Viz</div>
-		</a>
+        <!-- Sidebar - Brand -->
+        <a class="sidebar-brand d-flex align-items-center justify-content-center" href="index.html">
+            <div class="sidebar-brand-icon rotate-n-15">
+            <i class="fas fa-laugh-wink"></i>
+            </div>
+            <div class="sidebar-brand-text mx-3">Data Viz</div>
+        </a>
 
-		<hr class="sidebar-divider">
+        <hr class="sidebar-divider">
 
-		<li class="nav-item active">
-			<a class="nav-link" href="{{ url_for('visualization') }}">
-			<i class="fas fa-fw fa-chart-area"></i>
-			<span>Visualization</span></a>
-		</li>
+        <li class="nav-item active">
+            <a class="nav-link" href="{{ url_for('visualization') }}">
+            <i class="fas fa-fw fa-chart-area"></i>
+            <span>Visualization</span></a>
+        </li>
 
-		<li class="nav-item active">
-			<a class="nav-link" href="{{ url_for('config') }}">
-			<i class="fas fa-fw fa-table"></i>
-			<span>Config</span></a>
-		</li>
+        <li class="nav-item active">
+            <a class="nav-link" href="{{ url_for('config') }}">
+            <i class="fas fa-fw fa-table"></i>
+            <span>Config</span></a>
+        </li>
 
-		</ul>
-		<!-- End of Sidebar -->
+        </ul>
+        <!-- End of Sidebar -->
 
-	
-	<div class="container-fluid">
-		<div id="page-wrapper">
-			<div class="row" style="height: 100;"></div>
-			<h1 class="h3 mb-2 text-gray-800" style="margin-top: 50px;">{{ header }}</h1>
-			<div class="row">
-				{% with messages = get_flashed_messages() %}
-				{% if messages %}
-					{% for message in messages %}
-					<div class="alert alert-info" role="alert">{{ message }}</div>
-					{% endfor %}
-				{% endif %}
-				{% endwith %}
-			</div>
+    
+    <div class="container-fluid">
+        <div id="page-wrapper">
+            <div class="row" style="height: 100;"></div>
+            <h1 class="h3 mb-2 text-gray-800" style="margin-top: 50px;">{{ header }}</h1>
+            <div class="row">
+                {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-info" role="alert">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+                {% endwith %}
+            </div>
 
-			{% block app_content %}
-			{% endblock %}
-			{% block footer %}
-			<br><br><br>
-			{% endblock %}
-		</div>
-	</div>
+            {% block app_content %}
+            {% endblock %}
+            {% block footer %}
+            <br><br><br>
+            {% endblock %}
+        </div>
+    </div>
 
-	<!--Bootstrap core JS-->
-	<script src="static/vendor/jquery/jquery.min.js"></script>
-	<script src="static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <!--Bootstrap core JS-->
+    <script src="static/vendor/jquery/jquery.min.js"></script>
+    <script src="static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 
-	<!--Core JS-->
-	<script src="static/vendor/jquery-easing/jquery.easing.min.js"></script>
+    <!--Core JS-->
+    <script src="static/vendor/jquery-easing/jquery.easing.min.js"></script>
 
-	<!--SBAdmin 2 JS-->
-	<script src="static/vendor/sbadmin2/js/sb-admin-2.min.js"></script>
+    <!--SBAdmin 2 JS-->
+    <script src="static/vendor/sbadmin2/js/sb-admin-2.min.js"></script>
 
-	<!--DataTables-->
-	<script src="static/vendor/datatables/jquery.dataTables.min.js"></script>
-	<script src="static/vendor/datatables/dataTables.bootstrap4.min.js"></script>
+    <!--DataTables-->
+    <script src="static/vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="static/vendor/datatables/dataTables.bootstrap4.min.js"></script>
 
-	<!--Chart.js-->
-	<script src="static/vendor/chart.js/Chart.bundle.min.js"></script>
-	<script src="static/vendor/chart.js/chartjs-plugin-colorschemes.min.js"></script>
+    <!--Chart.js-->
+    <script src="static/vendor/chart.js/Chart.bundle.min.js"></script>
+    <script src="static/vendor/chart.js/chartjs-plugin-colorschemes.min.js"></script>
 
-	<!--Bootstrap select-->
-	<script src="static/vendor/bootstrap-select/dist/js/bootstrap-select.min.js"></script>
+    <!--Bootstrap select-->
+    <script src="static/vendor/bootstrap-select/dist/js/bootstrap-select.min.js"></script>
 
-	<script type="text/javascript">
-		var csrf_token = "{{ csrf_token() }}";
-		
-		$.ajaxSetup({
-			beforeSend: function(xhr, settings) {
-				if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
-					xhr.setRequestHeader("X-CSRFToken", csrf_token);
-				}
-			}
-		});
-	</script>
-	{% block app_scripts %}
-	{% endblock %}
+    <script type="text/javascript">
+        var csrf_token = "{{ csrf_token() }}";
+        
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", csrf_token);
+                }
+            }
+        });
+    </script>
+    {% block app_scripts %}
+    {% endblock %}
 
 </body>
 

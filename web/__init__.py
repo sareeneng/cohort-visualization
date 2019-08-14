@@ -8,17 +8,17 @@ from flask.json import JSONEncoder
 
 
 class Config(object):
-	SECRET_KEY = os.environ.get('SECRET_KEY') or os.urandom(24)
+    SECRET_KEY = os.environ.get('SECRET_KEY') or os.urandom(24)
 
 class CustomJSONEncoder(JSONEncoder):
-	def default(self, o):  
-		if isinstance(o, np.int64):
-			return int(o)
-		if isinstance(o, np.float64):
-			return float(o)
+    def default(self, o):  
+        if isinstance(o, np.int64):
+            return int(o)
+        if isinstance(o, np.float64):
+            return float(o)
 
-		# Any other serializer if needed
-		return super(CustomJSONEncoder, self).default(o)
+        # Any other serializer if needed
+        return super(CustomJSONEncoder, self).default(o)
 
 logger = logging.getLogger()
 formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s', '%Y-%m-%d %H:%M:%S')
