@@ -68,7 +68,6 @@ def get_graph_data():
         'title': title,
         'xaxis_label': groupby_axis_label,
         'yaxis_label': aggregate_fxn
-
     }
     logging.debug(return_data)
     
@@ -106,7 +105,49 @@ def get_accessible_variables():
 
     return jsonify(return_data)
 
-@flask_app.route('/config', methods=['GET', 'POST'])
+def create_temp_structure(dataset, config_dict):
+    db = DB(os.path.join('datasets', dataset))
+    db.finalize(temporary=True)
+    # Code to run fake config
+    return db
+
+@flask_app.route('/submit_config_dict', methods=['POST'])
+def submit_config_dict():
+    data = request.get_json()
+    logging.debug(data)
+    dataset = data.get('chosen_dataset')
+    config_dict = data.get('config_dict')
+    
+    db = DB(os.path.join('datasets', dataset), config_dict=config_dict)
+    db.finalize()
+
+    return_data = {
+        'column_links': db.column_links,
+        'custom_column_names': db.custom_column_names,
+        'column_display_names': db.column_display_names,
+        'exclude_columns': db.exclude_columns
+    }
+    logging.debug(return_data)
+    return jsonify(return_data)
+
+@flask_app.route('/get_metadata_config')
+def get_metadata_config():
+    chosen_dataset = request.args.get('chosen_dataset')
+    db = DB(os.path.join('datasets', chosen_dataset))
+    config_dict = db.get_config_dict()
+    
+    return_data = {
+        'common_column_names': db.common_column_names,
+        'table_columns': db.get_all_table_columns(),
+        'config_dict': config_dict,
+        'column_metadata': db.column_metadata
+    }
+
+    logging.debug(return_data)
+
+    return jsonify(return_data)
+
+@flask_app.route('/config')
 def config():
     datasets = sorted([f.name for f in os.scandir('datasets') if f.is_dir()], key=lambda x: x.upper())
     return render_template('config.html', header='Configuration', datasets=datasets)

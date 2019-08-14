@@ -1,42 +1,80 @@
 {
-    "directory_path": "datasets/sample2",
+    "directory_path": "datasets\\sample2",
     "data_file_extension": ".csv",
     "delimiter": ",",
     "table_names": [
-        "D",
-        "C",
-        "E",
         "A",
         "B",
+        "C",
+        "D",
+        "E",
         "F"
     ],
     "table_metadata": {
-        "D": {
-            "file": "datasets/sample2/D.csv"
-        },
-        "C": {
-            "file": "datasets/sample2/C.csv"
-        },
-        "E": {
-            "file": "datasets/sample2/E.csv"
-        },
         "A": {
-            "file": "datasets/sample2/A.csv"
+            "file": "datasets\\sample2\\A.csv",
+            "column_order": [
+                "col1",
+                "col2",
+                "col3"
+            ]
         },
         "B": {
-            "file": "datasets/sample2/B.csv"
+            "file": "datasets\\sample2\\B.csv",
+            "column_order": [
+                "col3",
+                "col4"
+            ]
+        },
+        "C": {
+            "file": "datasets\\sample2\\C.csv",
+            "column_order": [
+                "col1",
+                "col5",
+                "col6"
+            ]
+        },
+        "D": {
+            "file": "datasets\\sample2\\D.csv",
+            "column_order": [
+                "col2",
+                "col6"
+            ]
+        },
+        "E": {
+            "file": "datasets\\sample2\\E.csv",
+            "column_order": [
+                "col4",
+                "col7"
+            ]
         },
         "F": {
-            "file": "datasets/sample2/F.csv"
+            "file": "datasets\\sample2\\F.csv",
+            "column_order": [
+                "col5",
+                "col7",
+                "col8"
+            ]
         }
     },
     "column_metadata": {
-        "D": {
+        "A": {
+            "col1": {
+                "type": "MANY"
+            },
             "col2": {
+                "type": "MANY"
+            },
+            "col3": {
+                "type": "ONE"
+            }
+        },
+        "B": {
+            "col3": {
                 "type": "ONE"
             },
-            "col6": {
-                "type": "ONE"
+            "col4": {
+                "type": "MANY"
             }
         },
         "C": {
@@ -50,30 +88,19 @@
                 "type": "ONE"
             }
         },
+        "D": {
+            "col2": {
+                "type": "ONE"
+            },
+            "col6": {
+                "type": "ONE"
+            }
+        },
         "E": {
             "col4": {
                 "type": "ONE"
             },
             "col7": {
-                "type": "MANY"
-            }
-        },
-        "A": {
-            "col1": {
-                "type": "MANY"
-            },
-            "col2": {
-                "type": "MANY"
-            },
-            "col3": {
-                "type": "ONE"
-            }
-        },
-        "B": {
-            "col3": {
-                "type": "ONE"
-            },
-            "col4": {
                 "type": "MANY"
             }
         },
@@ -90,122 +117,122 @@
         }
     },
     "common_column_names": [
-        "col2",
-        "col6",
         "col1",
-        "col5",
+        "col2",
+        "col3",
         "col4",
-        "col7",
-        "col3"
+        "col5",
+        "col6",
+        "col7"
     ],
     "global_fks": [
-        "col2",
-        "col6",
         "col1",
-        "col5",
+        "col2",
+        "col3",
         "col4",
-        "col7",
-        "col3"
+        "col5",
+        "col6",
+        "col7"
     ],
     "custom_fks": [],
-    "exclude_columns": [],
+    "exclude_columns": {},
     "custom_column_names": {},
     "column_links": {
         "0": {
-            "D": "col2",
-            "A": "col2"
+            "A": "col1",
+            "C": "col1"
         },
         "1": {
-            "D": "col6",
-            "C": "col6"
+            "A": "col2",
+            "D": "col2"
         },
         "2": {
-            "C": "col1",
-            "A": "col1"
+            "A": "col3",
+            "B": "col3"
         },
         "3": {
+            "B": "col4",
+            "E": "col4"
+        },
+        "4": {
             "C": "col5",
             "F": "col5"
         },
-        "4": {
-            "E": "col4",
-            "B": "col4"
-        },
         "5": {
-            "E": "col7",
-            "F": "col7"
+            "C": "col6",
+            "D": "col6"
         },
         "6": {
-            "A": "col3",
-            "B": "col3"
+            "E": "col7",
+            "F": "col7"
         },
         "7": {
             "F": "col8"
         }
     },
     "column_display_names": {
-        "0": "col2",
-        "1": "col6",
-        "2": "col1",
-        "3": "col5",
-        "4": "col4",
-        "5": "col7",
-        "6": "col3",
+        "0": "col1",
+        "1": "col2",
+        "2": "col3",
+        "3": "col4",
+        "4": "col5",
+        "5": "col6",
+        "6": "col7",
         "7": "col8"
     },
     "table_relationships": {
-        "D": {
-            "parents": {
-                "A": 0
-            },
-            "children": {},
-            "siblings": {
-                "C": 1
-            }
-        },
-        "C": {
-            "parents": {
-                "A": 2
-            },
-            "children": {
-                "F": 3
-            },
-            "siblings": {
-                "D": 1
-            }
-        },
-        "E": {
-            "parents": {
-                "B": 4
-            },
-            "children": {
-                "F": 5
-            },
-            "siblings": {}
-        },
         "A": {
             "parents": {},
             "children": {
-                "D": 0,
-                "C": 2
+                "C": 0,
+                "D": 1
             },
             "siblings": {
-                "B": 6
+                "B": 2
             }
         },
         "B": {
             "parents": {},
             "children": {
-                "E": 4
+                "E": 3
             },
             "siblings": {
-                "A": 6
+                "A": 2
             }
+        },
+        "C": {
+            "parents": {
+                "A": 0
+            },
+            "children": {
+                "F": 4
+            },
+            "siblings": {
+                "D": 5
+            }
+        },
+        "D": {
+            "parents": {
+                "A": 1
+            },
+            "children": {},
+            "siblings": {
+                "C": 5
+            }
+        },
+        "E": {
+            "parents": {
+                "B": 3
+            },
+            "children": {
+                "F": 6
+            },
+            "siblings": {}
         },
         "F": {
             "parents": {
-                "C": 3,
-                "E": 5
+                "C": 4,
+                "E": 6
             },
             "children": {},
             "siblings": {}

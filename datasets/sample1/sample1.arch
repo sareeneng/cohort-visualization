@@ -1,72 +1,97 @@
 {
-    "directory_path": "datasets/sample1",
+    "directory_path": "datasets\\sample1",
     "data_file_extension": ".csv",
     "delimiter": ",",
     "table_names": [
-        "payments",
-        "offices",
-        "products",
-        "employees",
-        "orderdetails",
         "customers",
+        "employees",
+        "offices",
+        "orderdetails",
         "orders",
-        "productlines"
+        "payments",
+        "productlines",
+        "products"
     ],
     "table_metadata": {
-        "payments": {
-            "file": "datasets/sample1/payments.csv"
-        },
-        "offices": {
-            "file": "datasets/sample1/offices.csv"
-        },
-        "products": {
-            "file": "datasets/sample1/products.csv"
+        "customers": {
+            "file": "datasets\\sample1\\customers.csv",
+            "column_order": [
+                "customerNumber",
+                "LastName",
+                "FirstName",
+                "salesRepEmployeeNum"
+            ]
         },
         "employees": {
-            "file": "datasets/sample1/employees.csv"
+            "file": "datasets\\sample1\\employees.csv",
+            "column_order": [
+                "employeeNumber",
+                "LastName",
+                "FirstName",
+                "officeCode"
+            ]
+        },
+        "offices": {
+            "file": "datasets\\sample1\\offices.csv",
+            "column_order": [
+                "officeCode",
+                "State"
+            ]
         },
         "orderdetails": {
-            "file": "datasets/sample1/orderdetails.csv"
-        },
-        "customers": {
-            "file": "datasets/sample1/customers.csv"
+            "file": "datasets\\sample1\\orderdetails.csv",
+            "column_order": [
+                "orderNumber",
+                "productCode",
+                "quantity"
+            ]
         },
         "orders": {
-            "file": "datasets/sample1/orders.csv"
+            "file": "datasets\\sample1\\orders.csv",
+            "column_order": [
+                "orderNumber",
+                "orderDate",
+                "Status",
+                "customerNum"
+            ]
+        },
+        "payments": {
+            "file": "datasets\\sample1\\payments.csv",
+            "column_order": [
+                "customerNumber",
+                "checkNumber",
+                "amount"
+            ]
         },
         "productlines": {
-            "file": "datasets/sample1/productlines.csv"
+            "file": "datasets\\sample1\\productlines.csv",
+            "column_order": [
+                "ProductLine",
+                "TextDesc"
+            ]
+        },
+        "products": {
+            "file": "datasets\\sample1\\products.csv",
+            "column_order": [
+                "productCode",
+                "productLine",
+                "productDescription"
+            ]
         }
     },
     "column_metadata": {
-        "payments": {
+        "customers": {
             "customerNumber": {
+                "type": "ONE"
+            },
+            "LastName": {
+                "type": "ONE"
+            },
+            "FirstName": {
+                "type": "ONE"
+            },
+            "salesRepEmployeeNum": {
                 "type": "MANY"
-            },
-            "checkNumber": {
-                "type": "MANY"
-            },
-            "amount": {
-                "type": "ONE"
-            }
-        },
-        "offices": {
-            "officeCode": {
-                "type": "ONE"
-            },
-            "State": {
-                "type": "ONE"
-            }
-        },
-        "products": {
-            "productCode": {
-                "type": "ONE"
-            },
-            "productLine": {
-                "type": "MANY"
-            },
-            "productDescription": {
-                "type": "ONE"
             }
         },
         "employees": {
@@ -83,6 +108,14 @@
                 "type": "MANY"
             }
         },
+        "offices": {
+            "officeCode": {
+                "type": "ONE"
+            },
+            "State": {
+                "type": "ONE"
+            }
+        },
         "orderdetails": {
             "orderNumber": {
                 "type": "ONE"
@@ -91,20 +124,6 @@
                 "type": "MANY"
             },
             "quantity": {
-                "type": "MANY"
-            }
-        },
-        "customers": {
-            "customerNumber": {
-                "type": "ONE"
-            },
-            "LastName": {
-                "type": "ONE"
-            },
-            "FirstName": {
-                "type": "ONE"
-            },
-            "salesRepEmployeeNum": {
                 "type": "MANY"
             }
         },
@@ -122,6 +141,17 @@
                 "type": "MANY"
             }
         },
+        "payments": {
+            "customerNumber": {
+                "type": "MANY"
+            },
+            "checkNumber": {
+                "type": "MANY"
+            },
+            "amount": {
+                "type": "ONE"
+            }
+        },
         "productlines": {
             "ProductLine": {
                 "type": "ONE"
@@ -129,156 +159,156 @@
             "TextDesc": {
                 "type": "ONE"
             }
+        },
+        "products": {
+            "productCode": {
+                "type": "ONE"
+            },
+            "productLine": {
+                "type": "MANY"
+            },
+            "productDescription": {
+                "type": "ONE"
+            }
         }
     },
     "common_column_names": [
         "customerNumber",
-        "officeCode",
-        "productCode",
         "LastName",
         "FirstName",
-        "orderNumber"
+        "officeCode",
+        "orderNumber",
+        "productCode"
     ],
     "global_fks": [
         "customerNumber",
         "officeCode",
-        "productCode",
-        "orderNumber"
+        "orderNumber",
+        "productCode"
     ],
     "custom_fks": [
         {
-            "table_1": "employees",
-            "table_2": "customers",
-            "column_1": "employeeNumber",
-            "column_2": "salesRepEmployeeNum"
+            "table_1": "customers",
+            "column_1": "customerNumber",
+            "table_2": "orders",
+            "column_2": "customerNum"
         },
         {
-            "table_1": "orders",
-            "table_2": "customers",
-            "column_1": "customerNum",
-            "column_2": "customerNumber"
+            "table_1": "customers",
+            "column_1": "salesRepEmployeeNum",
+            "table_2": "employees",
+            "column_2": "employeeNumber"
         },
         {
-            "table_1": "products",
-            "table_2": "productlines",
-            "column_1": "productLine",
-            "column_2": "ProductLine"
+            "table_1": "productlines",
+            "column_1": "ProductLine",
+            "table_2": "products",
+            "column_2": "productLine"
         }
     ],
-    "exclude_columns": [],
+    "exclude_columns": {},
     "custom_column_names": {
         "customers": {
-            "customerNumber": "Customer Number",
-            "LastName": "Last Name"
+            "customerNumber": "CN#"
         },
         "orders": {
-            "customerNum": "Customer Num"
+            "customerNum": "CN#"
+        },
+        "payments": {
+            "customerNumber": "CN#"
         }
     },
     "column_links": {
         "0": {
-            "payments": "customerNumber",
             "customers": "customerNumber",
+            "payments": "customerNumber",
             "orders": "customerNum"
         },
         "1": {
-            "offices": "officeCode",
-            "employees": "officeCode"
+            "employees": "officeCode",
+            "offices": "officeCode"
         },
         "2": {
-            "products": "productCode",
-            "orderdetails": "productCode"
-        },
-        "3": {
             "orderdetails": "orderNumber",
             "orders": "orderNumber"
         },
+        "3": {
+            "orderdetails": "productCode",
+            "products": "productCode"
+        },
         "4": {
-            "employees": "employeeNumber",
-            "customers": "salesRepEmployeeNum"
+            "customers": "salesRepEmployeeNum",
+            "employees": "employeeNumber"
         },
         "5": {
-            "products": "productLine",
-            "productlines": "ProductLine"
+            "productlines": "ProductLine",
+            "products": "productLine"
         },
         "6": {
-            "payments": "checkNumber"
-        },
-        "7": {
-            "payments": "amount"
-        },
-        "8": {
-            "offices": "State"
-        },
-        "9": {
-            "products": "productDescription"
-        },
-        "10": {
-            "employees": "LastName"
-        },
-        "11": {
-            "employees": "FirstName"
-        },
-        "12": {
-            "orderdetails": "quantity"
-        },
-        "13": {
             "customers": "LastName"
         },
-        "14": {
+        "7": {
             "customers": "FirstName"
         },
-        "15": {
+        "8": {
+            "employees": "LastName"
+        },
+        "9": {
+            "employees": "FirstName"
+        },
+        "10": {
+            "offices": "State"
+        },
+        "11": {
+            "orderdetails": "quantity"
+        },
+        "12": {
             "orders": "orderDate"
         },
-        "16": {
+        "13": {
             "orders": "Status"
         },
-        "17": {
+        "14": {
+            "payments": "checkNumber"
+        },
+        "15": {
+            "payments": "amount"
+        },
+        "16": {
             "productlines": "TextDesc"
+        },
+        "17": {
+            "products": "productDescription"
         }
     },
     "column_display_names": {
-        "0": "customerNumber",
+        "0": "CN#",
         "1": "officeCode",
-        "2": "productCode",
-        "3": "orderNumber",
+        "2": "orderNumber",
+        "3": "productCode",
         "4": "salesRepEmployeeNum",
         "5": "ProductLine",
-        "6": "checkNumber",
-        "7": "amount",
-        "8": "State",
-        "9": "productDescription",
-        "10": "LastName_[employees]",
-        "11": "FirstName_[employees]",
-        "12": "quantity",
-        "13": "LastName_[customers]",
-        "14": "FirstName_[customers]",
-        "15": "orderDate",
-        "16": "Status",
-        "17": "TextDesc"
+        "6": "LastName_[customers]",
+        "7": "FirstName_[customers]",
+        "8": "LastName_[employees]",
+        "9": "FirstName_[employees]",
+        "10": "State",
+        "11": "quantity",
+        "12": "orderDate",
+        "13": "Status",
+        "14": "checkNumber",
+        "15": "amount",
+        "16": "TextDesc",
+        "17": "productDescription"
     },
     "table_relationships": {
-        "payments": {
-            "parents": {},
-            "children": {
-                "customers": 0
-            },
-            "siblings": {}
-        },
-        "offices": {
+        "customers": {
             "parents": {
-                "employees": 1
-            },
-            "children": {},
-            "siblings": {}
-        },
-        "products": {
-            "parents": {
-                "orderdetails": 2
+                "payments": 0,
+                "orders": 0
             },
             "children": {
-                "productlines": 5
+                "employees": 4
             },
             "siblings": {}
         },
@@ -291,24 +321,21 @@
             },
             "siblings": {}
         },
+        "offices": {
+            "parents": {
+                "employees": 1
+            },
+            "children": {},
+            "siblings": {}
+        },
         "orderdetails": {
             "parents": {},
             "children": {
-                "products": 2
+                "products": 3
             },
             "siblings": {
-                "orders": 3
+                "orders": 2
             }
-        },
-        "customers": {
-            "parents": {
-                "payments": 0,
-                "orders": 0
-            },
-            "children": {
-                "employees": 4
-            },
-            "siblings": {}
         },
         "orders": {
             "parents": {},
@@ -316,14 +343,30 @@
                 "customers": 0
             },
             "siblings": {
-                "orderdetails": 3
+                "orderdetails": 2
             }
+        },
+        "payments": {
+            "parents": {},
+            "children": {
+                "customers": 0
+            },
+            "siblings": {}
         },
         "productlines": {
             "parents": {
                 "products": 5
             },
             "children": {},
+            "siblings": {}
+        },
+        "products": {
+            "parents": {
+                "orderdetails": 3
+            },
+            "children": {
+                "productlines": 5
+            },
             "siblings": {}
         }
     }

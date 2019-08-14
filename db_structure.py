@@ -18,7 +18,7 @@ There is no support for many:many relationships.
 '''
 
 class DB():
-    def __init__(self, directory_path, arch_file=None, data_file_extension='.csv', delimiter=','):
+    def __init__(self, directory_path, arch_file=None, config_dict=None, data_file_extension='.csv', delimiter=','):
         logging.info(f'Loading {directory_path}')
         self.finalized = False
         self.directory_path = directory_path
@@ -35,7 +35,13 @@ class DB():
 
         if arch_file is not None:
             arch_path = os.path.join(directory_path, arch_file)
-            self.load_arch_file(arch_path)
+            if config_dict is None:
+                self.load_arch_file(arch_path, metadata_only=False)
+            else:
+                self.load_arch_file(arch_path, metadata_only=True)
+                self.load_config_dict(config_dict)
+                self.init_blank_struct()
+                self.finalize(temporary=True)
         else:
             logging.info(f'No .arch file found in {directory_path}')
             
@@ -48,33 +54,52 @@ class DB():
             
             self.collect_metadata()
 
-            self.global_fks = []
-            self.custom_fks = []
-            self.exclude_columns = []
-            self.custom_column_names = defaultdict(defaultdict)
-            self.column_links = defaultdict(dict)
-            self.column_display_names = {}
-            self.table_relationships = defaultdict(dict)
+            self.init_blank_struct()
+            if config_dict is not None:
+                self.load_config_dict(config_dict)
+                self.finalize(temporary=True)
+            else:
+                self.init_blank_config()
+            
 
-    def load_arch_file(self, arch_path):
+    def load_arch_file(self, arch_path, metadata_only=False):
         logging.info(f'Loading arch file: {arch_path}')
         with open(arch_path, 'r') as f:
             arch_data = json.load(f)
-            self.directory_path = arch_data['directory_path']
+            # metadata - must be present in file
             self.data_file_extension = arch_data['data_file_extension']
             self.delimiter = arch_data['delimiter']
             self.table_names = arch_data['table_names']
             self.table_metadata = arch_data['table_metadata']
             self.column_metadata = arch_data['column_metadata']
             self.common_column_names = arch_data['common_column_names']
-            self.global_fks = arch_data['global_fks']
-            self.custom_fks = arch_data['custom_fks']
-            self.exclude_columns = arch_data['exclude_columns']
-            self.custom_column_names = arch_data['custom_column_names']
-            self.column_links = arch_data['column_links']
-            self.column_display_names = arch_data['column_display_names']
-            self.table_relationships = arch_data['table_relationships']
-        self.finalized = True
+
+            if metadata_only:
+                logging.info('Only loading metadata because a config_dict was provided. To save this config_dict, you must run finalize() on this object')
+            else:
+                # config - may not be present
+                self.global_fks = arch_data.get('global_fks', [])
+                self.custom_fks = arch_data.get('custom_fks', [])
+                self.exclude_columns = arch_data.get('exclude_columns', [])
+                self.custom_column_names = arch_data.get('custom_column_names', defaultdict(defaultdict))
+
+                # struct - may not be present
+                self.column_links = arch_data.get('column_links', defaultdict(dict))
+                self.column_display_names = arch_data.get('column_display_names', {})
+                self.table_relationships = arch_data.get('table_relationships', defaultdict(dict))
+            
+            self.finalized = ('global_fks' in arch_data) and (not metadata_only)
+
+    def init_blank_config(self):
+        self.global_fks = []
+        self.custom_fks = []
+        self.exclude_columns = []
+        self.custom_column_names = defaultdict(defaultdict)
+   
+    def init_blank_struct(self):
+        self.column_links = defaultdict(dict)
+        self.column_display_names = {}
+        self.table_relationships = defaultdict(dict)
 
     def dump_data(self):
         arch_path = f'{os.path.join(self.directory_path, self.dataset_name)}.arch'
@@ -87,16 +112,26 @@ class DB():
             'table_metadata': self.table_metadata,
             'column_metadata': self.column_metadata,
             'common_column_names': self.common_column_names,
-            'global_fks': self.global_fks,
-            'custom_fks': self.custom_fks,
-            'exclude_columns': self.exclude_columns,
-            'custom_column_names': self.custom_column_names,
-            'column_links': self.column_links,
-            'column_display_names': self.column_display_names,
-            'table_relationships': self.table_relationships
         }
+        
+        if not self.finalized:
+            logging.info(f'Only metadata is currently set')
+        else:
+            logging.info(f'Full configuration is finalized, will dump column linking data')
+            arch_data['global_fks'] = self.global_fks
+            arch_data['custom_fks'] = self.custom_fks
+            arch_data['exclude_columns'] = self.exclude_columns
+            arch_data['custom_column_names'] = self.custom_column_names
+            arch_data['column_links'] = self.column_links
+            arch_data['column_display_names'] = self.column_display_names
+            arch_data['table_relationships'] = self.table_relationships
+        
         with open(arch_path, 'w') as f:
             json.dump(arch_data, f, indent=4)
+    
+    ###############
+    # Metadata type fxns - these are completely dependent on the files
+    ###############
     
     def collect_metadata(self, data_file_extension='.csv', delimiter=','):
         # Could not find a .arch file to load data from, so we need to find out information about the directory provided
@@ -113,6 +148,7 @@ class DB():
             self.table_metadata[table_name]['file'] = os.path.join(self.directory_path, file_name)
 
             df = pd.read_csv(os.path.join(self.directory_path, file_name), delimiter=self.delimiter)
+            self.table_metadata[table_name]['column_order'] = list(df.columns)
             self.column_metadata[table_name] = defaultdict(dict)
             for column in df.columns:
                 if len(df[column].dropna()) > len(df[column].dropna().unique()):
@@ -122,9 +158,7 @@ class DB():
                 self.column_metadata[table_name][column]['type'] = table_type
         self.common_column_names = self.get_common_column_names()
 
-    ###############
-    # Metadata type fxns - these are completely dependent on the files
-    ###############
+        self.dump_data()
     
     def get_common_column_names(self):
         column_counts = defaultdict(int)
@@ -139,8 +173,8 @@ class DB():
 
     def get_all_table_columns(self):
         return_dict = {}
-        for table in  self.table_names:
-            return_dict[table] = self.get_table_columns(table)
+        for table in self.table_names:
+            return_dict[table] = self.table_metadata[table]['column_order']
         return return_dict
 
     def table_has_column(self, table, column):
@@ -153,6 +187,23 @@ class DB():
     # Config type fxns - user provides information re: how to link the files together. This does not actually create the connections yet
     ###############
     
+    def load_config_dict(self, config_dict):
+        logging.info('Loading config_dict')
+        logging.debug(config_dict)
+        self.global_fks = config_dict['global_fks']
+        self.custom_fks = config_dict['custom_fks']
+        self.exclude_columns = config_dict.get('exclude_columns', [])
+        self.custom_column_names = config_dict.get('custom_column_names', [])
+
+    def get_config_dict(self):
+        return_dict = {
+            'global_fks': self.global_fks,
+            'custom_fks': self.custom_fks,
+            'exclude_columns': self.exclude_columns,
+            'custom_column_names': self.custom_column_names
+        }
+        return return_dict
+
     @property
     def config_changes_allowed(self):
         # Probably could be put in a decorator but need to figure out how to do that for class methods
@@ -161,13 +212,16 @@ class DB():
             return False
         return True
 
-    def finalize(self):
+    def finalize(self, temporary=False):
         if self.finalized:
             logging.error('DB has already been marked as finalized')
         else:
+            if temporary:
+                self.init_blank_struct()
             self.generate_links()
-            self.dump_data()
-            self.finalized = True
+            if not temporary:
+                self.finalized = True
+                self.dump_data()
 
     def unfinalize(self):
         self.finalized = False
@@ -185,9 +239,9 @@ class DB():
             else:
                 self.global_fks.append(global_fk)
         
-    def add_exclude_column(self, exclude_column):
+    def add_exclude_column(self, exclude_column_idx):
         if self.config_changes_allowed:
-            self.exclude_columns.append(exclude_column)
+            self.exclude_columns.append(exclude_column_idx)
 
     def add_custom_column_name(self, table, column, new_column_name):
         if self.config_changes_allowed:
@@ -285,7 +339,7 @@ class DB():
             col_obj = self.column_factory.create_column(shared=True, repetitive=repetitive)
             idx = col_obj.id
         else:
-            logging.info(f'Linking to column {idx}')
+            logging.debug(f'Linking to column {idx}')
         
         self.column_links[idx][table_1] = column_1
         self.column_links[idx][table_2] = column_2
@@ -304,7 +358,7 @@ class DB():
             # four options: many:many, many:one, one:many, or one:one.
 
             if self.table_relationship_exists(table_1, table_2):
-                logging.info(f'Relation already exists between {table_1} and {table_2}. Cannot assign two foreign keys between two tables.')  # serves as a safety check
+                logging.info(f'Relationship already exists between {table_1} and {table_2}. Cannot assign two foreign keys between two tables.')  # serves as a safety check. Will prioritize global_fks then custom_fks by nature of the order in which they are called in generate_links()
             else:
                 if column_1_type == TABLE_TYPE_MANY:
                     if column_2_type == TABLE_TYPE_MANY:
@@ -359,11 +413,16 @@ class DB():
         return set(col_idx_1).intersection(col_idx_2).pop()
 
     def assign_display_names(self):
+        custom_idxs = []
+        for table, column_rename_dict in self.custom_column_names.items():
+            for column, custom_name in column_rename_dict.items():
+                idx = self.get_col_idx(table, column)
+                if idx is not None:
+                    self.column_display_names[idx] = custom_name
+                    custom_idxs.append(idx)
+
         for idx, col_obj in self.column_factory.columns.items():
-            custom_name = self.custom_column_names.get(idx, None)
-            if custom_name is not None:
-                self.column_display_names[idx] = custom_name
-            else:			
+            if idx not in custom_idxs:
                 column_tables = self.get_tables_by_col_idx(idx)
                 first_table = column_tables[0]
                 first_table_column_name = self.column_links[idx][first_table]
@@ -392,6 +451,9 @@ class DB():
         # Return parents, children, and siblings of given table
         tr = self.table_relationships[table]
         return sorted(list(set(list(tr['parents'].keys()) + list(tr['children'].keys()) + list(tr['siblings'].keys()))))
+
+    def find_table_all_unrelated_tables(self, table):
+        return sorted(x for x in self.table_names if x not in self.find_table_all_related_tables(table) and x != table)
 
     def find_table_all_connectable_tables(self, table):
         # Return children and siblings, e.g. tables that I can go to next from this table
