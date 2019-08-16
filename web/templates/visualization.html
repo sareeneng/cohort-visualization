@@ -13,7 +13,7 @@
             </select>
         </div>
 
-        <label for="ind_variables">Independent variables</label>
+        <label for="ind_variables">Cohort variables</label>
         <div class="form-row">
             <div class="form-group col-9">
                 <select class="selectpicker form-control" multiple id="ind_variables" data-live-search="true" title="Choose up to 3..." data-max-options="3"></select>
@@ -49,10 +49,15 @@
 <script>
     var myChart
     var ordered_groupby_idxs = []
+    var table_columns
+    var column_display_names
+    var column_links
+    var chosen_dataset
+    var exclude_columns
 
     $('#dataset_select').change(function(){
-        clear_dropdowns()
-        get_dropdown_items(with_result='populate')
+        chosen_dataset = $(this).val()
+        get_table_column_data()
     })
 
     $('#ind_variables').on('changed.bs.select', function(e, clickedIndex, isSelected, previousValue){
@@ -84,10 +89,30 @@
         update_graph()
     })
 
+    function get_table_column_data(){
+        send_data = {
+            'chosen_dataset': chosen_dataset
+        }
+        $.ajax({
+            type: "GET",
+            url: "{{ url_for('get_table_columns') }}",
+            data: send_data,
+            dataType: "json",
+            contentType: 'application/json;charset=UTF-8',
+            success: function(return_data){
+                table_columns = return_data.table_columns
+                column_display_names = return_data.column_display_names
+                column_links = return_data.column_links
+                exclude_columns = return_data.exclude_columns
+                populate_dropdowns()
+            }
+        })
+    }
+
     function update_graph(){
         selected_outcome_var_idx = $('#outcome_variable').val()
         send_data = {
-            'chosen_dataset': $('#dataset_select').val(),
+            'chosen_dataset': chosen_dataset,
             'chosen_ind_idxs': ordered_groupby_idxs,
             'chosen_outcome_idx': selected_outcome_var_idx,
             'aggregate_fxn': $("input[name='distribution_choice']:checked").val()
@@ -141,7 +166,7 @@
     function get_dropdown_items(with_result){
         selected_outcome_var_idx = $('#outcome_variable').val()
         send_data = {
-            'chosen_dataset': $('#dataset_select').val(),
+            'chosen_dataset': chosen_dataset,
             'chosen_ind_idxs': ordered_groupby_idxs,
             'chosen_outcome_idx': selected_outcome_var_idx
         }
@@ -164,23 +189,27 @@
 
     function clear_dropdowns(){
         $('#ind_variables').html("")
-        $('#outcome_variable').html("<option></option>")
+        $('#outcome_variable').html("<option selected disabled hidden style='display: none' value=''></option>")
         ordered_groupby_idxs = []
         if (myChart){myChart.destroy()}
     }
 
-    function populate_dropdowns(list_of_idx_name_pairs){
+    function populate_dropdowns(){
         clear_dropdowns()
 
         // Each element is essentially a tuple of (idx, column_name)
-        $.each(list_of_idx_name_pairs, function() {
-            new_option = $("<option />",{
-                val: this[0],
-                text: this[1]
+        $.each(table_columns, function(table, columns) {
+            new_optgroup = $('<optgroup label="' + table + '"/>')
+            $.each(columns, function(){
+                if ($.inArray(this.toString(), exclude_columns[table]) == -1){
+                    idx = get_col_idx(table, this.toString())
+                    append_option(idx, column_display_names[idx], new_optgroup)
+                }
             })
-            // https://stackoverflow.com/questions/3636401/jquery-append-to-multiple-elements-fails
-            $('#ind_variables').append(new_option.clone())
-            $('#outcome_variable').append(new_option.clone())
+            new_optgroup.append('</optgroup>')
+            $('#ind_variables').append(new_optgroup.clone())
+            $('#outcome_variable').append(new_optgroup.clone())
+
         })
         $('#ind_variables').selectpicker('refresh');
         $('#outcome_variable').selectpicker('refresh');
@@ -195,6 +224,27 @@
         $('#ind_variables').selectpicker('refresh')
         $('#outcome_variable').selectpicker('refresh')
     }
+
+    function get_col_idx(table, column){
+        return_idx = -1
+        $.each(column_links, function(idx, table_links){
+            $.each(table_links, function(table_existing, column_existing){
+                if (table_existing == table && column_existing == column){
+                    return_idx = idx
+                    return
+                }
+            })
+        })
+        return return_idx
+    }
+
+    function append_option(val, text, element_to_append_to){
+    new_option = $('<option />', {
+        val: val,
+        text: text
+    })
+    element_to_append_to.append(new_option.clone())
+}
 </script>
 
 {% endblock %}

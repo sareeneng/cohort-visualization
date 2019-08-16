@@ -105,7 +105,6 @@ class DB():
         arch_path = f'{os.path.join(self.directory_path, self.dataset_name)}.arch'
         logging.info(f'Dumping arch file to: {arch_path}')
         arch_data = {
-            'directory_path': self.directory_path,
             'data_file_extension': self.data_file_extension,
             'delimiter': self.delimiter,
             'table_names': self.table_names,
@@ -145,7 +144,7 @@ class DB():
             idx = file_name.rfind('.')
             table_name = file_name[:idx]
             self.table_names.append(table_name)
-            self.table_metadata[table_name]['file'] = os.path.join(self.directory_path, file_name)
+            self.table_metadata[table_name]['file'] = file_name
 
             df = pd.read_csv(os.path.join(self.directory_path, file_name), delimiter=self.delimiter)
             self.table_metadata[table_name]['column_order'] = list(df.columns)
@@ -648,13 +647,13 @@ class DataManager():
 
     def load_all_tables(self):
         for table, table_metadata in self.db.table_metadata.items():
-            file_path = table_metadata['file']
+            file_path = os.path.join(self.db.directory_path, table_metadata['file'])
             logging.debug(f'Loading file {file_path}')
             self.table_dfs[table] = pd.read_csv(file_path, delimiter=self.db.delimiter).add_suffix(f'_[{table}]')
 
     def load_tables(self, tables):
         for table in tables:
-            file_path = self.db.table_metadata[table]['file']
+            file_path = os.path.join(db.directory_path, self.db.table_metadata[table]['file'])
             logging.debug(f'Loading file {file_path}')
             self.table_dfs[table] = pd.read_csv(file_path, delimiter=self.db.delimiter).add_suffix(f'_[{table}]')
 

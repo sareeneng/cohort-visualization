@@ -105,6 +105,18 @@ def get_accessible_variables():
 
     return jsonify(return_data)
 
+@flask_app.route('/get_table_columns')
+def get_table_columns():
+    return_data = {}
+    chosen_dataset = request.args.get('chosen_dataset')
+    db = DB(os.path.join('datasets', chosen_dataset))
+    return_data['table_columns'] = db.get_all_table_columns()
+    return_data['column_display_names'] = db.column_display_names
+    return_data['column_links'] = db.column_links
+    return_data['exclude_columns'] = db.exclude_columns
+
+    return jsonify(return_data)
+
 def create_temp_structure(dataset, config_dict):
     db = DB(os.path.join('datasets', dataset))
     db.finalize(temporary=True)
@@ -117,6 +129,7 @@ def submit_config_dict():
     logging.debug(data)
     dataset = data.get('chosen_dataset')
     config_dict = data.get('config_dict')
+    logging.debug(config_dict)
     
     db = DB(os.path.join('datasets', dataset), config_dict=config_dict)
     db.finalize()
