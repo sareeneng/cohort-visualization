@@ -18,6 +18,8 @@
     <link href="static/vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
     <!--Bootstrap select-->
     <link href="static/vendor/bootstrap-select/dist/css/bootstrap-select.min.css" rel="stylesheet">
+    <!-- Range Slider-->
+    <link href="static/vendor/ion.rangeSlider/css/ion.rangeSlider.min.css" rel="stylesheet">
 
 </head>
 
@@ -83,6 +85,9 @@
     <!--Core JS-->
     <script src="static/vendor/jquery-easing/jquery.easing.min.js"></script>
 
+    <!--Range Slider-->
+    <script src="static/vendor/ion.rangeSlider/js/ion.rangeSlider.min.js"></script>
+
     <!--SBAdmin 2 JS-->
     <script src="static/vendor/sbadmin2/js/sb-admin-2.min.js"></script>
 
@@ -100,7 +105,6 @@
     <!--Bootstrap select-->
     <script src="static/vendor/bootstrap-select/dist/js/bootstrap-select.min.js"></script>
 
-
     <script type="text/javascript">
         var csrf_token = "{{ csrf_token() }}";
         
@@ -112,6 +116,10 @@
             }
         });
     </script>
+
+    <!--My custom functions-->
+    <script src="static/js/visualization.js"></script>
+
     {% block app_scripts %}
     {% endblock %}
 

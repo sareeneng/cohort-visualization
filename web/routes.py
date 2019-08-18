@@ -1,6 +1,7 @@
 from db_structure import DB, DataManager
 from web import flask_app
 from flask import jsonify, render_template, request
+import json
 import logging
 import os
 import pandas as pd
@@ -10,9 +11,24 @@ import time
 @flask_app.route('/visualization')
 def visualization():
     datasets = sorted([f.name for f in os.scandir('datasets') if f.is_dir()], key=lambda x: x.upper())
-    distribution_choices = ['Count', 'Percents', 'Sum', 'Mean']
-
+    distribution_choices = {
+        'TEXT': ['Count', 'Percents'],
+        'NUMERIC': ['Mean', 'Median', 'Sum']
+    }
     return render_template('visualization.html', header="Cohort Visualization", datasets=datasets, distribution_choices=distribution_choices)
+
+@flask_app.route('/get_column_info')
+def get_column_info():
+    chosen_dataset = request.args.get('chosen_dataset')
+    col_idx = request.args.get('idx')
+
+    db = DB(os.path.join('datasets', chosen_dataset))
+    dm = DataManager(db)
+
+    col_info = dm.analyze_col_idx(col_idx)
+
+    return jsonify(col_info)
+
 
 @flask_app.route('/get_graph_data')
 def get_graph_data():
@@ -39,7 +55,15 @@ def get_graph_data():
 
     paths = db.find_paths_multi_columns(all_chosen_idxs)
     df = dm.get_biggest_joined_df_option_from_paths(paths, filter_col_idxs=all_chosen_idxs)
+
+    filters = json.loads(request.args.get('filters', None))
+    logging.debug(filters)
+    if filters is not None:
+        df = dm.filter_df(df, filters)
+
     df = dm.aggregate_df(df, groupby_col_idxs=chosen_ind_idxs, aggregate_col_idx=chosen_outcome_idx, aggregate_fxn=aggregate_fxn)
+
+    logging.debug(df)
     df = df.fillna(0)  # for charting purposes.
 
     labels = list(df['groupby_labels'])

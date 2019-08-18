@@ -1,6 +1,7 @@
 import json
 import os
 import pandas as pd
+from pandas.api.types import is_numeric_dtype
 import itertools
 from functools import wraps
 from collections import defaultdict
@@ -9,6 +10,9 @@ import logging
 
 TABLE_TYPE_MANY = 'MANY'
 TABLE_TYPE_ONE = 'ONE'
+
+COLUMN_TYPE_NUMERIC = 'NUMERIC'
+COLUMN_TYPE_TEXT = 'TEXT'
 
 '''
 A directed graph connects tables together
@@ -435,6 +439,9 @@ class DB():
     def get_all_column_display_names(self):
         return self.column_display_names
     
+    def get_table_column_pairs_by_idx(self, idx):
+        return self.column_links[idx]
+
     ###############
     # Pathfinding functions, determines whether relationships exist and how to get from one column/table to another
     ###############
@@ -646,23 +653,29 @@ class DataManager():
             self.load_all_tables()
 
     def load_all_tables(self):
-        for table, table_metadata in self.db.table_metadata.items():
-            file_path = os.path.join(self.db.directory_path, table_metadata['file'])
-            logging.debug(f'Loading file {file_path}')
-            self.table_dfs[table] = pd.read_csv(file_path, delimiter=self.db.delimiter).add_suffix(f'_[{table}]')
+        for table in self.db.table_names:
+            self.load_table(table)
 
     def load_tables(self, tables):
         for table in tables:
-            file_path = os.path.join(db.directory_path, self.db.table_metadata[table]['file'])
-            logging.debug(f'Loading file {file_path}')
-            self.table_dfs[table] = pd.read_csv(file_path, delimiter=self.db.delimiter).add_suffix(f'_[{table}]')
+            self.load_table(table)
+
+    def load_table(self, table):
+        file_path = os.path.join(self.db.directory_path, self.db.table_metadata[table]['file'])
+        logging.debug(f'Loading file {file_path}')
+        self.table_dfs[table] = pd.read_csv(file_path, delimiter=self.db.delimiter).add_suffix(f'_[{table}]')
+
+    def get_df(self, table):
+        if table not in self.table_dfs:
+            self.load_table(table)
+        return self.table_dfs[table]
 
     def get_joined_df_options_from_paths(self, paths, filter_col_idxs=None):
         # given a list of paths, get all dfs that could arise
         df_choices = []
 
         for path in paths:
-            df = self.table_dfs[path[0]]  # paths returns a list of tables. Initialize with the first table obj in the path
+            df = self.get_df(path[0])  # paths returns a list of tables. Initialize with the first table obj in the path
             previous_table = path[0]
             added_tables = [previous_table]
             if len(path) > 1:
@@ -675,7 +688,7 @@ class DataManager():
                         right_column = self.db.column_links[col_idx_joining][next_table]
                         right_column = f'{right_column}_[{next_table}]'
 
-                        df = pd.merge(df, self.table_dfs[next_table], left_on=left_column, right_on=right_column)
+                        df = pd.merge(df, self.get_df(next_table), left_on=left_column, right_on=right_column)
                         added_tables.append(next_table)
                     previous_table = next_table
             
@@ -725,24 +738,97 @@ class DataManager():
 
         if aggregate_col_header is None:
             # just get the counts then
-            df = df.groupby(groupby_col_headers).size().reset_index(name="Count")
+            df = df.groupby(groupby_col_headers).size().unstack(fill_value=0).sort_index(axis=1).stack().reset_index(name="Count")
+            logging.debug('after aggregation')
+            logging.debug(df)
         else:
-            g = df.groupby(groupby_col_headers)[aggregate_col_header]
+            g = df.groupby(groupby_col_headers)
 
             if aggregate_fxn == 'Count':
-                df = g.value_counts().unstack().reset_index()
+                df = g[aggregate_col_header].value_counts().unstack(fill_value=0).sort_index(axis=1).reset_index()
             elif aggregate_fxn == 'Percents':
-                df = (g.value_counts(normalize=True)*100).round(1).unstack().reset_index()
+                df = (g[aggregate_col_header].value_counts(normalize=True)*100).round(1).unstack(fill_value=0).sort_index(axis=1).reset_index()
             elif aggregate_fxn == 'Sum':
                 df = g.sum().reset_index()
+                df[aggregate_col_header] = df[aggregate_col_header].fillna(0)
             elif aggregate_fxn == 'Mean':
                 df = (g.mean()).round(2).reset_index()
+                logging.debug(df)
+                df[aggregate_col_header] = df[aggregate_col_header].fillna(0)
+                logging.debug(df)
+            elif aggregate_fxn == 'Median':
+                df = (g.median()).round(2).reset_index()
+                df[aggregate_col_header] = df[aggregate_col_header].fillna(0)
         
         df['groupby_labels'] = df.apply(lambda x: get_breakdown_label(x, groupby_col_headers), axis=1)
+        logging.debug(df)
         df = df.drop(columns=groupby_col_headers)
+        logging.debug(df)
         
         return df
 
+    def analyze_df(self, df):
+        analyze_dict = defaultdict(dict)
+        for x in df.columns:
+            analyze_dict[x] = self.analyze_series(df[x])
+        return analyze_dict
+
+    def analyze_column(self, table, column):
+        df = self.get_df(table)
+        col_header = f'{column}_[{table}]'
+        return self.analyze_series(df[col_header])
+
+    def analyze_col_idx(self, idx):
+        # find df with most unique values, that's probably the best one to analyze
+        best_df = None
+        tables = self.db.get_tables_by_col_idx(idx)
+        best_table = tables[0]
+        best_df = self.get_df(tables[0])
+        best_col_header = f'{self.db.column_links[idx][best_table]}_[{best_table}]'
+        len_most_unique = len(best_df[best_col_header].unique())
+        
+        for table in tables[1:]:
+            df = self.get_df(table)
+            current_col_header = f'{self.db.column_links[idx][table]}_[{table}]'
+            len_current_unique = len(df[current_col_header].unique())
+            if len_current_unique > len_most_unique:
+                best_table = table
+                best_df = df
+                best_col_header = current_col_header
+                len_most_unique = len_current_unique
+        
+        return self.analyze_series(best_df[best_col_header])
+
+    def analyze_series(self, series):
+        series = series.dropna()
+        if is_numeric_dtype(series):
+            return {
+                'type': COLUMN_TYPE_NUMERIC,
+                'min': series.min(),
+                'mean': series.mean(),
+                'max': series.max(),
+                'median': series.median()
+            }
+        else:
+            return {
+                'type': COLUMN_TYPE_TEXT,
+                'possible_vals': sorted(list(series.unique()), key=lambda x: x.upper())
+            }
+
+    def filter_df(self, df, filters):
+        for col_idx, filter in filters.items():
+            if filter is not None:
+                col_header = next(x for x in self.db.get_df_col_headers_by_idx(col_idx) if x in df.columns)
+                if filter['type'] == 'list':
+                    df = df[df[col_header].isin(filter['filter'])]
+                elif filter['type'] == 'range':
+                    df = df[(df[col_header] >= filter['filter']['min']) & (df[col_header] <= filter['filter']['max'])]
+
+                    if 'bins' in filter['filter']:
+                        df.loc[:, 'temp_col'] = pd.cut(df[col_header], bins=int(filter['filter']['bins']))
+                        df.loc[:, col_header] = df['temp_col']
+                        df = df.drop('temp_col', axis=1)
+        return df
 
 class ColumnFactory():
     def __init__(self, custom_column_names):

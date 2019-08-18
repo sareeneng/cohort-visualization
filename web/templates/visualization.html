@@ -1,46 +1,67 @@
 {% extends "base.html" %}
 
 {% block app_content %}
-<div class="card col-4">
-    <div class="card-body">
-        <div class="form-group">
-            <label for="dataset_select" >Choose dataset</label>
-            <select class="form-control" id="dataset_select">
-                <option selected disabled hidden style='display: none' value=''></option>
-                {% for dataset in datasets %}
-                <option>{{ dataset}}</option>
-                {% endfor %}
-            </select>
-        </div>
+<div class="row">
+    <div class="card col-4">
+        <div class="card-body">
+            <div class="form-group">
+                <label for="dataset_select" >Choose dataset</label>
+                <select class="form-control" id="dataset_select">
+                    <option selected disabled hidden style='display: none' value=''></option>
+                    {% for dataset in datasets %}
+                    <option>{{ dataset}}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-        <label for="ind_variables">Cohort variables</label>
-        <div class="form-row">
-            <div class="form-group col-9">
-                <select class="selectpicker form-control" multiple id="ind_variables" data-live-search="true" title="Choose up to 3..." data-max-options="3"></select>
-            </div>
-            <div class="form-group col-3">
-                <button type="button" class="btn btn-primary" id="add_ind_variable_btn">Add</button>
-            </div>
-        </div>
-
-        <label for="outcome_variable">Outcome</label>
-        <div class="form-row">
-            <div class="form-group col-9">
-                <select class="selectpicker form-control show-tick" id="outcome_variable" data-live-search="true"></select>
-            </div>
-            <div class="form-group col-3">
-                <button type="button" class="btn btn-primary" id="clear_outcome_btn">Clear</button>
-            </div>
-        </div>
-        <div class="form-row" id="distribution_choice_row">
-            {% for distribution_choice in distribution_choices %}
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="distribution_choice" id="distribution_choice_{{loop.index}}" value="{{distribution_choice}}" {% if loop.index == 1 %} checked="checked" {% endif %} disabled>
-                    <label class="form-check-label" for="distribution_choice_{{loop.index}}">{{ distribution_choice }}</label>
+            <label for="ind_variables">Cohort variables</label>
+            <div class="form-row">
+                <div class="form-group col-9">
+                    <select class="selectpicker form-control" multiple id="ind_variables" data-live-search="true" title="Choose up to 3..." data-max-options="3"></select>
                 </div>
-            {% endfor %}
+            </div>
+
+            <label for="outcome_variable">Outcome</label>
+            <div class="form-row">
+                <div class="form-group col-9">
+                    <select class="selectpicker form-control show-tick" id="outcome_variable" data-live-search="true"></select>
+                </div>
+                <div class="form-group col-3">
+                    <button type="button" class="btn btn-primary" id="clear_outcome_btn">Clear</button>
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-primary" id="update_graph_btn">Update Graph</button>
         </div>
     </div>
+    {% for n in range(4) %}
+        <div class="col-2">
+            <div class="card" style="height: 100%" id="c{{n+1}}">
+                <h5 class="card-header" id="ch{{n+1}}"></h5>
+                <div class="card-body" id="cb{{n+1}}">
+                    {% if n == 3 %}
+                        <div id="distribution_choices_text_div" style="display: none;">
+                        {% for distribution_choice in distribution_choices["TEXT"]%}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="distribution_choice" id="distribution_choice_text_{{loop.index}}" value="{{distribution_choice}}">
+                                <label class="form-check-label" for="distribution_choice_text_{{loop.index}}">{{ distribution_choice }}</label>
+                            </div>
+                        {% endfor %}
+                        </div>
+                        <div id="distribution_choices_numeric_div" style="display: none;">
+                        {% for distribution_choice in distribution_choices["NUMERIC"]%}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="distribution_choice" id="distribution_choice_numeric_{{loop.index}}" value="{{distribution_choice}}" >
+                                <label class="form-check-label" for="distribution_choice_numeric_{{loop.index}}">{{ distribution_choice }}</label>
+                            </div>
+                        {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
 </div>
 <canvas id="graph"></canvas>
 {% endblock %}
@@ -55,38 +76,179 @@
     var chosen_dataset
     var exclude_columns
 
+    c1 = {'idx': -1, 'type': null}
+    c2 = {'idx': -1, 'type': null}
+    c3 = {'idx': -1, 'type': null}
+    c_outcome = {'idx': -1, 'type': null}
+
+
     $('#dataset_select').change(function(){
         chosen_dataset = $(this).val()
         get_table_column_data()
     })
 
     $('#ind_variables').on('changed.bs.select', function(e, clickedIndex, isSelected, previousValue){
-        clicked_value = $(this).find('option').eq(clickedIndex).val()
+        chosen_option = $(this).find('option').eq(clickedIndex)
+        idx = chosen_option.val()
+        column_name = chosen_option.text()
+        
         if(isSelected){
-            ordered_groupby_idxs.push(clicked_value)
-        }
-        else{
-            var index = ordered_groupby_idxs.indexOf(clicked_value);
-            ordered_groupby_idxs.splice(index, 1);
-        }
-        get_dropdown_items(with_result='filter')
-        update_graph()
-    })
+            send_data = {
+                'chosen_dataset': chosen_dataset,
+                'idx': idx
+            }
+            make_ajax_call(type="GET", url="{{ url_for('get_column_info') }}", onSuccess=function(return_data){
+                if (c1['idx'] == -1){
+                    card_num = 1
+                    c1['idx'] = idx
+                    c1['type'] = return_data.type
+                }
+                else if (c2['idx'] == -1){
+                    card_num = 2
+                    c2['idx'] = idx
+                    c2['type'] = return_data.type
+                }
+                else if (c3['idx'] == -1){
+                    card_num = 3
+                    c3['idx'] = idx
+                    c3['type'] = return_data.type
+                }
+                
+                $('#ch' + card_num).text(column_name)
+                $('#cb' + card_num).html('<h6>Include: </h6>')
 
-    $('#outcome_variable').change(function(){
-        if ($(this).val() == ''){
-            $('#distribution_choice_1').prop('checked', true)
-            $('#distribution_choice_row input:radio').attr('disabled', true)
+                if (return_data.type == 'TEXT'){
+                    multiselect = $('<select class="form-control" multiple size=10 style="overflow-x: auto; font-size: 14px;" id=cfilter' + card_num + '>')
+                    $.each(return_data.possible_vals, function(){
+                        append_option(this, this, multiselect, selected=true)
+                    })
+                    multiselect.append($('</select>'))
+
+                    $('#cb' + card_num).append(multiselect)
+                }
+                else {
+                    min_max_cols = $('<div class="row"><div class="col-5"><input type="text" class="form-control form-control-sm" id="min' + card_num +'" value=' + return_data.min + '></div><div class="col"></div><div class="col-5"><input type="text" class="form-control form-control-sm" id="max' + card_num + '" value=' + return_data.max + '></div></div>')
+                    slider = $('<input type="text" class="js-range-slider" value="" id="slider' + card_num + '"/>')
+                    $('#cb' + card_num).append(min_max_cols)
+                    $('#cb' + card_num).append(slider)
+
+                    if (card_num == 1){
+                        slider_obj = $('#slider1')
+                        min_obj = $('#min1')
+                        max_obj = $('#max1')
+                    }
+                    else if (card_num == 2){
+                        slider_obj = $('#slider2')
+                        min_obj = $('#min2')
+                        max_obj = $('#max2')
+                    }
+                    else if (card_num == 3){
+                        slider_obj = $('#slider3')
+                        min_obj = $('#min3')
+                        max_obj = $('#max3')
+                    }
+                    
+                    step_amt = (return_data.max - return_data.min)/100
+                    if (step_amt > 1){
+                        step_amt = Math.round(step_amt)
+                    }
+
+                    slider_obj.ionRangeSlider({
+                        type: 'double',
+                        grid: true,
+                        min: return_data.min,
+                        max: return_data.max,
+                        step: step_amt,
+                        skin: 'sharp'
+                    })
+
+                    min_obj.on('change', function(){
+                        slider_obj.data('ionRangeSlider').update({
+                            from: $(this).val()
+                        })
+                    })
+
+                    max_obj.on('change', function(){
+                        slider_obj.data('ionRangeSlider').update({
+                            to: $(this).val()
+                        })
+                    })
+
+                    slider_obj.on('change', function(){
+                        new_min = $(this).data('from')
+                        new_max = $(this).data('to')
+                        min_obj.val(new_min)
+                        max_obj.val(new_max)
+                    })
+
+                    split_div = $('<div class="form-group row mt-5"><label for="divide' + card_num + '" class="col col-form-label text-right" style="font-size: 14px;">Segment range</label><div class="col-5"><input type="number" id="divide' + card_num + '" class="form-control" value=1 min=1 max=20></div></div>')
+                    $('#cb' + card_num).append(split_div)
+                }
+
+                filter_dropdown_items()  // have to include this in AJAX call
+            })
         }
         else {
-            $('#distribution_choice_row input:radio').attr('disabled', false)
+            if (c1['idx'] == idx){
+                card_num = 1
+                c1 = {'idx': -1, 'type': null}
+            }
+            else if (c2['idx'] == idx){
+                card_num = 2
+                c2 = {'idx': -1, 'type': null}
+            }
+            else if (c3['idx'] == idx){
+                card_num = 3
+                c3 = {'idx': -1, 'type': null}
+            }
+            $('#ch' + card_num).text('')
+            $('#cb' + card_num).html('')
         }
-        get_dropdown_items(with_result='filter')
-        update_graph()
+        filter_dropdown_items()
     })
 
-    $('#distribution_choice_row').change(function(){
-        update_graph()
+    $('#outcome_variable').change(function() {
+        if (($(this).val() == '') || ($(this).val() == null)){
+            $('.form-check-input').prop('checked', false)
+            $('#distribution_choices_text_div').prop('style', 'display: none;')
+            $('#distribution_choices_numeric_div').prop('style', 'display: none;')
+            $('#ch4').text('')
+            c_outcome = {'idx': -1, 'type': null}
+
+            filter_dropdown_items()
+        }
+        else{
+            idx = $(this).val()
+            send_data = {
+                'chosen_dataset': chosen_dataset,
+                'idx': idx
+            }
+            column_name = $(this).find('[value=' + idx + ']').text()
+            $('#ch4').text(column_name)
+        
+            make_ajax_call(type="GET", url="{{ url_for('get_column_info') }}", onSuccess=function(return_data){
+                c_outcome = {'idx': idx, 'type': return_data.type}
+
+                if (return_data.type == 'TEXT') {
+                    $('#distribution_choices_text_div').prop('style', '')
+                    $('#distribution_choices_numeric_div').prop('style', 'display: none;')
+                    $('#distribution_choice_text_1').prop('checked', true)
+                }
+                else if (return_data.type == 'NUMERIC'){
+                    $('#distribution_choices_numeric_div').prop('style', '')
+                    $('#distribution_choices_text_div').prop('style', 'display: none;')
+                    $('#distribution_choice_numeric_1').prop('checked', true)
+                }
+
+                filter_dropdown_items()
+
+            })
+        }
+        
+    })
+
+    $('#clear_outcome_btn').on('click', function(){
+        $('#outcome_variable').selectpicker('val', '').change()
     })
 
     function get_table_column_data(){
@@ -109,14 +271,57 @@
         })
     }
 
-    function update_graph(){
-        selected_outcome_var_idx = $('#outcome_variable').val()
+    $('#update_graph_btn').on('click', function(){
+        filters = {}
+        $.each([1, 2, 3], function(){
+            if (this == 1){
+                c_info = c1
+            }
+            else if (this == 2){
+                c_info = c2
+            }
+            else if (this == 3){
+                c_info = c3
+            }
+
+            if (c_info['idx'] != -1){
+                if (c_info['type'] == 'TEXT'){
+                    var allSelected = $("#cfilter" + this + " option:not(:selected)").length == 0;
+                    if (!allSelected){
+                        filter_info = {'type': 'list', 'filter': []}
+                        $.each($('#cfilter' + this).find('option'), function(){
+                            if ($(this).prop('selected')){
+                                filter_info['filter'].push($(this).text())
+                            }
+                        })
+                    }
+                    else{
+                        filter_info = null
+                    }
+                    filters[c_info['idx']] = filter_info
+                }
+                else if (c_info['type'] == 'NUMERIC'){
+                    filters[c_info['idx']] = {'type': 'range', 'filter': {'min': $('#slider' + this).data().from, 'max': $('#slider' + this).data().to, 'bins': $('#divide' + this).val()}}
+                }                
+                
+            }
+        })
+        [ordered_groupby_idxs, selected_outcome_var_idx] = get_idxs()
+
+        aggregate_fxn = $("input[name='distribution_choice']:checked").val()
+        if (aggregate_fxn == null){
+            aggregate_fxn = 'Count'
+        }
+
         send_data = {
             'chosen_dataset': chosen_dataset,
             'chosen_ind_idxs': ordered_groupby_idxs,
             'chosen_outcome_idx': selected_outcome_var_idx,
-            'aggregate_fxn': $("input[name='distribution_choice']:checked").val()
+            'aggregate_fxn': aggregate_fxn,
+            'filters': JSON.stringify(filters)
         }
+        console.log(send_data)
+        
         $.ajax({
             type: "GET",
             url: "{{ url_for('get_graph_data') }}",
@@ -126,6 +331,36 @@
             success: function(return_data){
                 var graph = $('#graph');
                 if (myChart){myChart.destroy()}
+
+                min_y = null
+                max_y = null
+
+                $.each(return_data.datasets, function(){
+                    $.each(this['data'], function(){
+                        if (min_y == null){
+                            min_y = this
+                        }
+                        else{
+                            min_y = Math.min(this, min_y)
+                        }
+                        if (max_y == null){
+                            max_y = this
+                        }
+                        else{
+                            max_y = Math.max(this, max_y)
+                        }
+                    })
+                })
+                range = max_y - min_y
+                if (range == 0){
+                    upper = max_y + 1
+                    lower = min_y - 1
+                }
+                else{
+                    upper = max_y + (0.25 * range)
+                    lower = Math.max(0, min_y - (0.25 * range))
+                }
+
                 myChart = new Chart(graph, {
                     type: 'bar',
                     data: {
@@ -154,6 +389,10 @@
                                 scaleLabel: {
                                     display: true,
                                     labelString: return_data.yaxis_label
+                                },
+                                ticks: {
+                                    min: lower,
+                                    max: upper
                                 }
                             }]
                         }
@@ -161,29 +400,41 @@
                 })
             }
         })
+    })
+
+    function get_idxs(){
+        ordered_groupby_idxs = []
+        $.each([c1, c2, c3], function(){
+            if (this['idx'] != -1){
+                ordered_groupby_idxs.push(this['idx'])
+            }
+        })
+        if (c_outcome['idx'] != -1) {
+            selected_outcome_var_idx = c_outcome['idx']
+        }
+        else{
+            selected_outcome_var_idx = null
+        }
+
+        return [ordered_groupby_idxs, selected_outcome_var_idx]
     }
 
-    function get_dropdown_items(with_result){
-        selected_outcome_var_idx = $('#outcome_variable').val()
+    function filter_dropdown_items(){
+        [ordered_groupby_idxs, selected_outcome_var_idx] = get_idxs()
+
         send_data = {
             'chosen_dataset': chosen_dataset,
             'chosen_ind_idxs': ordered_groupby_idxs,
             'chosen_outcome_idx': selected_outcome_var_idx
         }
-        $.ajax({
-            type: "GET",
-            url: "{{ url_for('get_accessible_variables') }}",
-            data: send_data,
-            dataType: "json",
-            contentType: 'application/json;charset=UTF-8',
-            success: function(return_data){
-                if (with_result == 'populate'){
-                    populate_dropdowns(return_data.accessible_columns_list)
-                }
-                else if (with_result == 'filter'){
-                    filter_dropdowns(return_data.accessible_columns_list)
-                }
-            }
+        make_ajax_call(type="GET", url="{{ url_for('get_accessible_variables') }}", onSuccess=function(return_data){
+            $.each(return_data.accessible_columns_list, function(){
+                $('#ind_variables').find('[value=' + this[0]+']').prop('disabled', !this[2])
+                $('#outcome_variable').find('[value=' + this[0]+']').prop('disabled', !this[2])
+                
+            })
+            $('#ind_variables').selectpicker('refresh')
+            $('#outcome_variable').selectpicker('refresh')
         })
     }
 
@@ -215,16 +466,6 @@
         $('#outcome_variable').selectpicker('refresh');
     }
 
-    function filter_dropdowns(list_of_idx_name_pairs){
-        $.each(list_of_idx_name_pairs, function(){
-            $('#ind_variables').find('[value=' + this[0]+']').prop('disabled', !this[2])
-            $('#outcome_variable').find('[value=' + this[0]+']').prop('disabled', !this[2])
-            
-        })
-        $('#ind_variables').selectpicker('refresh')
-        $('#outcome_variable').selectpicker('refresh')
-    }
-
     function get_col_idx(table, column){
         return_idx = -1
         $.each(column_links, function(idx, table_links){
@@ -238,10 +479,11 @@
         return return_idx
     }
 
-    function append_option(val, text, element_to_append_to){
+    function append_option(val, text, element_to_append_to, selected=false){
     new_option = $('<option />', {
         val: val,
-        text: text
+        text: text,
+        selected: selected
     })
     element_to_append_to.append(new_option.clone())
 }
