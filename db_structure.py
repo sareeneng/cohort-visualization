@@ -738,9 +738,10 @@ class DataManager():
 
         if aggregate_col_header is None:
             # just get the counts then
-            df = df.groupby(groupby_col_headers).size().unstack(fill_value=0).sort_index(axis=1).stack().reset_index(name="Count")
-            logging.debug('after aggregation')
-            logging.debug(df)
+            df = df.groupby(groupby_col_headers).size()
+            if len(groupby_col_headers) > 1:
+                df = df.unstack(fill_value=0).sort_index(axis=1).stack()
+            df = df.reset_index(name="Count")
         else:
             g = df.groupby(groupby_col_headers)
 
