@@ -120,7 +120,7 @@
                 if (return_data.type == 'TEXT'){
                     multiselect = $('<select class="form-control" multiple size=10 style="overflow-x: auto; font-size: 14px;" id=cfilter' + card_num + '>')
                     $.each(return_data.possible_vals, function(){
-                        append_option(this, this, multiselect, selected=true)
+                        append_option(this, this, multiselect, selected=true, table_row=true)
                     })
                     multiselect.append($('</select>'))
 
@@ -479,11 +479,18 @@
         return return_idx
     }
 
-    function append_option(val, text, element_to_append_to, selected=false){
+    function append_option(val, text, element_to_append_to, selected=false, table_row=false){
+    if (table_row){
+        style = "display: table-row;"
+    }
+    else{
+        style = ""
+    }
     new_option = $('<option />', {
         val: val,
         text: text,
-        selected: selected
+        selected: selected,
+        style: style
     })
     element_to_append_to.append(new_option.clone())
 }
