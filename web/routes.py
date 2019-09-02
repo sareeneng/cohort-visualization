@@ -1,23 +1,103 @@
 from db_structure import DB, DataManager
-from web import flask_app
-from flask import jsonify, render_template, request
+from web import flask_app, db
+from web.forms import LoginForm, ChangePWForm
+from web.models import User, UserGroups, Group
+from flask import flash, jsonify, redirect, render_template, request, url_for, session
+from flask_login import current_user, login_user, logout_user, fresh_login_required
+from functools import wraps
 import json
 import logging
 import os
 import pandas as pd
 import time
 
+PAGE_ACCESS = {
+    'visualization': ['Basic', 'Admin'],
+    'config': ['Admin']
+}
+
+# https://stackoverflow.com/questions/15871391/implementing-flask-login-with-multiple-user-classes
+def login_required(roles=["ANY"]):
+    def wrapper(fn):
+        @wraps(fn)
+        def decorated_view(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return flask_app.login_manager.unauthorized()
+            uroles = current_user.get_roles()
+            if (len(set(roles).intersection(uroles)) == 0) and ("ANY" not in roles):
+                return flask_app.login_manager.unauthorized()      
+            return fn(*args, **kwargs)
+        return decorated_view
+    return wrapper
+
+def navbar_access():
+    uroles = current_user.get_roles()
+    user_access = {}
+    for page, auth_roles in PAGE_ACCESS.items():
+        if (len(set(uroles).intersection(auth_roles)) > 0) or ("ANY" in auth_roles):
+            user_access[page] = True
+        else:
+            user_access[page] = False
+    return user_access
+
+@flask_app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('visualization'))
+
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        if user is None or not user.check_password(form.password.data):
+            flash('Invalid username or password')
+            return redirect(url_for('login'))
+        login_user(user)
+
+        if user.check_password(user.username):
+            flash('You must change your password from the one assigned to you')
+            return redirect(url_for('change_pw'))
+        
+        next_page = request.args.get('next', 'visualization').replace('/', '')
+        if next_page == '':
+            next_page = 'visualization'
+        return redirect(url_for(next_page))
+    return render_template('login.html', header='Sign In', form=form)
+
+@flask_app.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
+@flask_app.route('/change_pw', methods=['GET', 'POST'])
+def change_pw():
+	form = ChangePWForm()
+	if current_user.is_authenticated:
+		if form.validate_on_submit():
+			if current_user.check_password(form.old_password.data):
+				current_user.set_password(form.new_password.data)
+				db.session.commit()
+				flash('Password successfully changed')
+				return redirect(url_for('change_pw'))
+			else:
+				flash('Old password is incorrect')
+				return redirect(url_for('change_pw'))
+	else:
+		return redirect(url_for('login'))
+	return render_template('change_pw.html', header='Change Password', navbar_access=navbar_access(), form=form)
+
 @flask_app.route('/')
 @flask_app.route('/visualization')
+@login_required(roles=PAGE_ACCESS['visualization'])
 def visualization():
-    datasets = sorted([f.name for f in os.scandir('datasets') if f.is_dir()], key=lambda x: x.upper())
+    datasets = sorted([f.name for f in os.scandir('datasets') if f.is_dir() and f.name[0:6] != 'sample'], key=lambda x: x.upper())
     distribution_choices = {
         'TEXT': ['Count', 'Percents'],
         'NUMERIC': ['Mean', 'Median', 'Sum']
     }
-    return render_template('visualization.html', header="Cohort Visualization", datasets=datasets, distribution_choices=distribution_choices)
+    return render_template('visualization.html', header="Cohort Visualization", datasets=datasets, distribution_choices=distribution_choices, navbar_access=navbar_access())
 
 @flask_app.route('/get_column_info')
+@login_required(roles=PAGE_ACCESS['visualization'])
 def get_column_info():
     chosen_dataset = request.args.get('chosen_dataset')
     col_idx = request.args.get('idx')
@@ -29,8 +109,8 @@ def get_column_info():
 
     return jsonify(col_info)
 
-
 @flask_app.route('/get_graph_data')
+@login_required(roles=PAGE_ACCESS['visualization'])
 def get_graph_data():
     start = time.time()
     return_data = {}
@@ -100,6 +180,7 @@ def get_graph_data():
     return jsonify(return_data)
 
 @flask_app.route('/get_accessible_variables')
+@login_required(roles=PAGE_ACCESS['visualization'])
 def get_accessible_variables():
     return_data = {}
     chosen_dataset = request.args.get('chosen_dataset')
@@ -130,6 +211,7 @@ def get_accessible_variables():
     return jsonify(return_data)
 
 @flask_app.route('/get_table_columns')
+@login_required(roles=PAGE_ACCESS['visualization'])
 def get_table_columns():
     return_data = {}
     chosen_dataset = request.args.get('chosen_dataset')
@@ -148,6 +230,7 @@ def create_temp_structure(dataset, config_dict):
     return db
 
 @flask_app.route('/submit_config_dict', methods=['POST'])
+@login_required(roles=PAGE_ACCESS['config'])
 def submit_config_dict():
     data = request.get_json()
     logging.debug(data)
@@ -168,6 +251,7 @@ def submit_config_dict():
     return jsonify(return_data)
 
 @flask_app.route('/get_metadata_config')
+@login_required(roles=PAGE_ACCESS['config'])
 def get_metadata_config():
     chosen_dataset = request.args.get('chosen_dataset')
     db = DB(os.path.join('datasets', chosen_dataset))
@@ -185,6 +269,7 @@ def get_metadata_config():
     return jsonify(return_data)
 
 @flask_app.route('/config')
+@login_required(roles=PAGE_ACCESS['config'])
 def config():
     datasets = sorted([f.name for f in os.scandir('datasets') if f.is_dir()], key=lambda x: x.upper())
-    return render_template('config.html', header='Configuration', datasets=datasets)
+    return render_template('config.html', header='Configuration', datasets=datasets, navbar_access=navbar_access())

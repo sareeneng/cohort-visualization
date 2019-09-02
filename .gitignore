@@ -7,3 +7,4 @@ arbitrage/
 scratch.py
 *.pdf
 *.bak
+*.db

@@ -2288,7 +2288,7 @@
             "HospCETime": "Catastrophic Event Time of Day"
         },
         "CPR": {
-            "Alive24HrsAfterCPR": "CPR - Alive 24 Hrs After CPR",
+            "Alive24HrsAfterCPR": "CPR - Alive 24 Hours After CPR",
             "CHESTCOMPSTARTDAY": "CPR - Chest Compression Start Day Rel to PICU",
             "CHESTCOMPSTOPDAY": "CPR - Chest Compression Stop Day Rel to PICU",
             "CPRDAY": "CPR - Day Rel to PICU",
@@ -3999,7 +3999,7 @@
         "255": "Catastrophic Event Day Rel to ICU",
         "252": "Catastrophic Event Description",
         "251": "Catastrophic Event Time of Day",
-        "242": "CPR - Alive 24 Hrs After CPR",
+        "242": "CPR - Alive 24 Hours After CPR",
         "244": "CPR - Chest Compression Start Day Rel to PICU",
         "245": "CPR - Chest Compression Stop Day Rel to PICU",
         "243": "CPR - Day Rel to PICU",
