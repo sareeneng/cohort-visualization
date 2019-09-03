@@ -86,6 +86,7 @@ def change_pw():
 	return render_template('change_pw.html', header='Change Password', navbar_access=navbar_access(), form=form)
 
 @flask_app.route('/')
+@flask_app.route('/index')
 @flask_app.route('/visualization')
 @login_required(roles=PAGE_ACCESS['visualization'])
 def visualization():
