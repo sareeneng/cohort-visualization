@@ -211,8 +211,8 @@
     $('#outcome_variable').change(function() {
         if (($(this).val() == '') || ($(this).val() == null)){
             $('.form-check-input').prop('checked', false)
-            $('#distribution_choices_text_div').prop('style', 'display: none;')
-            $('#distribution_choices_numeric_div').prop('style', 'display: none;')
+            $('#distribution_choices_text_div').attr('style', 'display: none;')
+            $('#distribution_choices_numeric_div').attr('style', 'display: none;')
             $('#ch4').text('')
             c_outcome = {'idx': -1, 'type': null}
 
@@ -231,13 +231,13 @@
                 c_outcome = {'idx': idx, 'type': return_data.type}
 
                 if (return_data.type == 'TEXT') {
-                    $('#distribution_choices_text_div').prop('style', '')
-                    $('#distribution_choices_numeric_div').prop('style', 'display: none;')
+                    $('#distribution_choices_text_div').attr('style', '')
+                    $('#distribution_choices_numeric_div').attr('style', 'display: none;')
                     $('#distribution_choice_text_1').prop('checked', true)
                 }
                 else if (return_data.type == 'NUMERIC'){
-                    $('#distribution_choices_numeric_div').prop('style', '')
-                    $('#distribution_choices_text_div').prop('style', 'display: none;')
+                    $('#distribution_choices_numeric_div').attr('style', '')
+                    $('#distribution_choices_text_div').attr('style', 'display: none;')
                     $('#distribution_choice_numeric_1').prop('checked', true)
                 }
 
@@ -307,7 +307,10 @@
                 
             }
         })
-        [ordered_groupby_idxs, selected_outcome_var_idx] = get_idxs()
+        current_idxs = get_idxs()
+        ordered_groupby_idxs = current_idxs['ordered_groupby_idxs']
+        selected_outcome_var_idx = current_idxs['selected_outcome_var_idx']
+
 
         aggregate_fxn = $("input[name='distribution_choice']:checked").val()
         if (aggregate_fxn == null){
@@ -416,13 +419,13 @@
         else{
             selected_outcome_var_idx = null
         }
-
-        return [ordered_groupby_idxs, selected_outcome_var_idx]
+        return {'ordered_groupby_idxs': ordered_groupby_idxs, 'selected_outcome_var_idx': selected_outcome_var_idx}
     }
 
     function filter_dropdown_items(){
-        [ordered_groupby_idxs, selected_outcome_var_idx] = get_idxs()
-
+        current_idxs = get_idxs()
+        ordered_groupby_idxs = current_idxs['ordered_groupby_idxs']
+        selected_outcome_var_idx = current_idxs['selected_outcome_var_idx']
         send_data = {
             'chosen_dataset': chosen_dataset,
             'chosen_ind_idxs': ordered_groupby_idxs,
@@ -480,21 +483,24 @@
         return return_idx
     }
 
-    function append_option(val, text, element_to_append_to, selected=false, table_row=false){
-    if (table_row){
-        style = "display: table-row;"
+    function append_option(val, text, element_to_append_to, selected, table_row){
+        if (!selected) selected = false;
+        if (!table_row) table_row = false;
+        
+        if (table_row){
+            style = "display: table-row;"
+        }
+        else{
+            style = ""
+        }
+        new_option = $('<option />', {
+            val: val,
+            text: text,
+            selected: selected,
+            style: style
+        })
+        element_to_append_to.append(new_option.clone())
     }
-    else{
-        style = ""
-    }
-    new_option = $('<option />', {
-        val: val,
-        text: text,
-        selected: selected,
-        style: style
-    })
-    element_to_append_to.append(new_option.clone())
-}
 </script>
 
 {% endblock %}

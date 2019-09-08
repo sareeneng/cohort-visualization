@@ -361,7 +361,7 @@ $('#remove_custom_fk_btn').on('click', function() {
 
 $('#submit_config_btn').on('click', function() {
     if (chosen_dataset != null){
-        $('#alert_locking_config').prop('style', 'visibility: shown;')
+        $('#alert_locking_config').attr('style', 'visibility: shown;')
         send_data = {
             'chosen_dataset': chosen_dataset,
             'config_dict': config_dict
@@ -412,7 +412,7 @@ $('#submit_config_btn').on('click', function() {
                 
                 $('#rename_table').selectpicker('refresh')
 
-                $('#alert_locking_config').prop('style', 'visibility: hidden;')
+                $('#alert_locking_config').attr('style', 'visibility: hidden;')
             }
         })
     }
