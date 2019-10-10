@@ -287,18 +287,12 @@
 
             if (c_info['idx'] != -1){
                 if (c_info['type'] == 'TEXT'){
-                    var allSelected = $("#cfilter" + this + " option:not(:selected)").length == 0;
-                    if (!allSelected){
-                        filter_info = {'type': 'list', 'filter': []}
-                        $.each($('#cfilter' + this).find('option'), function(){
-                            if ($(this).prop('selected')){
-                                filter_info['filter'].push($(this).text())
-                            }
-                        })
-                    }
-                    else{
-                        filter_info = null
-                    }
+                    filter_info = {'type': 'list', 'filter': []}
+                    $.each($('#cfilter' + this).find('option'), function(){
+                        if ($(this).prop('selected')){
+                            filter_info['filter'].push($(this).text())
+                        }
+                    })
                     filters[c_info['idx']] = filter_info
                 }
                 else if (c_info['type'] == 'NUMERIC'){

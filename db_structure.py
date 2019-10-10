@@ -7,6 +7,7 @@ from functools import wraps
 from collections import defaultdict
 import utilities as u
 import logging
+from decimal import Decimal as D
 
 TABLE_TYPE_MANY = 'MANY'
 TABLE_TYPE_ONE = 'ONE'
@@ -719,52 +720,92 @@ class DataManager():
         
         return df_choices[idx]
 
-    def aggregate_df(self, df, groupby_col_idxs, aggregate_col_idx=None, aggregate_fxn='Count'):
+    def aggregate_df(self, df, groupby_col_idxs, filters, aggregate_col_idx=None, aggregate_fxn='Count'):
+        # need filters because we need to add 0 values for completely missing combinations
+        logging.debug(f'Aggregate by {groupby_col_idxs} for {aggregate_col_idx}')
         groupby_col_headers = []
-        aggregate_col_header = None
         for idx in groupby_col_idxs:
             col_headers = self.db.get_df_col_headers_by_idx(idx)
             groupby_col_headers += [x for x in col_headers if x in df.columns]
+
+        logging.debug(f'Aggregate by {groupby_col_headers}')
         if aggregate_col_idx is not None:
-            col_headers = self.db.get_df_col_headers_by_idx(aggregate_col_idx)
-            aggregate_col_header = next(x for x in col_headers if x in df.columns)
+            aggregate_col_headers = self.db.get_df_col_headers_by_idx(aggregate_col_idx)
+            aggregate_col_header = next(x for x in aggregate_col_headers if x in df.columns)
+            logging.debug(f'Aggregate for {aggregate_col_header}')
 
-        def get_breakdown_label(row, ind_variables):
-            return_str = ''
-            for x in ind_variables:
-                return_str += str(row[x]) + '_'
-            return_str = return_str[:-1]  # remove trailing underscore
-            return return_str
-
-        if aggregate_col_header is None:
-            # just get the counts then
-            df = df.groupby(groupby_col_headers).size()
-            if len(groupby_col_headers) > 1:
-                df = df.unstack(fill_value=0).sort_index(axis=1).stack()
-            df = df.reset_index(name="Count")
-        else:
-            g = df.groupby(groupby_col_headers)
-
-            if aggregate_fxn == 'Count':
-                df = g[aggregate_col_header].value_counts().unstack(fill_value=0).sort_index(axis=1).reset_index()
-            elif aggregate_fxn == 'Percents':
-                df = (g[aggregate_col_header].value_counts(normalize=True)*100).round(1).unstack(fill_value=0).sort_index(axis=1).reset_index()
-            elif aggregate_fxn == 'Sum':
-                df = g.sum().reset_index()
-                df[aggregate_col_header] = df[aggregate_col_header].fillna(0)
-            elif aggregate_fxn == 'Mean':
-                df = (g.mean()).round(2).reset_index()
-                logging.debug(df)
-                df[aggregate_col_header] = df[aggregate_col_header].fillna(0)
-                logging.debug(df)
-            elif aggregate_fxn == 'Median':
-                df = (g.median()).round(2).reset_index()
-                df[aggregate_col_header] = df[aggregate_col_header].fillna(0)
+        # Code to generate filter permutations
+        filter_filters = []
+        for col_idx in groupby_col_idxs:
+            filter = filters[col_idx]
+            if filter['type'] == 'list':
+                filter_filters.append(filter['filter'])
+            elif filter['type'] == 'bins':
+                filter_filters.append([x for x in u.pairwise(filter['filter'])])
         
-        df['groupby_labels'] = df.apply(lambda x: get_breakdown_label(x, groupby_col_headers), axis=1)
-        logging.debug(df)
+        groupby_label_options = []
+        for filter_combo in itertools.product(*filter_filters):
+            label = ''
+            for i in filter_combo:
+                label += str(i) + '_'
+            label = label[:-1]
+            groupby_label_options.append(label)
+
+        if len(df) > 0:        
+            if aggregate_col_idx is None:
+                # just get the counts then
+                df = df.groupby(groupby_col_headers).size()
+                if len(groupby_col_headers) > 1:
+                    df = df.unstack(fill_value=0).sort_index(axis=1).stack()
+                df = df.reset_index(name="Count")
+            else:
+                g = df.groupby(groupby_col_headers)
+
+                if aggregate_fxn == 'Count':
+                    df = g[aggregate_col_header].value_counts().unstack(fill_value=0).sort_index(axis=1).reset_index()
+                elif aggregate_fxn == 'Percents':
+                    df = (g[aggregate_col_header].value_counts(normalize=True)*100).round(1).unstack(fill_value=0).sort_index(axis=1).reset_index()
+                elif aggregate_fxn == 'Sum':
+                    df = g.sum().reset_index()
+                    df[aggregate_col_header] = df[aggregate_col_header].fillna(0)
+                elif aggregate_fxn == 'Mean':
+                    df = (g.mean()).round(2).reset_index()
+                    logging.debug(df)
+                    df[aggregate_col_header] = df[aggregate_col_header].fillna(0)
+                    logging.debug(df)
+                elif aggregate_fxn == 'Median':
+                    df = (g.median()).round(2).reset_index()
+                    df[aggregate_col_header] = df[aggregate_col_header].fillna(0)
+            
+            def get_breakdown_label(row, ind_variables):
+                return_str = ''
+                for x in ind_variables:
+                    return_str += str(row[x]) + '_'
+                return_str = return_str[:-1]  # remove trailing underscore
+                return return_str
+
+            df['groupby_labels'] = df.apply(lambda x: get_breakdown_label(x, groupby_col_headers), axis=1)
+        else:
+            df['groupby_labels'] = None
+           
         df = df.drop(columns=groupby_col_headers)
-        logging.debug(df)
+        logging.debug(f'DF before adding in missing labels: {df}')
+        
+        found_labels = list(df['groupby_labels'].value_counts().index)
+        missing_labels = [x for x in groupby_label_options if x not in found_labels]
+        if len(missing_labels) > 0:
+            logging.debug(f'Missing following labels: {missing_labels}')
+            for missing_label in missing_labels:
+                df = df.append({'groupby_labels': missing_label}, ignore_index=True)
+            df = df.fillna(0)
+            logging.debug(f'DF after adding missing labels: {df}')
+
+        def find_sort_order(row):
+            return groupby_label_options.index(row['groupby_labels'])
+        
+        df['sort_order'] = df.apply(lambda x: find_sort_order(x), axis=1)
+        df = df.sort_values(by='sort_order')
+        df = df.drop(columns=['sort_order'])
         
         return df
 
@@ -816,19 +857,47 @@ class DataManager():
                 'possible_vals': sorted(list(series.unique()), key=lambda x: x.upper())
             }
 
-    def filter_df(self, df, filters):
+    def rewrite_filters(self, filters):
+        return_filters = {}
         for col_idx, filter in filters.items():
             if filter is not None:
-                col_header = next(x for x in self.db.get_df_col_headers_by_idx(col_idx) if x in df.columns)
                 if filter['type'] == 'list':
-                    df = df[df[col_header].isin(filter['filter'])]
+                    return_filters[col_idx] = filter
                 elif filter['type'] == 'range':
-                    df = df[(df[col_header] >= filter['filter']['min']) & (df[col_header] <= filter['filter']['max'])]
+                    min = D(filter['filter']['min'])
+                    max = D(filter['filter']['max'])
+                    num_bins = D(int(filter['filter']['bins']))
+                    step_size = (max-min)/num_bins
 
-                    if 'bins' in filter['filter']:
-                        df.loc[:, 'temp_col'] = pd.cut(df[col_header], bins=int(filter['filter']['bins']))
-                        df.loc[:, col_header] = df['temp_col']
-                        df = df.drop('temp_col', axis=1)
+                    current_cut = min
+                    bin_cuts = []
+                    while len(bin_cuts) < num_bins:
+                        try:
+                            pre_dec, post_dec = str(current_cut).split('.')  # code to reduce num digits after decimal
+                            if len(post_dec) > 2:
+                                current_cut = D(pre_dec + '.' + post_dec[:2])
+                        except ValueError:  # not a decimal
+                            pass
+                        bin_cuts.append(float(current_cut))
+                        current_cut += step_size
+                    bin_cuts.append(float(max))  # added in case there are rounding errors, and planning for choosing left-inclusive right-non-inclusive intervals
+                    return_filters[col_idx] = {'type': 'bins', 'filter': bin_cuts}
+            else:
+                return_filters[col_idx] = None
+
+        return return_filters
+
+    def filter_df(self, df, filters):
+        for col_idx, filter in filters.items():
+            col_headers = self.db.get_df_col_headers_by_idx(col_idx)
+            col_header = next(x for x in col_headers if x in df.columns)
+            if filter['type'] == 'list':
+                df = df[df[col_header].isin(filter['filter'])]
+            elif filter['type'] == 'bins':
+                bin_labels = [x for x in u.pairwise(filter['filter'])]
+                df[col_header] = pd.cut(df[col_header], filter['filter'], include_lowest=True, labels=bin_labels).dropna().astype(str)
+        
+        df = df.dropna()
         return df
 
 class ColumnFactory():

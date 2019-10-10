@@ -136,13 +136,17 @@ def get_graph_data():
 
     paths = db.find_paths_multi_columns(all_chosen_idxs)
     df = dm.get_biggest_joined_df_option_from_paths(paths, filter_col_idxs=all_chosen_idxs)
+    logging.debug(f'DF size before filtering: {len(df)}')
 
     filters = json.loads(request.args.get('filters', None))
-    logging.debug(filters)
+    logging.debug(f'Original filters: {filters}')
+    filters = dm.rewrite_filters(filters)
+    logging.debug(f'Rewritten filters: {filters}')
     if filters is not None:
         df = dm.filter_df(df, filters)
+    logging.debug(f'DF size after filtering: {len(df)}')
 
-    df = dm.aggregate_df(df, groupby_col_idxs=chosen_ind_idxs, aggregate_col_idx=chosen_outcome_idx, aggregate_fxn=aggregate_fxn)
+    df = dm.aggregate_df(df, groupby_col_idxs=chosen_ind_idxs, filters=filters, aggregate_col_idx=chosen_outcome_idx, aggregate_fxn=aggregate_fxn)
 
     logging.debug(df)
     df = df.fillna(0)  # for charting purposes.
