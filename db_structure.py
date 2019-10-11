@@ -759,7 +759,7 @@ class DataManager():
                     df = df.unstack(fill_value=0).sort_index(axis=1).stack()
                 df = df.reset_index(name="Count")
             else:
-                g = df.groupby(groupby_col_headers)
+                g = df.groupby(groupby_col_headers, observed=True)
 
                 if aggregate_fxn == 'Count':
                     df = g[aggregate_col_header].value_counts().unstack(fill_value=0).sort_index(axis=1).reset_index()
@@ -895,7 +895,7 @@ class DataManager():
                 df = df[df[col_header].isin(filter['filter'])]
             elif filter['type'] == 'bins':
                 bin_labels = [x for x in u.pairwise(filter['filter'])]
-                df[col_header] = pd.cut(df[col_header], filter['filter'], include_lowest=True, labels=bin_labels).dropna().astype(str)
+                df[col_header] = pd.cut(df[col_header], filter['filter'], include_lowest=True, labels=bin_labels).dropna()
         
         df = df.dropna()
         return df
