@@ -38,7 +38,7 @@
     {% for n in range(4) %}
         <div class="col-2">
             <div class="card" style="height: 100%" id="c{{n+1}}">
-                <h5 class="card-header" id="ch{{n+1}}"></h5>
+                <h6 class="card-header" id="ch{{n+1}}"></h5>
                 <div class="card-body" id="cb{{n+1}}">
                     {% if n == 3 %}
                         <div id="distribution_choices_text_div" style="display: none;">
@@ -128,10 +128,8 @@
                     $('#cb' + card_num).append(multiselect)
                 }
                 else {
-                    min_max_cols = $('<div class="row"><div class="col-5"><input type="text" class="form-control form-control-sm" id="min' + card_num +'" value=' + return_data.min + '></div><div class="col"></div><div class="col-5"><input type="text" class="form-control form-control-sm" id="max' + card_num + '" value=' + return_data.max + '></div></div>')
-                    slider = $('<input type="text" class="js-range-slider" value="" id="slider' + card_num + '"/>')
-                    $('#cb' + card_num).append(min_max_cols)
-                    $('#cb' + card_num).append(slider)
+                    card_body = $('<div class="row"><div class="col-5" style="padding: 0px;"><input type="text" class="form-control form-control-sm" id="min' + card_num +'" value=' + return_data.min + ' style="text-align: center;"></div><div class="col" style="padding: 0px;"></div><div class="col-5" style="padding: 0px;"><input type="text" class="form-control form-control-sm" id="max' + card_num + '" value=' + return_data.max + '  style="text-align: center;"></div></div><div class="row mt-2"></div><input type="text" class="js-range-slider" value="" id="slider' + card_num + '"/>')
+                    $('#cb' + card_num).append(card_body)
 
                     if (card_num == 1){
                         slider_obj = $('#slider1')
@@ -182,7 +180,7 @@
                         max_obj.val(new_max)
                     })
 
-                    split_div = $('<div class="form-group row mt-5"><label for="divide' + card_num + '" class="col col-form-label text-right" style="font-size: 14px;">Segment range</label><div class="col-5"><input type="number" id="divide' + card_num + '" class="form-control" value=1 min=1 max=20></div></div>')
+                    split_div = $('<div class="row mt-3"><label for="divide' + card_num + '" class="col col-form-label d-flex align-items-center" style="font-size: 14px;">Divide range into</label></div><div class="row"><div class="col-6" style="padding-right: 0px;"><input type="number" id="divide' + card_num + '" class="form-control" value=1 min=1 max=20></div><div class="col-6 d-flex align-items-center">parts</div></div></div>')
                     $('#cb' + card_num).append(split_div)
                 }
 
@@ -318,7 +316,6 @@
             'aggregate_fxn': aggregate_fxn,
             'filters': JSON.stringify(filters)
         }
-        console.log(send_data)
         
         $.ajax({
             type: "GET",
