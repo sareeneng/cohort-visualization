@@ -73,6 +73,13 @@
                     <span>Config</span></a>
                 </li>
             {% endif %}
+            {% if navbar_access['manage_users'] %}
+                <li class="nav-item active">
+                    <a class="nav-link" href="{{ url_for('manage_users') }}">
+                    <i class="fas fa-fw fa-users"></i>
+                    <span>Manage Users</span></a>
+                </li>
+            {% endif %}
         {% endif %}
 
        

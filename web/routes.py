@@ -1,20 +1,23 @@
 from db_structure import DB, DataManager
 from web import flask_app, db
-from web.forms import LoginForm, ChangePWForm
+from web.forms import LoginForm, ChangePWForm, AddUserForm, PermissionChangeForm
 from web.models import User, UserGroups, Group
-from flask import flash, jsonify, redirect, render_template, request, url_for, session
+from flask import flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_user, logout_user, fresh_login_required
+from sqlalchemy.exc import IntegrityError
 from functools import wraps
+from collections import defaultdict
 import json
 import logging
 import os
-import pandas as pd
 import time
 
 PAGE_ACCESS = {
     'visualization': ['Basic', 'Admin'],
-    'config': ['Admin']
+    'config': ['Admin'],
+    'manage_users': ['Admin']
 }
+
 
 # https://stackoverflow.com/questions/15871391/implementing-flask-login-with-multiple-user-classes
 def login_required(roles=["ANY"]):
@@ -25,10 +28,11 @@ def login_required(roles=["ANY"]):
                 return flask_app.login_manager.unauthorized()
             uroles = current_user.get_roles()
             if (len(set(roles).intersection(uroles)) == 0) and ("ANY" not in roles):
-                return flask_app.login_manager.unauthorized()      
+                return flask_app.login_manager.unauthorized()
             return fn(*args, **kwargs)
         return decorated_view
     return wrapper
+
 
 def navbar_access():
     uroles = current_user.get_roles()
@@ -39,6 +43,7 @@ def navbar_access():
         else:
             user_access[page] = False
     return user_access
+
 
 @flask_app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -63,10 +68,12 @@ def login():
         return redirect(url_for(next_page))
     return render_template('login.html', header='Sign In', form=form)
 
+
 @flask_app.route('/logout')
 def logout():
     logout_user()
     return redirect(url_for('login'))
+
 
 @flask_app.route('/change_pw', methods=['GET', 'POST'])
 def change_pw():
@@ -85,6 +92,7 @@ def change_pw():
 		return redirect(url_for('login'))
 	return render_template('change_pw.html', header='Change Password', navbar_access=navbar_access(), form=form)
 
+
 @flask_app.route('/')
 @flask_app.route('/index')
 @flask_app.route('/visualization')
@@ -96,6 +104,7 @@ def visualization():
         'NUMERIC': ['Mean', 'Median', 'Sum']
     }
     return render_template('visualization.html', header="Cohort Visualization", datasets=datasets, distribution_choices=distribution_choices, navbar_access=navbar_access())
+
 
 @flask_app.route('/get_column_info')
 @login_required(roles=PAGE_ACCESS['visualization'])
@@ -109,6 +118,7 @@ def get_column_info():
     col_info = dm.analyze_col_idx(col_idx)
 
     return jsonify(col_info)
+
 
 @flask_app.route('/get_graph_data')
 @login_required(roles=PAGE_ACCESS['visualization'])
@@ -156,8 +166,8 @@ def get_graph_data():
     datasets = []
     for outcome_possibility in outcome_possibilities:
         datasets.append({
-                'label': outcome_possibility,
-                'data': list(df[outcome_possibility])
+            'label': outcome_possibility,
+            'data': list(df[outcome_possibility])
         })
 
     groupby_col_names = [db.column_display_names[x] for x in chosen_ind_idxs]
@@ -183,6 +193,7 @@ def get_graph_data():
     end = time.time()
     logging.info(f'Took {end - start:.2f} seconds to get data')
     return jsonify(return_data)
+
 
 @flask_app.route('/get_accessible_variables')
 @login_required(roles=PAGE_ACCESS['visualization'])
@@ -215,6 +226,7 @@ def get_accessible_variables():
 
     return jsonify(return_data)
 
+
 @flask_app.route('/get_table_columns')
 @login_required(roles=PAGE_ACCESS['visualization'])
 def get_table_columns():
@@ -228,11 +240,13 @@ def get_table_columns():
 
     return jsonify(return_data)
 
+
 def create_temp_structure(dataset, config_dict):
     db = DB(os.path.join('datasets', dataset))
     db.finalize(temporary=True)
     # Code to run fake config
     return db
+
 
 @flask_app.route('/submit_config_dict', methods=['POST'])
 @login_required(roles=PAGE_ACCESS['config'])
@@ -255,6 +269,7 @@ def submit_config_dict():
     logging.debug(return_data)
     return jsonify(return_data)
 
+
 @flask_app.route('/get_metadata_config')
 @login_required(roles=PAGE_ACCESS['config'])
 def get_metadata_config():
@@ -273,8 +288,108 @@ def get_metadata_config():
 
     return jsonify(return_data)
 
+
 @flask_app.route('/config')
 @login_required(roles=PAGE_ACCESS['config'])
 def config():
     datasets = sorted([f.name for f in os.scandir('datasets') if f.is_dir()], key=lambda x: x.upper())
     return render_template('config.html', header='Configuration', datasets=datasets, navbar_access=navbar_access())
+
+
+@flask_app.route('/manage_users', methods=['GET', 'POST'])
+@login_required(roles=PAGE_ACCESS['manage_users'])
+@fresh_login_required
+def manage_users():
+	add_user_form = AddUserForm()
+	permission_change_form = PermissionChangeForm()
+	if request.method == 'POST':
+		if request.form.get('submit') == 'Add User':
+			logging.info(f'Adding user {add_user_form.username.data} - {add_user_form.last_name.data}, {add_user_form.first_name.data}')
+
+			new_user_obj = User(
+				username=add_user_form.username.data,
+				first_name=add_user_form.first_name.data,
+				last_name=add_user_form.last_name.data
+			)
+			new_user_obj.set_password(add_user_form.username.data)
+			db.session.add(new_user_obj)
+			try:
+				db.session.flush()
+				new_user_id = new_user_obj.id
+				basic_group_id = db.session.query(Group).filter(Group.group_name == 'Basic').first().id
+				new_user_group_rel = UserGroups(user_id=new_user_id, group_id=basic_group_id)
+				db.session.add(new_user_group_rel)
+				db.session.commit()
+				flash(f'Added {add_user_form.username.data}')
+			except IntegrityError:
+				logging.error(f'Username {add_user_form.username.data} is already in the db')
+				flash(f'Username {add_user_form.username.data} is already in the db')
+		
+		elif request.form.get('submit') == 'Submit User Changes':
+			if current_user.check_password(permission_change_form.password.data):
+				data = json.loads(request.form['data'])
+				logging.debug(f'Submitting change: {data}')
+				for new_data in data['updated_permissions']:
+					username = new_data.pop('user')
+					new_name = new_data.pop('name')
+					new_last_name, new_first_name = new_name.replace(' ', '').split(',')
+					if new_last_name == 'None':
+						new_last_name = None
+					if new_first_name == 'None':
+						new_first_name = None
+					
+					user_obj = db.session.query(User).filter(User.username == username).first()
+					user_id = user_obj.id
+					current_roles = set(user_obj.get_roles())
+					user_obj.first_name = new_first_name
+					user_obj.last_name = new_last_name
+					db.session.commit()
+					
+					# Remaining keys are all roles
+					new_roles = set([k for k, v in new_data.items() if v in ['true', True]])
+					new_non_roles = set([k for k, v in new_data.items() if v in ['false', False]])
+
+					add_roles = new_roles - current_roles
+					remove_roles = current_roles.intersection(new_non_roles)
+
+					for add_role in add_roles:
+						logging.info(f'Adding role {add_role} to {username}')
+						group_id = db.session.query(Group).filter(add_role == Group.group_name).first().id
+						new_user_group_rel = UserGroups(user_id=user_id, group_id=group_id)
+						db.session.add(new_user_group_rel)
+					db.session.commit()
+
+					for remove_role in remove_roles:
+						logging.info(f'Removing role {remove_role} from {username}')
+						group_id = db.session.query(Group).filter(remove_role == Group.group_name).first().id
+						db.session.query(UserGroups).filter(UserGroups.user_id == user_id, UserGroups.group_id == group_id).delete()
+					db.session.commit()
+
+			else:
+				logging.info(f'Invalid password')
+				flash('Invalid password')
+
+		return redirect(url_for('manage_users'))
+
+	user_groups = db.session.query(UserGroups, User, Group).join(User, Group).all()
+	all_usernames = [x.username for x in db.session.query(User).all()]
+	all_groupnames = [x.group_name for x in db.session.query(Group).all()]
+
+	permission_dict = defaultdict(dict)
+	for user in all_usernames:
+		for group in all_groupnames:
+			permission_dict[user][group] = False
+
+	for user_group_access in user_groups:
+		permission_dict[user_group_access.User.username][user_group_access.Group.group_name] = True
+
+	permission_list = []
+	for user, permissions in permission_dict.items():
+		add_dict = {}
+		user_obj = db.session.query(User).filter(User.username == user).first()
+		add_dict['user'] = user
+		add_dict['name'] = user_obj.full_name
+		for k, v in permissions.items():
+			add_dict[k] = v
+		permission_list.append(add_dict)
+	return render_template('manage_users.html', header="Manage Users", navbar_access=navbar_access(), permissions=permission_list, add_user_form=add_user_form, permission_change_form=permission_change_form)
