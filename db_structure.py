@@ -3,7 +3,6 @@ import os
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
 import itertools
-from functools import wraps
 from collections import defaultdict
 import utilities as u
 import logging
@@ -21,6 +20,7 @@ If the tables have a 1:1 relationship, then they are siblings (bidirectional arr
 If the tables have a many:1 relationship, then the many table is the parent of the 1 table (many table is left table in a join) (unidirectional arrow in directed graph)
 There is no support for many:many relationships.
 '''
+
 
 class DB():
     def __init__(self, directory_path, arch_file=None, config_dict=None, data_file_extension='.csv', delimiter=','):
@@ -65,7 +65,6 @@ class DB():
                 self.finalize(temporary=True)
             else:
                 self.init_blank_config()
-            
 
     def load_arch_file(self, arch_path, metadata_only=False):
         logging.info(f'Loading arch file: {arch_path}')
@@ -100,7 +99,7 @@ class DB():
         self.custom_fks = []
         self.exclude_columns = []
         self.custom_column_names = defaultdict(defaultdict)
-   
+
     def init_blank_struct(self):
         self.column_links = defaultdict(dict)
         self.column_display_names = {}
@@ -182,7 +181,7 @@ class DB():
         return return_dict
 
     def table_has_column(self, table, column):
-        return self.column_metadata[table].get(column, None) is not None 
+        return self.column_metadata[table].get(column, None) is not None
 
     def get_column_type(self, table, column):
         return self.column_metadata[table][column]['type']
@@ -242,7 +241,7 @@ class DB():
                 logging.error(f'{global_fk} is not in common column names: {self.common_column_names}')
             else:
                 self.global_fks.append(global_fk)
-        
+
     def add_exclude_column(self, exclude_column_idx):
         if self.config_changes_allowed:
             self.exclude_columns.append(exclude_column_idx)
@@ -411,6 +410,7 @@ class DB():
             col_headers.append(f'{column}_[{table}]')
         
         return col_headers
+
     def get_joining_col_idx(self, table_1, table_2):
         col_idx_1 = self.get_table_col_idxs(table_1)
         col_idx_2 = self.get_table_col_idxs(table_2)
@@ -540,7 +540,7 @@ class DB():
         if (destination_table in self.find_table_all_connectable_tables(start_table)):  # immediately return valid path rather than going through children/siblings
             all_paths.append(current_path.copy() + [destination_table])
             return all_paths
-            
+
         elif len(self.find_table_children(start_table)) == 0 and len(self.find_table_siblings(start_table)) == 0:  # destination table wasn't found and this path has nowhere else to go
             return []
 
@@ -586,10 +586,10 @@ class DB():
         
         valid_incomplete_paths = []
         for permutation in permutations:
-            is_valid=True
+            is_valid = True
             for pair in u.pairwise(permutation):
                 if len(self.find_paths_between_tables(start_table=pair[0], destination_table=pair[1])) == 0:
-                    is_valid=False
+                    is_valid = False
             if is_valid:
                 valid_incomplete_paths.append(permutation)
         
@@ -599,13 +599,13 @@ class DB():
             # combo [B,A,F]
             # BA --> [[B,A]]
             # AF --> [[A,D,C,F],[A,C,F],[A,B,E,F]]
-            for pair in u.pairwise(valid_incomplete_path):	
+            for pair in u.pairwise(valid_incomplete_path):
                 path_possibilities_pairwise.append(self.find_paths_between_tables(start_table=pair[0], destination_table=pair[1]))
-            #print(path_possibilities_pairwise)
+            # print(path_possibilities_pairwise)
             combos = itertools.product(*path_possibilities_pairwise)
             for combo in combos:
                 unflattened_valid_complete_paths.append(list(combo))
-            
+
         flattened_valid_complete_paths = []
         for l in unflattened_valid_complete_paths:
             flattened_valid_complete_paths.append(list(u.flatten(l)))
@@ -616,7 +616,7 @@ class DB():
 
     def find_paths_multi_columns(self, list_of_column_idxs, fix_first=False):
         '''
-        Given a list of columns that need to be traversed along a single path, call find_paths_multi_tables to find paths between then	
+        Given a list of columns that need to be traversed along a single path, call find_paths_multi_tables to find paths between then
         Fix_first is useful when you want to breakdown some outcome by different variables. For example, if you want to get Income broken down by State and Profession, then start_column = Income column, and list_of_columns = [State column, Profession column]
         '''
 
@@ -644,7 +644,7 @@ class DB():
 
         dedup_valid_column_paths = u.remove_duplicated_lists(valid_column_paths)
         return dedup_valid_column_paths
-    
+
 
 class DataManager():
     def __init__(self, db, load_all_data=False):
@@ -699,7 +699,7 @@ class DataManager():
                     idx_all_headers = self.db.get_df_col_headers_by_idx(idx)
                     common_headers = [x for x in idx_all_headers if x in df.columns]
                     col_headers += common_headers
-                df = df.loc[:, col_headers]			
+                df = df.loc[:, col_headers]
             df_choices.append(df)
         return df_choices
 
@@ -751,7 +751,7 @@ class DataManager():
             label = label[:-1]
             groupby_label_options.append(label)
 
-        if len(df) > 0:        
+        if len(df) > 0:
             if aggregate_col_idx is None:
                 # just get the counts then
                 df = df.groupby(groupby_col_headers).size()
@@ -764,7 +764,7 @@ class DataManager():
                 if aggregate_fxn == 'Count':
                     df = g[aggregate_col_header].value_counts().unstack(fill_value=0).sort_index(axis=1).reset_index()
                 elif aggregate_fxn == 'Percents':
-                    df = (g[aggregate_col_header].value_counts(normalize=True)*100).round(1).unstack(fill_value=0).sort_index(axis=1).reset_index()
+                    df = (g[aggregate_col_header].value_counts(normalize=True) * 100).round(1).unstack(fill_value=0).sort_index(axis=1).reset_index()
                 elif aggregate_fxn == 'Sum':
                     df = g.sum().reset_index()
                     df[aggregate_col_header] = df[aggregate_col_header].fillna(0)
@@ -787,7 +787,7 @@ class DataManager():
             df['groupby_labels'] = df.apply(lambda x: get_breakdown_label(x, groupby_col_headers), axis=1)
         else:
             df['groupby_labels'] = None
-           
+
         df = df.drop(columns=groupby_col_headers)
         logging.debug(f'DF before adding in missing labels: {df}')
         
@@ -867,7 +867,7 @@ class DataManager():
                     min = D(filter['filter']['min'])
                     max = D(filter['filter']['max'])
                     num_bins = D(int(filter['filter']['bins']))
-                    step_size = (max-min)/num_bins
+                    step_size = (max - min) / num_bins
 
                     current_cut = min
                     bin_cuts = []
@@ -900,6 +900,7 @@ class DataManager():
         df = df.dropna()
         return df
 
+
 class ColumnFactory():
     def __init__(self, custom_column_names):
         self.counter = 0
@@ -911,7 +912,8 @@ class ColumnFactory():
         self.columns[self.counter] = new_column
         self.counter += 1
         return new_column
-        
+
+
 class Column():
     def __init__(self, id, shared=False, repetitive=False):
         self.id = id
