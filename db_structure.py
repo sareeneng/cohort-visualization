@@ -866,7 +866,10 @@ class DataManager():
                 elif filter['type'] == 'range':
                     min = D(filter['filter']['min'])
                     max = D(filter['filter']['max'])
-                    num_bins = D(int(filter['filter']['bins']))
+                    try:
+                        num_bins = D(int(filter['filter']['bins']))
+                    except ValueError:
+                        num_bins = 1
                     step_size = (max - min) / num_bins
 
                     current_cut = min
