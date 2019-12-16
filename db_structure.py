@@ -131,7 +131,7 @@ class DB():
         
         with open(arch_path, 'w') as f:
             json.dump(arch_data, f, indent=4)
-    
+
     ###############
     # Metadata type fxns - these are completely dependent on the files
     ###############
