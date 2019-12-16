@@ -1,7 +1,7 @@
-from db_structure import DB, DataManager
+from db_structure import DBExtractor
 from web import flask_app, db
 from web.forms import LoginForm, ChangePWForm, AddUserForm, PermissionChangeForm
-from web.models import User, UserGroups, Group
+from web.models import ColumnMetadata, DatasetMetadata, TableMetadata, Group, User, UserGroups
 from flask import flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_user, logout_user, fresh_login_required
 from sqlalchemy.exc import IntegrityError
@@ -9,8 +9,6 @@ from functools import wraps
 from collections import defaultdict
 import json
 import logging
-import os
-import time
 
 PAGE_ACCESS = {
     'visualization': ['Basic', 'Admin'],
@@ -98,7 +96,8 @@ def change_pw():
 @flask_app.route('/visualization')
 @login_required(roles=PAGE_ACCESS['visualization'])
 def visualization():
-    datasets = sorted([f.name for f in os.scandir('datasets') if f.is_dir() and f.name[0:6] != 'sample'], key=lambda x: x.upper())
+    datasets = sorted([x[0] for x in db.session.query(DatasetMetadata.dataset_name).all()], key=lambda x: x.upper())
+
     distribution_choices = {
         'TEXT': ['Count', 'Percents'],
         'NUMERIC': ['Mean', 'Median', 'Sum']
@@ -109,13 +108,10 @@ def visualization():
 @flask_app.route('/get_column_info')
 @login_required(roles=PAGE_ACCESS['visualization'])
 def get_column_info():
-    chosen_dataset = request.args.get('chosen_dataset')
-    col_idx = request.args.get('idx')
-
-    db = DB(os.path.join('datasets', chosen_dataset))
-    dm = DataManager(db)
-
-    col_info = dm.analyze_col_idx(col_idx)
+    column_id = request.args.get('column_id')
+    found_row = db.session.query(ColumnMetadata).filter(ColumnMetadata.id == column_id).first()
+    db_extractor = DBExtractor(found_row.dataset_name)
+    col_info = db_extractor.analyze_column(table=found_row.table_name, column=found_row.column_source_name)
 
     return jsonify(col_info)
 
@@ -123,63 +119,70 @@ def get_column_info():
 @flask_app.route('/get_graph_data')
 @login_required(roles=PAGE_ACCESS['visualization'])
 def get_graph_data():
-    start = time.time()
     return_data = {}
     chosen_dataset = request.args.get('chosen_dataset')
-    chosen_ind_idxs = request.args.getlist('chosen_ind_idxs[]', None)
-    if len(chosen_ind_idxs) == 0:
+    chosen_ind_column_ids = request.args.getlist('chosen_ind_column_ids[]', None)
+    chosen_ind_column_ids = [int(x) for x in chosen_ind_column_ids]
+    if len(chosen_ind_column_ids) == 0:
         return jsonify({})
     
-    chosen_outcome_idx = request.args.get('chosen_outcome_idx', None)
-    if chosen_outcome_idx == '':
-        chosen_outcome_idx = None
+    chosen_outcome_column_id = request.args.get('chosen_outcome_column_id', None)
+    if chosen_outcome_column_id == '':
+        chosen_outcome_column_id = None
+    else:
+        chosen_outcome_column_id = int(chosen_outcome_column_id)
 
     aggregate_fxn = request.args.get('aggregate_fxn')
+
+    column_metadata = db.session.query(ColumnMetadata).filter(ColumnMetadata.id.in_(chosen_ind_column_ids + [chosen_outcome_column_id])).all()
+
+    db_extractor = DBExtractor(dataset_name=chosen_dataset)
+
+    tables = list(set(x.table_name for x in column_metadata))
+    table_columns_of_interest = [(x.table_name, x.column_source_name) for x in column_metadata]
+    groupby_columns = [f'{x.table_name}_{x.column_source_name}' for x in column_metadata if x.id in chosen_ind_column_ids]
+
+    aggregate_column = None
+    aggregate_column_display_name = None
+    for x in column_metadata:
+        if x.id == chosen_outcome_column_id:
+            aggregate_column = f'{x.table_name}_{x.column_source_name}'
+            aggregate_column_display_name = x.column_custom_name
+
+    paths = db_extractor.find_paths_multi_tables(tables)
+    df = db_extractor.get_biggest_df_from_paths(paths, table_columns_of_interest)
+
+    # Gets filters with {column_id: filter data}
+    filters_with_id_keys = json.loads(request.args.get('filters', None))
+    # Need to rewrite to {table_columnsource: filter_data}
+    filters_with_name_keys = {}
+    for column_id_str, filter in filters_with_id_keys.items():
+        column_id = int(column_id_str)
+        for x in column_metadata:
+            if x.id == column_id:
+                filters_with_name_keys[f'{x.table_name}_{x.column_source_name}'] = filter
+                continue
     
-    db = DB(os.path.join('datasets', chosen_dataset))
-    dm = DataManager(db, load_all_data=True)
+    aggregated_df = db_extractor.aggregate_df(df, groupby_columns, filters_with_name_keys, aggregate_column, aggregate_fxn)
 
-    if chosen_outcome_idx is None:
-        all_chosen_idxs = chosen_ind_idxs
-    else:
-        all_chosen_idxs = [chosen_outcome_idx] + chosen_ind_idxs
-
-    paths = db.find_paths_multi_columns(all_chosen_idxs)
-    df = dm.get_biggest_joined_df_option_from_paths(paths, filter_col_idxs=all_chosen_idxs)
-    logging.debug(f'DF size before filtering: {len(df)}')
-
-    filters = json.loads(request.args.get('filters', None))
-    logging.debug(f'Original filters: {filters}')
-    filters = dm.rewrite_filters(filters)
-    logging.debug(f'Rewritten filters: {filters}')
-    if filters is not None:
-        df = dm.filter_df(df, filters)
-    logging.debug(f'DF size after filtering: {len(df)}')
-
-    df = dm.aggregate_df(df, groupby_col_idxs=chosen_ind_idxs, filters=filters, aggregate_col_idx=chosen_outcome_idx, aggregate_fxn=aggregate_fxn)
-
-    logging.debug(df)
-    df = df.fillna(0)  # for charting purposes.
-
-    labels = list(df['groupby_labels'])
-    outcome_possibilities = [x for x in df.columns if x != 'groupby_labels']
+    labels = list(aggregated_df['groupby_labels'])
+    outcome_possibilities = [x for x in aggregated_df.columns if x != 'groupby_labels']
     datasets = []
     for outcome_possibility in outcome_possibilities:
         datasets.append({
             'label': outcome_possibility,
-            'data': list(df[outcome_possibility])
+            'data': list(aggregated_df[outcome_possibility])
         })
 
-    groupby_col_names = [db.column_display_names[x] for x in chosen_ind_idxs]
+    groupby_col_names = [x.column_custom_name for x in column_metadata if x.id in chosen_ind_column_ids]
     groupby_axis_label = ''
     for x in groupby_col_names:
         groupby_axis_label += x + '_'
     groupby_axis_label = groupby_axis_label[:-1]
-    if chosen_outcome_idx is None:
+    if aggregate_column_display_name is None:
         title = f'{aggregate_fxn} broken down by {groupby_axis_label}'
     else:
-        aggregate_axis_label = db.column_display_names[chosen_outcome_idx]
-        title = f'{aggregate_fxn} of {aggregate_axis_label} broken down by {groupby_axis_label}'
+        title = f'{aggregate_fxn} of {aggregate_column_display_name} broken down by {groupby_axis_label}'
 
     return_data = {
         'labels': labels,
@@ -188,113 +191,61 @@ def get_graph_data():
         'xaxis_label': groupby_axis_label,
         'yaxis_label': aggregate_fxn
     }
-    logging.debug(return_data)
-    
-    end = time.time()
-    logging.info(f'Took {end - start:.2f} seconds to get data')
+
     return jsonify(return_data)
 
 
-@flask_app.route('/get_accessible_variables')
+@flask_app.route('/get_accessible_tables')
 @login_required(roles=PAGE_ACCESS['visualization'])
-def get_accessible_variables():
+def get_accessible_tables():
     return_data = {}
     chosen_dataset = request.args.get('chosen_dataset')
-    db = DB(os.path.join('datasets', chosen_dataset))
-    column_display_names = db.get_all_column_display_names()
+    chosen_ind_column_ids = request.args.getlist('chosen_ind_column_ids[]', None)
+    chosen_outcome_column_id = request.args.get('chosen_outcome_column_id', None)
+    all_tables = [x[0] for x in db.session.query(TableMetadata.table_name).filter(TableMetadata.dataset_name == chosen_dataset).all()]
     
-    chosen_ind_idxs = request.args.getlist('chosen_ind_idxs[]', None)
-    chosen_outcome_idx = request.args.get('chosen_outcome_idx', None)
-    accessible_list = []
-    if len(chosen_ind_idxs) == 0 and chosen_outcome_idx in [None, '']:
+    if len(chosen_ind_column_ids) == 0 and chosen_outcome_column_id in [None, '']:
         # User hasn't chosen anything yet, so both the independent variables and outcome variables will have the same options. This will happen when dataset has changed
-        for idx, name in column_display_names.items():
-            accessible_list.append((idx, name, True))
+        for table in all_tables:
+            return_data[table] = True
     else:
-        if chosen_outcome_idx in [None, '']:
-            all_chosen_idxs = chosen_ind_idxs
+        if chosen_outcome_column_id in [None, '']:
+            all_chosen_column_ids = chosen_ind_column_ids
         else:
-            all_chosen_idxs = [chosen_outcome_idx] + chosen_ind_idxs
+            all_chosen_column_ids = [chosen_outcome_column_id] + chosen_ind_column_ids
 
-        accessible_col_idxs = db.find_column_idxs_still_accessible_idxs(all_chosen_idxs)
-        for idx, name in column_display_names.items():
-            accessible_list.append((idx, name, idx in accessible_col_idxs))
-    
-    sorted_accessible_list = sorted(accessible_list, key=lambda x: list(i.upper() for i in x[1]))
-
-    return_data['accessible_columns_list'] = sorted_accessible_list
+        include_tables = list(set([x[0] for x in db.session.query(ColumnMetadata.table_name).filter(ColumnMetadata.id.in_(all_chosen_column_ids))]))
+        
+        db_extractor = DBExtractor(dataset_name=chosen_dataset)
+        accessible_tables = db_extractor.find_multi_tables_still_accessible_tables(include_tables=include_tables)
+        for table in all_tables:
+            if table in include_tables or table in accessible_tables:
+                return_data[table] = True
+            else:
+                return_data[table] = False
 
     return jsonify(return_data)
-
 
 @flask_app.route('/get_table_columns')
 @login_required(roles=PAGE_ACCESS['visualization'])
 def get_table_columns():
-    return_data = {}
+    return_data = defaultdict(list)
     chosen_dataset = request.args.get('chosen_dataset')
-    db = DB(os.path.join('datasets', chosen_dataset))
-    return_data['table_columns'] = db.get_all_table_columns()
-    return_data['column_display_names'] = db.column_display_names
-    return_data['column_links'] = db.column_links
-    return_data['exclude_columns'] = db.exclude_columns
+    column_metadata = db.session.query(ColumnMetadata).filter(ColumnMetadata.dataset_name == chosen_dataset, ColumnMetadata.visible == True).all()  # noqa: E712
+
+    for x in column_metadata:
+        return_data[x.table_name].append({'column_id': x.id, 'column_custom_name': x.column_custom_name})
+
+    for k, v in return_data.items():
+        return_data[k] = sorted(return_data[k], key=lambda x: x['column_custom_name'].upper())
 
     return jsonify(return_data)
-
-
-def create_temp_structure(dataset, config_dict):
-    db = DB(os.path.join('datasets', dataset))
-    db.finalize(temporary=True)
-    # Code to run fake config
-    return db
-
-
-@flask_app.route('/submit_config_dict', methods=['POST'])
-@login_required(roles=PAGE_ACCESS['config'])
-def submit_config_dict():
-    data = request.get_json()
-    logging.debug(data)
-    dataset = data.get('chosen_dataset')
-    config_dict = data.get('config_dict')
-    logging.debug(config_dict)
-    
-    db = DB(os.path.join('datasets', dataset), config_dict=config_dict)
-    db.finalize()
-
-    return_data = {
-        'column_links': db.column_links,
-        'custom_column_names': db.custom_column_names,
-        'column_display_names': db.column_display_names,
-        'exclude_columns': db.exclude_columns
-    }
-    logging.debug(return_data)
-    return jsonify(return_data)
-
-
-@flask_app.route('/get_metadata_config')
-@login_required(roles=PAGE_ACCESS['config'])
-def get_metadata_config():
-    chosen_dataset = request.args.get('chosen_dataset')
-    db = DB(os.path.join('datasets', chosen_dataset))
-    config_dict = db.get_config_dict()
-    
-    return_data = {
-        'common_column_names': db.common_column_names,
-        'table_columns': db.get_all_table_columns(),
-        'config_dict': config_dict,
-        'column_metadata': db.column_metadata
-    }
-
-    logging.debug(return_data)
-
-    return jsonify(return_data)
-
 
 @flask_app.route('/config')
 @login_required(roles=PAGE_ACCESS['config'])
 def config():
-    datasets = sorted([f.name for f in os.scandir('datasets') if f.is_dir()], key=lambda x: x.upper())
+    datasets = sorted([x[0] for x in db.session.query(DatasetMetadata.dataset_name).all()], key=lambda x: x.upper())
     return render_template('config.html', header='Configuration', datasets=datasets, navbar_access=navbar_access())
-
 
 @flask_app.route('/manage_users', methods=['GET', 'POST'])
 @login_required(roles=PAGE_ACCESS['manage_users'])
