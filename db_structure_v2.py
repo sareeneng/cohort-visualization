@@ -399,3 +399,81 @@ class DBExtractor():
         logging.info(sql_statement)
         df = pd.read_sql(sql_statement, con=self.engine)
         return df
+
+    def aggregate_df(self, df_original, groupby_columns, filters, aggregate_column=None, aggregate_fxn='Count'):
+        logging.debug(f'Aggregate by {groupby_columns}')
+        if aggregate_column is not None:
+            logging.debug(f'Aggregate for {aggregate_column}')
+        
+        df = df_original.copy(deep=True)
+
+        # Code to generate filter perumutations
+        filter_filters = []
+        for column in groupby_columns:
+            filter = filters[column]
+            if filter['type'] == 'list':
+                filter_filters.append(filter['filter'])
+            elif filter['type'] == 'bins':
+                filter_filters.append([x for x in u.pairwise(filter['filter'])])
+        
+        groupby_label_options = []
+        for filter_combo in itertools.product(*filter_filters):
+            label = ''
+            for i in filter_combo:
+                label += str(i) + '_'
+            label = label[:-1]
+            groupby_label_options.append(label)
+        
+        if len(df) > 0:
+            if aggregate_column is None:
+                # just get the counts then
+                df = df.groupby(groupby_columns).size()
+                if len(groupby_columns) > 1:
+                    df = df.unstack(fill_value=0).sort_index(axis=1).stack()
+                df = df.reset_index(name='Count')
+            else:
+                g = df.groupby(groupby_columns, observed=True)
+
+                if aggregate_fxn == 'Count':
+                    df = g[aggregate_column].value_counts().unstack(fill_value=0).sort_index(axis=1).reset_index()
+                elif aggregate_fxn == 'Percents':
+                    df = (g[aggregate_column].value_counts(normalize=True) * 100).round(1).unstack(fill_value=0).sort_index(axis=1).reset_index()
+                elif aggregate_fxn == 'Sum':
+                    df = g.sum().reset_index()
+                    df[aggregate_column] = df[aggregate_column].fillna(0)
+                elif aggregate_fxn == 'Mean':
+                    df = (g.mean()).round(2).reset_index()
+                    df[aggregate_column] = df[aggregate_column].fillna(0)
+                elif aggregate_fxn == 'Median':
+                    df = (g.median()).round(2).reset_index()
+                    df[aggregate_column] = df[aggregate_column].fillna(0)
+
+            def get_breakdown_label(row, ind_variables):
+                return_str = ''
+                for x in ind_variables:
+                    return_str += str(row[x]) + '_'
+                return_str = return_str[:-1]  # remove trailing underscore
+                return return_str
+
+            df['groupby_labels'] = df.apply(lambda x: get_breakdown_label(x, groupby_columns), axis=1)
+        else:
+            df['groupby_labels'] = None
+
+        df = df.drop(columns=groupby_columns)
+        found_labels = list(df['groupby_labels'].value_counts().index)
+        missing_labels = [x for x in groupby_label_options if x not in found_labels]
+        if len(missing_labels) > 0:
+            logging.debug(f'Missing following labels: {missing_labels}')
+            for missing_label in missing_labels:
+                df = df.append({'groupby_labels': missing_label}, ignore_index=True)
+            df = df.fillna(0)
+            logging.debug(f'DF after adding missing labels: {df}')
+        
+        def find_sort_order(row):
+            return groupby_label_options.index(row['groupby_labels'])
+        
+        df['sort_order'] = df.apply(lambda x: find_sort_order(x), axis=1)
+        df = df.sort_values(by='sort_order')
+        df = df.drop(columns=['sort_order'])
+        
+        return df
