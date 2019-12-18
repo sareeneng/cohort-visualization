@@ -1,13 +1,33 @@
-import db_structure
+import db_structure_v2
 import os
 import utilities as u
-import pandas as pd
 import unittest
+
 
 class TestPathFinding(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.db = db_structure.DB(os.path.join('datasets', 'sample2'))
+        self.directory_path = os.path.join('datasets', 'sample2')
+        self.db_maker = db_structure_v2.DBMaker(directory_path=self.directory_path)
+        self.db_maker.create_db()
+        self.db_linker = db_structure_v2.DBLinker(directory_path=self.directory_path)
+        self.db_linker.add_global_fk('col1')
+        self.db_linker.add_global_fk('col2')
+        self.db_linker.add_global_fk('col3')
+        self.db_linker.add_global_fk('col4')
+        self.db_linker.add_global_fk('col5')
+        self.db_linker.add_global_fk('col6')
+        self.db_linker.add_global_fk('col7')
+        self.db_linker.add_global_fk('col8')
+        self.db_linker.finalize()
+        self.db = db_structure_v2.DBExtractor(directory_path=self.directory_path)
+
+    @classmethod
+    def tearDownClass(self):
+        print('Removing files')
+        os.remove(os.path.join(self.directory_path, 'sample2.db'))
+        os.remove(os.path.join(self.directory_path, 'sample2.links'))
+        os.remove(os.path.join(self.directory_path, 'sample2.metadata'))
         
     def test_two_tables(self):
         x = self.db.find_paths_between_tables('A', 'F')
@@ -53,21 +73,6 @@ class TestPathFinding(unittest.TestCase):
         x = self.db.find_paths_multi_tables(['D', 'C', 'F'], fix_first=True)
         self.assertEqual([['D', 'C', 'F']], x)
 
-        colx = self.db.get_col_idx('A', 'col1')
-        coly = self.db.get_col_idx('B', 'col4')  # in tables B, E
-        colz = self.db.get_col_idx('F', 'col8')  # only in table F
-
-        x = self.db.find_paths_multi_columns([colx, coly, colz])
-        self.assertEqual(len(x), 6)
-        self.assertIn(['A', 'B', 'E', 'F'], x)
-        self.assertIn(['A', 'B', 'A', 'D', 'C', 'F'], x)
-        self.assertIn(['A', 'B', 'A', 'C', 'F'], x)
-        self.assertIn(['B', 'A', 'D', 'C', 'F'], x)
-        self.assertIn(['B', 'A', 'C', 'F'], x)
-        self.assertIn(['B', 'A', 'B', 'E', 'F'], x)
-
-        x = self.db.find_paths_multi_columns([colx, coly, colz], fix_first=True)
-        self.assertEqual(len(x), 3)
 
 class TestUtilities(unittest.TestCase):
     def test_duplicate_handling(self):
@@ -87,6 +92,7 @@ class TestUtilities(unittest.TestCase):
         
         x = u.remove_duplicates(['A', 'A'])
         self.assertEqual(['A'], x)
+
 
 if __name__ == '__main__':
     unittest.main()
