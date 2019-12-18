@@ -1,6 +1,8 @@
 from collections import Iterable
+from decimal import Decimal as D
 import itertools
 import os
+
 
 def remove_duplicated_lists(list_of_lists):
     # Given list of lists, remove lists that are already seen in the bigger container
@@ -10,6 +12,7 @@ def remove_duplicated_lists(list_of_lists):
         if indiv_list not in dedup_list:
             dedup_list.append(indiv_list)
     return dedup_list
+
 
 def remove_adjacent_repeats(list_of_lists):
     # Given list of lists with duplicated data in each list, remove tables that are the same that are right next to each other
@@ -29,6 +32,7 @@ def remove_adjacent_repeats(list_of_lists):
         dedup_list.append(list_to_add)
     return dedup_list
 
+
 def remove_duplicates(single_list):
     # remove any repeats in a single list
     dedup_list = []
@@ -37,11 +41,13 @@ def remove_duplicates(single_list):
             dedup_list.append(x)
     return dedup_list
 
+
 def pairwise(iterable):
     # s -> (s0,s1), (s1,s2), (s2, s3), ...
     a, b = itertools.tee(iterable)
     next(b, None)
     return zip(a, b)
+
 
 def flatten(l):
     for el in l:
@@ -50,5 +56,17 @@ def flatten(l):
         else:
             yield el
 
+
 def find_file_types(directory_path, extension):
     return [x for x in os.listdir(directory_path) if x.endswith(extension)]
+
+
+def reduce_precision(number, precision=2):
+    pre_dec, post_dec = str(number).split('.')
+    if len(post_dec) > precision:
+        number_str = pre_dec + '.' + post_dec[:precision]
+        
+        if type(number) in [D, float]:
+            return D(number_str)
+        return number_str
+    return number

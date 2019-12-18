@@ -7,7 +7,9 @@ import constants as c
 import utilities as u
 
 from collections import defaultdict
+from decimal import Decimal as D
 from sqlalchemy import create_engine
+from pandas.api.types import is_numeric_dtype
 
 
 class DBMaker():
@@ -406,15 +408,32 @@ class DBExtractor():
             logging.debug(f'Aggregate for {aggregate_column}')
         
         df = df_original.copy(deep=True)
+        df = df.dropna()
 
-        # Code to generate filter perumutations
+        # Code to generate filter perumutations and do actual filtering
         filter_filters = []
         for column in groupby_columns:
-            filter = filters[column]
-            if filter['type'] == 'list':
+            filter = filters.get(column, None)
+            if filter is None:
+                series = df.loc[:, column]
+                if is_numeric_dtype(series):
+                    min = u.reduce_precision(series.min(), 2)
+                    max = u.reduce_precision(series.max(), 2)
+
+                    label = f'({min}, {max})'
+                    df[column] = label
+                    filter_filters.append([label])
+                else:
+                    filter_filters.append(sorted(series.unique(), key=lambda x: x.upper()))
+            elif filter['type'] == 'list':
                 filter_filters.append(filter['filter'])
-            elif filter['type'] == 'bins':
-                filter_filters.append([x for x in u.pairwise(filter['filter'])])
+                df = df[df[column].isin(filter['filter'])]
+            elif filter['type'] == 'range':
+                bin_cuts = self.get_bin_cuts(filter['filter']['min'], filter['filter']['max'], filter['filter']['bins'])
+                bin_labels = [str(x) for x in u.pairwise(bin_cuts)]
+                bin_labels = [x.replace(')', ']') for x in bin_labels]
+                df[column] = pd.cut(df[column], bin_cuts, include_lowest=True, labels=bin_labels).dropna()
+                filter_filters.append(bin_labels)
         
         groupby_label_options = []
         for filter_combo in itertools.product(*filter_filters):
@@ -460,20 +479,36 @@ class DBExtractor():
             df['groupby_labels'] = None
 
         df = df.drop(columns=groupby_columns)
+        
+        # Some groupbys will have 0 patients, but I still want to display 0
         found_labels = list(df['groupby_labels'].value_counts().index)
         missing_labels = [x for x in groupby_label_options if x not in found_labels]
         if len(missing_labels) > 0:
-            logging.debug(f'Missing following labels: {missing_labels}')
             for missing_label in missing_labels:
                 df = df.append({'groupby_labels': missing_label}, ignore_index=True)
             df = df.fillna(0)
-            logging.debug(f'DF after adding missing labels: {df}')
-        
+
         def find_sort_order(row):
             return groupby_label_options.index(row['groupby_labels'])
-        
+
         df['sort_order'] = df.apply(lambda x: find_sort_order(x), axis=1)
         df = df.sort_values(by='sort_order')
         df = df.drop(columns=['sort_order'])
         
         return df
+
+    def get_bin_cuts(self, min, max, num_bins):
+        min = D(min)
+        max = D(max)
+        num_bins = D(num_bins)
+        
+        step_size = (max - min) / num_bins
+        current_cut = min
+        bin_cuts = []
+        while len(bin_cuts) < num_bins:
+            current_cut = u.reduce_precision(current_cut, precision=2)
+            bin_cuts.append(float(current_cut))
+            current_cut += step_size
+        bin_cuts.append(float(max))  # added in case there are rounding errors, and planning for choosing inclusive right-non-inclusive intervals
+
+        return bin_cuts
