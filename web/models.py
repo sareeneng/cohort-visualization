@@ -52,3 +52,26 @@ class UserGroups(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	user_id = db.Column(db.Integer, db.ForeignKey(User.id))
 	group_id = db.Column(db.Integer, db.ForeignKey(Group.id))
+
+
+class DatasetMetadata(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	dataset_name = db.Column(db.String(), unique=True, index=True)
+	folder = db.Column(db.String(), unique=True)
+
+
+class TableMetadata(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	dataset_name = db.Column(db.String(), index=True)
+	table_name = db.Column(db.String(), index=True)
+	db_location = db.Column(db.String())
+	file = db.Column(db.String())
+
+
+class ColumnMetadata(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	dataset_name = db.Column(db.String(), index=True)
+	table_name = db.Column(db.String(), index=True)
+	column_source_name = db.Column(db.String(), index=True)
+	column_custom_name = db.Column(db.String())
+	is_many = db.Column(db.Boolean())

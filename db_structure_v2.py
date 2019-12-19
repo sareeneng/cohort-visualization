@@ -8,69 +8,93 @@ import utilities as u
 
 from collections import defaultdict
 from decimal import Decimal as D
-from sqlalchemy import create_engine
 from pandas.api.types import is_numeric_dtype
+from web import db
+from web.models import DatasetMetadata, TableMetadata, ColumnMetadata
 
 
 class DBMaker():
     '''
-    This class will take the files in the directory and then create a SQL database
+    This class will take the files in the directory and then create tables in the main application db. It will also add metadata
     '''
 
-    def __init__(self, directory_path, data_file_extension='.csv', delimiter=','):
+    def __init__(self, dataset_name, directory_path, data_file_extension='.csv', delimiter=','):
         self.directory_path = directory_path
         self.abs_path = os.path.join(os.getcwd(), directory_path)
+        self.dataset_name = dataset_name
         self.data_file_extension = data_file_extension
-        self.delimiter = delimiter
 
-    def create_db(self, db_name=None, overwrite=False):
-        db_files = u.find_file_types(self.directory_path, '.db')
-        metadata_files = u.find_file_types(self.directory_path, '.metadata')
+    def create_db(self, overwrite=False):
+        # First check to see if either dataset_name or the folder are already in the db
+        x = db.session.query(DatasetMetadata).filter(DatasetMetadata.dataset_name == self.dataset_name).first()
+        if x is not None:
+            e = f'{self.dataset_name} is already in the db'
+            logging.error(e)
+            raise Exception(e)
 
-        if len(db_files) + len(metadata_files) > 0:
-            if overwrite:
-                self.purge_dbs()
-            else:
-                raise Exception('Cannot proceed, there are existing .db or .metadata files in the directory. If you want to overwrite it, pass in "overwrite=True"')
+        x = db.session.query(DatasetMetadata).filter(DatasetMetadata.folder == self.directory_path).first()
+        if x is not None:
+            e = f'{self.directory_path} is already in the db'
+            logging.error(e)
+            raise Exception(e)
 
-        if db_name is None:
-            db_name = os.path.split(self.abs_path)[1]
-
-        engine = create_engine('sqlite:///' + os.path.join(self.abs_path, f'{db_name}.db'), echo=False)
-
-        metadata = defaultdict(dict)
+        dataset_metadata = DatasetMetadata(
+            dataset_name=self.dataset_name,
+            folder=self.directory_path
+        )
+        db.session.add(dataset_metadata)
+        
         data_file_names = u.find_file_types(self.directory_path, self.data_file_extension)
+
         for data_file_name in data_file_names:
             idx = data_file_name.rfind('.')
             table_name = data_file_name[:idx]
-            metadata[table_name]['file'] = data_file_name
-            metadata[table_name]['columns'] = []
+            db_location = f'{self.dataset_name}_{table_name}'
 
-            logging.info(f'Writing {table_name} to db')
+            logging.info(f'Writing {table_name} to {db_location}')
+            
             df = pd.read_csv(os.path.join(self.abs_path, data_file_name))
+            df.to_sql(db_location, con=db.engine)
+            table_metadata = TableMetadata(
+                dataset_name=self.dataset_name,
+                table_name=table_name,
+                db_location=db_location,
+                file=data_file_name
+            )
+
+            db.session.add(table_metadata)
+
             for column in df.columns:
                 if len(df[column].dropna()) > len(df[column].dropna().unique()):
-                    column_type = c.COLUMN_MANY
+                    is_many = True
                 else:
-                    column_type = c.COLUMN_ONE
-                metadata[table_name]['columns'].append({'name': column, 'type': column_type})
-            
-            df.to_sql(table_name, con=engine)
-        
-        logging.info(f'Finished writing {db_name}.db')
-        
-        logging.info(f'Dumping metadata to {db_name}.metadata')
-        metadata_path = os.path.join(self.abs_path, f'{db_name}.metadata')
-        with open(metadata_path, 'w') as f:
-            json.dump(metadata, f, indent=4)
+                    is_many = False
 
-    def purge_dbs(self):
-        db_files = u.find_file_types(self.directory_path, '.db')
-        metadata_files = u.find_file_types(self.directory_path, '.metadata')
+                column_metadata = ColumnMetadata(
+                    dataset_name=self.dataset_name,
+                    table_name=table_name,
+                    column_source_name=column,
+                    column_custom_name=column,
+                    is_many=is_many
+                )
+                db.session.add(column_metadata)
+        
+        db.session.commit()
+        logging.info(f'Finished writing {self.dataset_name}')
 
-        for x in db_files + metadata_files:
-            logging.warning(f'Removing {x}')
-            os.remove(os.path.join(self.directory_path, x))
+    def remove_db(self):
+        table_metadata = db.session.query(TableMetadata).filter(TableMetadata.dataset_name == self.dataset_name).all()
+        for table in table_metadata:
+            sql_statement = f'DROP TABLE {table.db_location};'
+            db.engine.execute(sql_statement)
+        
+        db.session.query(TableMetadata).filter(TableMetadata.dataset_name == self.dataset_name).delete()
+
+        db.session.query(ColumnMetadata).filter(ColumnMetadata.dataset_name == self.dataset_name).delete()
+        
+        db.session.query(DatasetMetadata).filter(DatasetMetadata.dataset_name == self.dataset_name).delete()
+        
+        db.session.commit()
 
 
 class DBLinker():
@@ -78,9 +102,10 @@ class DBLinker():
         # Create global FKs, custom FKs. Write to .links file
         self.directory_path = directory_path
         self.abs_path = os.path.join(os.getcwd(), directory_path)
+        self.db_name = os.path.split(self.abs_path)[1]
         self.finalized = False
         self.load_links()
-        self.load_metadata()
+        '''
         if self.table_relationships is None:
             self.table_relationships = {}
             for table in self.table_names:
@@ -92,6 +117,7 @@ class DBLinker():
                 }
         else:
             self.finalized = True
+        '''
 
     @property
     def table_names(self):
@@ -108,20 +134,16 @@ class DBLinker():
             with open(os.path.join(self.abs_path, links_file), 'r') as f:
                 self.table_relationships = json.load(f)
 
-    def load_metadata(self):
-        metadata_files = u.find_file_types(self.abs_path, '.metadata')
-        if len(metadata_files) > 1:
-            raise Exception('Cannot proceed, there are multiple .metadata files in the directory. Delete all but one to continue')
-        elif len(metadata_files) == 0:
-            raise Exception(f'No .metadata files found in {self.abs_path}')
-        else:
-            metadata_file = metadata_files[0]
-            self.db_name = metadata_file.split('.metadata')[0]
-            with open(os.path.join(self.abs_path, metadata_file), 'r') as f:
-                self.metadata = json.load(f)
-
     def get_column_type(self, table, column):
-        return next(x['type'] for x in self.metadata[table]['columns'] if x['name'] == column)
+        found_row = db.session.query(DatasetMetadata).filter(DatasetMetadata.dataset == self.db_name, DatasetMetadata.table == table, DatasetMetadata.column == column).first()
+        try:
+            if found_row.is_many:
+                return c.COLUMN_MANY
+            else:
+                return c.COLUMN_ONE
+        except AttributeError:
+            logging.error(f'Unable to find column type for {table}.{column}')
+            return None
 
     def get_table_columns(self, table):
         return [x['name'] for x in self.metadata[table]['columns']]
