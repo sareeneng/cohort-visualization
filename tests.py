@@ -121,7 +121,7 @@ class TestDataExtraction(unittest.TestCase):
     def test_categorical(self):
         # Just get counts for each group
         path = ['HOSPITALADMIT', 'CAREPROCESSES', 'DEATH']
-        df = self.db_extractor.get_df_from_path(path, table_columns_of_interest=['HOSPITALADMIT.Sex', 'CAREPROCESSES.MechVent', 'DEATH.DeathMode'])
+        df = self.db_extractor.get_df_from_path(path, table_columns_of_interest=[('HOSPITALADMIT', 'Sex'), ('CAREPROCESSES', 'MechVent'), ('DEATH', 'DeathMode')])
         self.assertEqual(len(df), 275)
         self.assertEqual(list(df.columns), ['Sex', 'MechVent', 'DeathMode'])
 
@@ -170,7 +170,7 @@ class TestDataExtraction(unittest.TestCase):
 
     def test_numeric(self):
         path = ['HOSPITALADMIT', 'CAREPROCESSES', 'PHYSIOSTATUS']
-        df = self.db_extractor.get_df_from_path(path, table_columns_of_interest=['HOSPITALADMIT.Sex', 'CAREPROCESSES.MechVent', 'PHYSIOSTATUS.LowpH'])
+        df = self.db_extractor.get_df_from_path(path, table_columns_of_interest=[('HOSPITALADMIT', 'Sex'), ('CAREPROCESSES', 'MechVent'), ('PHYSIOSTATUS', 'LowpH')])
         self.assertEqual(len(df), 10078)
 
         filters = {

@@ -126,6 +126,18 @@ class DBLinker():
     def get_table_columns(self, table):
         return [x['name'] for x in self.metadata[table]['columns']]
 
+    def get_column_tables(self, reference_table, column):
+        # Given the name of a column in a table, look at the links to see all the tables this column is located in
+        # Add check to make sure column is in table
+        related_table_columns = {reference_table: column}
+        tr = self.table_relationships[reference_table]
+        for x in ['parents', 'children', 'siblings', 'step_siblings']:
+            for related_table, keys in tr[x].items():
+                if keys[0] == column:
+                    related_table_columns[related_table] = keys[1]
+        
+        return related_table_columns
+
     def table_relationship_exists(self, table_1, table_2):
         if table_2 in self.find_table_all_related_tables(table_1):
             return True
@@ -148,6 +160,7 @@ class DBLinker():
         for table in self.table_names:
             if column in self.get_table_columns(table):
                 tables_found.append(table)
+        logging.debug(tables_found)
         
         for table_combination in itertools.combinations(tables_found, 2):
             self.add_fk(table_combination[0], column, table_combination[1], column)
@@ -206,31 +219,39 @@ class DBCustomizer():
         # User-defined custom column names, etc
         self.directory_path = directory_path
         self.abs_path = os.path.join(os.getcwd(), directory_path)
-        self.load_metadata()
-        self.load_links()
+        self.db_linker = DBLinker(directory_path)
+        self.load_customization()
+        self.db_name = self.db_linker.db_name
+        if self.customization is None:
+            self.customization = defaultdict(dict)
 
-    def load_metadata(self):
-        metadata_files = u.find_file_types(self.abs_path, '.metadata')
-        if len(metadata_files) > 1:
-            raise Exception('Cannot proceed, there are multiple .metadata files in the directory. Delete all but one to continue')
-        elif len(metadata_files) == 0:
-            raise Exception(f'No .metadata files found in {self.abs_path}')
+    def load_customization(self):
+        custom_files = u.find_file_types(self.abs_path, '.custom')
+        if len(custom_files) > 1:
+            raise Exception('Cannot proceed, there are multiple .custom files in the directory. Delete all but one to continue')
+        elif len(custom_files) == 0:
+            self.customization = None
         else:
-            metadata_file = metadata_files[0]
-            self.db_name = metadata_file.split('.metadata')[0]
-            with open(os.path.join(self.abs_path, metadata_file), 'r') as f:
-                self.metadata = json.load(f)
+            custom_file = custom_files[0]
+            with open(os.path.join(self.abs_path, custom_file), 'r') as f:
+                self.customization = json.load(f)
 
-    def load_links(self):
-        links_files = u.find_file_types(self.abs_path, '.links')
-        if len(links_files) > 1:
-            raise Exception('Cannot proceed, there are multiple .links files in the directory. Delete all but one to continue')
-        elif len(links_files) == 0:
-            raise Exception(f'No .links files found in {self.abs_path}')
-        else:
-            links_file = links_files[0]
-            with open(os.path.join(self.abs_path, links_file), 'r') as f:
-                self.table_relationships = json.load(f)
+    def rename_column(self, reference_table, original_name, new_name):
+        # Get dict of {table: column_name} wherever this column is used as a linker
+        table_columns_dict = self.db_linker.get_column_tables(reference_table, original_name)
+        for found_table, source_column_name in table_columns_dict.items():
+            self.customization[found_table][source_column_name] = new_name
+
+    def get_custom_column_name(self, reference_table, original_name):
+        try:
+            return self.customization[reference_table][original_name]
+        except KeyError:
+            return original_name
+
+    def dump_customization(self):
+        custom_path = os.path.join(self.abs_path, f'{self.db_name}.custom')
+        with open(custom_path, 'w') as f:
+            json.dump(self.customization, f, indent=4)
 
 
 class DBExtractor():
@@ -241,6 +262,7 @@ class DBExtractor():
         self.load_engine()
         self.load_metadata()
         self.load_links()
+        self.db_customizer = DBCustomizer(self.directory_path)
 
     def load_engine(self):
         db_files = u.find_file_types(self.abs_path, '.db')
@@ -360,7 +382,6 @@ class DBExtractor():
             path_possibilities_pairwise = []
             for pair in u.pairwise(valid_incomplete_path):
                 path_possibilities_pairwise.append(self.find_paths_between_tables(start_table=pair[0], destination_table=pair[1]))
-            # print(path_possibilities_pairwise)
             combos = itertools.product(*path_possibilities_pairwise)
             for combo in combos:
                 unflattened_valid_complete_paths.append(list(combo))
@@ -382,22 +403,25 @@ class DBExtractor():
         return None
 
     def get_df_from_path(self, path, table_columns_of_interest):
+        # table_columns of interest is a list of (table, column)
         sql_statement = f'SELECT '
-        for column in table_columns_of_interest:
-            sql_statement += column + ', '
+        for table, column in table_columns_of_interest:
+            custom_name = self.db_customizer.get_custom_column_name(table, column)
+            sql_statement += f'{table}.{column} AS {custom_name}, '
         sql_statement = sql_statement[:-2]
 
         sql_statement += f' FROM {path[0]} '
         previous_table = path[0]
-        for table in path[1:]:
-            keys = self.get_joining_keys(previous_table, table)
+        for current_table in path[1:]:
+            keys = self.get_joining_keys(previous_table, current_table)
             try:
                 left_key, right_key = keys[0], keys[1]
             except TypeError:
                 logging.error(f'Path {path} is invalid. Unable to join {previous_table} to {table}')
                 raise(TypeError)
-            sql_statement += f'JOIN {table} ON {previous_table}.{left_key} = {table}.{right_key} '
-            previous_table = table
+            sql_statement += f'JOIN {current_table} ON {previous_table}.{left_key} = {current_table}.{right_key} '
+            previous_table = current_table
+
         logging.info(sql_statement)
         df = pd.read_sql(sql_statement, con=self.engine)
         return df

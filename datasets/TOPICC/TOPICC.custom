@@ -1,0 +1,62 @@
+{
+    "CARDIACPROCEDURES": {
+        "PudID": "PatientID"
+    },
+    "CAREPROCESSES": {
+        "PudID": "PatientID"
+    },
+    "DEATH": {
+        "PudID": "PatientID"
+    },
+    "HOSPITALADMIT": {
+        "PudID": "PatientID"
+    },
+    "HOSPITALDISCHARGE": {
+        "PudID": "PatientID"
+    },
+    "LIMITOFCARE": {
+        "PudID": "PatientID"
+    },
+    "PHYSIOSTATUS": {
+        "PudID": "PatientID"
+    },
+    "PICUADMIT": {
+        "PudID": "PatientID"
+    },
+    "PICUDISCHARGE": {
+        "PudID": "PatientID"
+    },
+    "CARDIACSURGERY": {
+        "PudID": "PatientID"
+    },
+    "CATASTROPHICEVENTS": {
+        "PudID": "PatientID"
+    },
+    "CPR": {
+        "PudID": "PatientID"
+    },
+    "HOSPITALADMIT_CE": {
+        "PudID": "PatientID"
+    },
+    "PICUADMIT_ADMITSECONDDX": {
+        "PudID": "PatientID"
+    },
+    "PICUADMIT_AHD": {
+        "PudID": "PatientID"
+    },
+    "PICUADMIT_CHD": {
+        "PudID": "PatientID"
+    },
+    "PICUADMIT_CHRONICDX": {
+        "PudID": "PatientID"
+    },
+    "PICUDISCHARGE_DISCHRONICDX": {
+        "PudID": "PatientID"
+    },
+    "PICUDISCHARGE_DISSECONDDX": {
+        "PudID": "PatientID"
+    },
+    "SURGERY": {
+        "PudID": "PatientID"
+    }
+}
