@@ -1,4 +1,4 @@
-import db_structure_v2
+import db_structure
 import logging
 import os
 import utilities as u
@@ -20,14 +20,12 @@ logger.addHandler(handler_info)
 logger.addHandler(handler_debug)
 
 
-@unittest.skip
 class TestPathFinding(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.directory_path = os.path.join('datasets', 'sample2')
-        self.db_maker = db_structure_v2.DBMaker(directory_path=self.directory_path)
+        self.db_maker = db_structure.DBMaker(dataset_name='sample2', directory_path=os.path.join('datasets', 'sample2'))
         self.db_maker.create_db()
-        self.db_linker = db_structure_v2.DBLinker(directory_path=self.directory_path)
+        self.db_linker = db_structure.DBLinker(dataset_name='sample2')
         self.db_linker.add_global_fk('col1')
         self.db_linker.add_global_fk('col2')
         self.db_linker.add_global_fk('col3')
@@ -36,58 +34,55 @@ class TestPathFinding(unittest.TestCase):
         self.db_linker.add_global_fk('col6')
         self.db_linker.add_global_fk('col7')
         self.db_linker.add_global_fk('col8')
-        self.db_linker.finalize()
-        self.db = db_structure_v2.DBExtractor(directory_path=self.directory_path)
+        self.db_extractor = db_structure.DBExtractor(dataset_name='sample2')
 
     @classmethod
     def tearDownClass(self):
-        print('Removing files')
-        os.remove(os.path.join(self.directory_path, 'sample2.db'))
-        os.remove(os.path.join(self.directory_path, 'sample2.links'))
-        os.remove(os.path.join(self.directory_path, 'sample2.metadata'))
+        print('Removing db')
+        self.db_maker.remove_db()
 
     def test_two_tables(self):
-        x = self.db.find_paths_between_tables('A', 'F')
+        x = self.db_extractor.find_paths_between_tables('A', 'F')
         self.assertEqual(len(x), 3)
         self.assertIn(['A', 'D', 'C', 'F'], x)
         self.assertIn(['A', 'C', 'F'], x)
         self.assertIn(['A', 'B', 'E', 'F'], x)
 
-        x = self.db.find_paths_between_tables('B', 'F')
+        x = self.db_extractor.find_paths_between_tables('B', 'F')
         self.assertEqual(len(x), 3)
         self.assertIn(['B', 'E', 'F'], x)
         self.assertIn(['B', 'A', 'D', 'C', 'F'], x)
         self.assertIn(['B', 'A', 'C', 'F'], x)
 
         # A could have the option to go A-->C or A-->D-->C. However it will always be better to use A-->C direct unless I need to pull in a var from D
-        x = self.db.find_paths_between_tables('A', 'C')
+        x = self.db_extractor.find_paths_between_tables('A', 'C')
         self.assertEqual([['A', 'C']], x)
 
-        x = self.db.find_paths_between_tables('A', 'A')
+        x = self.db_extractor.find_paths_between_tables('A', 'A')
         self.assertEqual(['A'], x)
 
-        x = self.db.find_paths_between_tables('B', 'E')
+        x = self.db_extractor.find_paths_between_tables('B', 'E')
         self.assertEqual([['B', 'E']], x)
 
-        x = self.db.find_paths_between_tables('E', 'B')
+        x = self.db_extractor.find_paths_between_tables('E', 'B')
         self.assertEqual([], x)
 
     def test_multi(self):
         # test back-tracking with multi_tables path-finding
-        x = self.db.find_paths_multi_tables(['A', 'D', 'C', 'F'])
+        x = self.db_extractor.find_paths_multi_tables(['A', 'D', 'C', 'F'])
         self.assertEqual(len(x), 2)
         self.assertIn(['A', 'D', 'C', 'F'], x)
         self.assertIn(['A', 'C', 'D', 'C', 'F'], x)
 
-        x = self.db.find_paths_multi_tables(['A', 'B', 'D', 'E'])
+        x = self.db_extractor.find_paths_multi_tables(['A', 'B', 'D', 'E'])
         self.assertEqual([], x)
 
-        x = self.db.find_paths_multi_tables(['D', 'C', 'F'])
+        x = self.db_extractor.find_paths_multi_tables(['D', 'C', 'F'])
         self.assertEqual(len(x), 2)
         self.assertIn(['D', 'C', 'F'], x)
         self.assertIn(['C', 'D', 'C', 'F'], x)
 
-        x = self.db.find_paths_multi_tables(['D', 'C', 'F'], fix_first=True)
+        x = self.db_extractor.find_paths_multi_tables(['D', 'C', 'F'], fix_first=True)
         self.assertEqual([['D', 'C', 'F']], x)
 
 
@@ -114,57 +109,56 @@ class TestUtilities(unittest.TestCase):
 class TestDataExtraction(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.directory_path = os.path.join('datasets', 'TOPICC')
-        # Assume that I've already set up the .links and .metadata files
-        self.db_extractor = db_structure_v2.DBExtractor(directory_path=self.directory_path)
+        # Assume that I've already set up all the links and such
+        self.db_extractor = db_structure.DBExtractor(dataset_name='TOPICC')
 
     def test_categorical(self):
         # Just get counts for each group
         path = ['HOSPITALADMIT', 'CAREPROCESSES', 'DEATH']
         df = self.db_extractor.get_df_from_path(path, table_columns_of_interest=[('HOSPITALADMIT', 'Sex'), ('CAREPROCESSES', 'MechVent'), ('DEATH', 'DeathMode')])
         self.assertEqual(len(df), 275)
-        self.assertEqual(list(df.columns), ['Sex', 'MechVent', 'DeathMode'])
+        self.assertEqual(list(df.columns), ['HOSPITALADMIT_Sex', 'CAREPROCESSES_MechVent', 'DEATH_DeathMode'])
 
         # Test with no real filters
         filters = {
-            'MechVent': None,
-            'Sex': None,
-            'DeathMode': None
+            'CAREPROCESSES_MechVent': None,
+            'HOSPITALADMIT_Sex': None,
+            'DEATH_DeathMode': None
         }
         
-        df_no_filters = self.db_extractor.aggregate_df(df, groupby_columns=['MechVent', 'Sex', 'DeathMode'], filters=filters)
+        df_no_filters = self.db_extractor.aggregate_df(df, groupby_columns=['CAREPROCESSES_MechVent', 'HOSPITALADMIT_Sex', 'DEATH_DeathMode'], filters=filters)
         self.assertEqual(len(df_no_filters), 16)
         self.assertEqual(df_no_filters['Count'].sum(), 275)
 
-        df_aggreg_counts = self.db_extractor.aggregate_df(df, groupby_columns=['MechVent', 'Sex'], filters=filters, aggregate_column='DeathMode', aggregate_fxn='Count')
+        df_aggreg_counts = self.db_extractor.aggregate_df(df, groupby_columns=['CAREPROCESSES_MechVent', 'HOSPITALADMIT_Sex'], filters=filters, aggregate_column='DEATH_DeathMode', aggregate_fxn='Count')
         self.assertEqual(len(df_aggreg_counts.columns), 5)
         self.assertEqual(df_aggreg_counts[df_aggreg_counts['groupby_labels'] == 'Yes_Male'].iloc[0]['Failed resuscitation'], 24)
 
-        df_aggreg_percs = self.db_extractor.aggregate_df(df, groupby_columns=['MechVent', 'Sex'], filters=filters, aggregate_column='DeathMode', aggregate_fxn='Percents')
+        df_aggreg_percs = self.db_extractor.aggregate_df(df, groupby_columns=['CAREPROCESSES_MechVent', 'HOSPITALADMIT_Sex'], filters=filters, aggregate_column='DEATH_DeathMode', aggregate_fxn='Percents')
         df_aggreg_percs['PercSums'] = df_aggreg_percs['Brain death'] + df_aggreg_percs['Failed resuscitation'] + df_aggreg_percs['Limitation of care'] + df_aggreg_percs['Withdrawal of care']
         self.assertEqual(len(df_aggreg_percs[(df_aggreg_percs['PercSums'] > 99.5) & (df_aggreg_percs['PercSums'] < 100.5)]), len(df_aggreg_percs))
 
         # Test with filters
         filters = {
-            'MechVent': {'type': 'list', 'filter': ['Yes']},
-            'Sex': {'type': 'list', 'filter': ['Male']},
-            'DeathMode': None
+            'CAREPROCESSES_MechVent': {'type': 'list', 'filter': ['Yes']},
+            'HOSPITALADMIT_Sex': {'type': 'list', 'filter': ['Male']},
+            'DEATH_DeathMode': None
         }
 
-        df_filters = self.db_extractor.aggregate_df(df, groupby_columns=['MechVent', 'Sex', 'DeathMode'], filters=filters)
+        df_filters = self.db_extractor.aggregate_df(df, groupby_columns=['CAREPROCESSES_MechVent', 'HOSPITALADMIT_Sex', 'DEATH_DeathMode'], filters=filters)
         self.assertEqual(len(df_filters), 4)
         self.assertEqual(df_filters['Count'].sum(), 129)
 
         filters = {
-            'MechVent': {'type': 'list', 'filter': ['Yes']},
-            'Sex': {'type': 'list', 'filter': ['Male']},
+            'CAREPROCESSES_MechVent': {'type': 'list', 'filter': ['Yes']},
+            'HOSPITALADMIT_Sex': {'type': 'list', 'filter': ['Male']},
         }
 
-        df_aggreg_counts = self.db_extractor.aggregate_df(df, groupby_columns=['MechVent', 'Sex'], filters=filters, aggregate_column='DeathMode', aggregate_fxn='Count')
+        df_aggreg_counts = self.db_extractor.aggregate_df(df, groupby_columns=['CAREPROCESSES_MechVent', 'HOSPITALADMIT_Sex'], filters=filters, aggregate_column='DEATH_DeathMode', aggregate_fxn='Count')
         self.assertEqual(len(df_aggreg_counts.columns), 5)
         self.assertEqual(df_aggreg_counts[df_aggreg_counts['groupby_labels'] == 'Yes_Male'].iloc[0]['Failed resuscitation'], 24)
 
-        df_aggreg_percs = self.db_extractor.aggregate_df(df, groupby_columns=['MechVent', 'Sex'], filters=filters, aggregate_column='DeathMode', aggregate_fxn='Percents')
+        df_aggreg_percs = self.db_extractor.aggregate_df(df, groupby_columns=['CAREPROCESSES_MechVent', 'HOSPITALADMIT_Sex'], filters=filters, aggregate_column='DEATH_DeathMode', aggregate_fxn='Percents')
         df_aggreg_percs['PercSums'] = df_aggreg_percs['Brain death'] + df_aggreg_percs['Failed resuscitation'] + df_aggreg_percs['Limitation of care'] + df_aggreg_percs['Withdrawal of care']
         self.assertEqual(len(df_aggreg_percs[(df_aggreg_percs['PercSums'] > 99.5) & (df_aggreg_percs['PercSums'] < 100.5)]), len(df_aggreg_percs))
 
@@ -174,34 +168,34 @@ class TestDataExtraction(unittest.TestCase):
         self.assertEqual(len(df), 10078)
 
         filters = {
-            'MechVent': None,
-            'Sex': None,
-            'LowpH': None
+            'CAREPROCESSES_MechVent': None,
+            'HOSPITALADMIT_Sex': None,
+            'PHYSIOSTATUS_LowpH': None
         }
-        df_no_filters = self.db_extractor.aggregate_df(df, groupby_columns=['MechVent', 'Sex', 'LowpH'], filters=filters)
+        df_no_filters = self.db_extractor.aggregate_df(df, groupby_columns=['CAREPROCESSES_MechVent', 'HOSPITALADMIT_Sex', 'PHYSIOSTATUS_LowpH'], filters=filters)
         self.assertEqual(len(df_no_filters), 4)
         self.assertEqual(df_no_filters['Count'].sum(), 4815)
 
-        df_aggreg_mean = self.db_extractor.aggregate_df(df, groupby_columns=['MechVent', 'Sex'], filters=filters, aggregate_column='LowpH', aggregate_fxn='Mean')
-        self.assertEqual(df_aggreg_mean[df_aggreg_mean['groupby_labels'] == 'Yes_Male'].iloc[0]['LowpH'], 7.29)
+        df_aggreg_mean = self.db_extractor.aggregate_df(df, groupby_columns=['CAREPROCESSES_MechVent', 'HOSPITALADMIT_Sex'], filters=filters, aggregate_column='PHYSIOSTATUS_LowpH', aggregate_fxn='Mean')
+        self.assertEqual(df_aggreg_mean[df_aggreg_mean['groupby_labels'] == 'Yes_Male'].iloc[0]['PHYSIOSTATUS_LowpH'], 7.29)
 
         filters = {
-            'MechVent': {'type': 'list', 'filter': ['Yes']},
-            'Sex': {'type': 'list', 'filter': ['Male']},
-            'LowpH': {'type': 'range', 'filter': {'min': 6.8, 'max': 6.9, 'bins': 10}}
+            'CAREPROCESSES_MechVent': {'type': 'list', 'filter': ['Yes']},
+            'HOSPITALADMIT_Sex': {'type': 'list', 'filter': ['Male']},
+            'PHYSIOSTATUS_LowpH': {'type': 'range', 'filter': {'min': 6.8, 'max': 6.9, 'bins': 10}}
         }
 
-        df_filters = self.db_extractor.aggregate_df(df, groupby_columns=['MechVent', 'Sex', 'LowpH'], filters=filters)
+        df_filters = self.db_extractor.aggregate_df(df, groupby_columns=['CAREPROCESSES_MechVent', 'HOSPITALADMIT_Sex', 'PHYSIOSTATUS_LowpH'], filters=filters)
         self.assertEqual(len(df_filters), 10)
         self.assertEqual(df_filters['Count'].sum(), 14)
 
         filters = {
-            'MechVent': {'type': 'list', 'filter': ['Yes']},
-            'LowpH': {'type': 'range', 'filter': {'min': 6.8, 'max': 6.9, 'bins': 4}},
-            'Sex': None
+            'CAREPROCESSES_MechVent': {'type': 'list', 'filter': ['Yes']},
+            'PHYSIOSTATUS_LowpH': {'type': 'range', 'filter': {'min': 6.8, 'max': 6.9, 'bins': 4}},
+            'HOSPITALADMIT_Sex': None
         }
 
-        df_aggreg_mean = self.db_extractor.aggregate_df(df, groupby_columns=['MechVent', 'LowpH'], filters=filters, aggregate_column='Sex')
+        df_aggreg_mean = self.db_extractor.aggregate_df(df, groupby_columns=['CAREPROCESSES_MechVent', 'PHYSIOSTATUS_LowpH'], filters=filters, aggregate_column='HOSPITALADMIT_Sex')
         self.assertEqual(len(df_aggreg_mean), 4)
         self.assertEqual(df_aggreg_mean[df_aggreg_mean['groupby_labels'] == 'Yes_(6.79, 6.81]'].iloc[0]['Male'], 3)
 

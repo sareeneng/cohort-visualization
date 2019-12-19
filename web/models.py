@@ -58,13 +58,14 @@ class DatasetMetadata(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	dataset_name = db.Column(db.String(), unique=True, index=True)
 	folder = db.Column(db.String(), unique=True)
+	prefix = db.Column(db.String(), unique=True)
 
 
 class TableMetadata(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	dataset_name = db.Column(db.String(), index=True)
 	table_name = db.Column(db.String(), index=True)
-	db_location = db.Column(db.String())
+	db_location = db.Column(db.String(), unique=True)
 	file = db.Column(db.String())
 
 
@@ -75,3 +76,17 @@ class ColumnMetadata(db.Model):
 	column_source_name = db.Column(db.String(), index=True)
 	column_custom_name = db.Column(db.String())
 	is_many = db.Column(db.Boolean())
+	visible = db.Column(db.Boolean(), default=True)
+
+
+class TableRelationship(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	dataset_name = db.Column(db.String(), index=True)
+	reference_table = db.Column(db.String(), index=True)
+	other_table = db.Column(db.String(), index=True)
+	is_parent = db.Column(db.Boolean(), index=True, default=False)
+	is_child = db.Column(db.Boolean(), index=True, default=False)
+	is_sibling = db.Column(db.Boolean(), index=True, default=False)
+	is_step_sibling = db.Column(db.Boolean(), index=True, default=False)
+	reference_key = db.Column(db.String(), index=True)
+	other_key = db.Column(db.String(), index=True)

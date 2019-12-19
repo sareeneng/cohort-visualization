@@ -62,7 +62,11 @@ def find_file_types(directory_path, extension):
 
 
 def reduce_precision(number, precision=2):
-    pre_dec, post_dec = str(number).split('.')
+    try:
+        pre_dec, post_dec = str(number).split('.')
+    except ValueError:  # not a decimal
+        return number
+
     if len(post_dec) > precision:
         number_str = pre_dec + '.' + post_dec[:precision]
         

@@ -18,76 +18,7 @@
     </div>
 </div>
 <hr>
-<div class="row">
-    <p class="h5">Designate commonly named columns as global foreign keys <i class="fas fa-info-circle" data-toggle="tooltip" data-placement="top" title="Links all tables that contain the selected columns together"></i></p>
-</div>
-<div class="row mb-3">
-    <div class="form-group col-4">
-        <label for="common_column_names">Common Column Names Found</label>
-        <select id="common_column_names" class="form-control"></select>
-    </div>
-    <div class="col-1 align-self-center">
-        <div class="row">
-            <div class="btn-group-vertical mx-auto">
-                <button type="button" id="add_global_fk_btn" class="btn btn-primary mx-auto mb-2">
-                    <i class="fas fa-arrow-right"></i>
-                </button>
-                <button type="button" id="remove_global_fk_btn" class="btn btn-primary mx-auto">
-                    <i class="fas fa-arrow-left"></i>
-                </button>
-            </div>
-        </div>
-    </div>
-    <div class="form-group col-4">
-        <label for="global_fks">Global Foreign Keys</label>
-        <select id="global_fks" class="form-control" style="overflow-x: auto" multiple="multiple"></select>
-    </div>
-</div>
-<div class="row">
-    <p class="h5">Create remaining foreign key links <i class="fas fa-info-circle" data-toggle="tooltip" data-placement="top" title="Choose two tables to link together by specifying their column names. The page will not allow you to link together columns that have a many-to-many relationship."></i></p>
-</div>
-<div class="row">
-    <div class="form-group col-3 align-self-center">
-        <select class="form-control mb-1" id="custom_fk_table_1">
-        </select>
-        <select class="selectpicker form-control" data-live-search="true" id="custom_fk_column_1" >
-        </select>
-    </div>
-    <div class="form-group col-3 align-self-center">
-        <select class="form-control mb-1" id="custom_fk_table_2">
-        </select>
-        <select class="selectpicker form-control" data-live-search="true" id="custom_fk_column_2" >
-        </select>
-    </div>
-    <div class="col-1 align-self-center">
-        <div class="row">
-            <div class="btn-group-vertical mx-auto">
-                <button type="button" class="btn btn-primary mb-1" id="add_custom_fk_btn">Add</button>
-                <button type="button" class="btn btn-danger" id="remove_custom_fk_btn">Delete</button>
-            </div>
-        </div>
-    </div>
-    <div class="form-group col-4">
-        <label for="custom_fks_assigned">Custom Foreign Keys</label>
-        <select multiple class="form-control" id="custom_fks_assigned" style="overflow-x: auto">
-        </select>
-    </div>
-</div>
-<hr>
-<div class="row">
-    <div class="col-3">
-        <button type="button" id="submit_config_btn" class="btn btn-primary">
-            Lock Configuration to Proceed
-        </button>
-    </div>
-    <div class="col-5">
-        <div class="alert alert-info" id="alert_locking_config" role="alert" style="visibility: hidden;">
-            Locking configuration and creating links between tables, please wait
-        </div>
-    </div>
-</div>
-<hr>
-<div id="config_second_part_div" hidden>
+<div id="customize_columns_div" hidden>
     <p class="h5">Customize columns for visualization</p>
     <div class="form-group col-3">
         <label for="rename_table">Choose table</label>
@@ -99,6 +30,7 @@
             <table id="rename_datatable" class="table table-condensed table-bordered table-hover">
                 <thead>
                     <tr>
+                        <th>ID</th>
                         <th>Original Name</th>
                         <th>Display Name</th>
                         <th class="text-center">Hide <i class="fas fa-info-circle" data-toggle="tooltip" data-placement="top" title="Prevent this column from showing up in data visualization."></i></th>
@@ -126,17 +58,9 @@
 {% block app_scripts %}
 <script>
 
-var table_columns
-var unlinked_tables
-var chosen_dataset = null
-var config_dict
+var exclude_columns_ids = []
 var custom_column_names_dict = {}
-var custom_fks_dict = {}
-var column_metadata
-var column_links
-var exclude_columns_idxs = []
-var struct_display_names
-    
+
 $(document).ready(function(){
     $('.alert').alert()
     $(function () {
@@ -148,30 +72,30 @@ $(document).ready(function(){
         columnDefs: [{
             className: 'text-center',
             orderable: false,
-            targets: 2
+            targets: 3
         }],
         "order": []
     })
     
     $(document).on('click', '.chkRow', function () {
         if ($(this).prop('checked')){
-            if ($.inArray($(this).val(), exclude_columns_idxs) == -1){
-                exclude_columns_idxs.push($(this).val())
+            if ($.inArray($(this).val(), exclude_columns_ids) == -1){
+                exclude_columns_ids.push($(this).val())
             }
         }
         else {
-            var index = $.inArray($(this).val(), exclude_columns_idxs);
-            if (index !== -1) exclude_columns_idxs.splice(index, 1);
+            var index = $.inArray($(this).val(), exclude_columns_ids);
+            if (index !== -1) exclude_columns_ids.splice(index, 1);
         }
     });
     
     // https://github.com/ejbeaty/CellEdit
     rename_datatable.MakeCellsEditable({
-        "columns": [1],
+        "columns": [2],
         "onUpdate": update_custom_name,
         "inputTypes": [
             {
-                "column": 1,
+                "column": 2,
                 "type": "text",
                 "options": null
             }
@@ -181,12 +105,11 @@ $(document).ready(function(){
 
 function update_custom_name(updatedCell, updatedRow, oldValue){
     table = $('#rename_table').val()
-    column = updatedRow.data()[0]
-    idx = get_col_idx(table, column)
-    
-    custom_column_names_dict[idx] = updatedCell.data()
+    column_id = updatedRow.data()[1]
+    custom_column_names_dict[column_id] = updatedCell.data()
 }
 
+// FIX THIS
 $('#dataset_select').change(function(){
     clear_elements()
     chosen_dataset = $('#dataset_select').val()
@@ -197,225 +120,30 @@ $('#dataset_select').change(function(){
     }
     $.ajax({
         type: "GET",
-        url: "{{ url_for('get_metadata_config') }}",
+        url: "{{ url_for('get_custom_column_data') }}",
         data: send_data,
         dataType: "json",
         contentType: 'application/json;charset=UTF-8',
         success: function(return_data){
-            config_dict = return_data['config_dict']
-            column_metadata = return_data.column_metadata
-
-            $.each(return_data.config_dict['custom_fks'], function(i){
-                custom_fks_dict[i] = {
-                    'table_1': this['table_1'],
-                    'table_2': this['table_2'],
-                    'column_1': this['column_1'],
-                    'column_2': this['column_2']
-                }
-                custom_fk_repr = stringify_custom_fk(this)
-                append_option(i, custom_fk_repr, $('#custom_fks_assigned'))
-            })
-            
-            $.each(return_data.common_column_names, function(){
-                append_option(this, this, $('#common_column_names'))
+            $.each(return_data.custom_column_names, function(table, column_rename_dict) {
+                $.each(column_rename_dict, function(column, new_name){
+                    idx = get_col_idx(table, column)
+                    custom_column_names_dict[idx] = new_name
+                })
             })
 
-            $.each(return_data.config_dict.global_fks, function(){
-                remove_option(this, $('#common_column_names'))
-                append_option(this, this, $('#global_fks'))
-            })
-            
-            table_columns = return_data.table_columns
-            $.each(return_data.table_columns, function(table, columns){
-                append_option(table, table, $('#custom_fk_table_1'))
-                append_option(table, table, $('#custom_fk_table_2'))
-                append_option(table, table, $('#rename_table'))
+            $.each(return_data.exclude_columns, function(table, columns){
+                $.each(columns, function(){
+                    idx = get_col_idx(table, this.toString())
+                    if ($.inArray(idx, exclude_column_ids) == -1){
+                        exclude_column_ids.push(idx)
+                    }
+                })
             })
 
             $('#alert_loading_initial_data').prop('hidden', true)
         }
     })
-})
-
-$('#add_global_fk_btn').on('click', function(){
-    new_global_fk = $('#common_column_names').val()
-    if(new_global_fk != null){
-        config_dict['global_fks'].push(new_global_fk)
-        remove_option(new_global_fk, $('#common_column_names'))
-        append_option(new_global_fk, new_global_fk, $('#global_fks'))
-        
-        // now if the global_fk was in custom_fks, then remove that entry
-        custom_fks_assigned = $('#custom_fks_assigned').find('option')
-        $.each(custom_fks_assigned, function(){
-            custom_fk_val = $(this).val()
-            if (config_dict['custom_fks'][custom_fk_val]['column_1'] == new_global_fk && config_dict['custom_fks'][custom_fk_val]['column_2'] == new_global_fk){
-                delete config_dict['custom_fks'][custom_fk_val]
-                remove_option(custom_fk_val, $('#custom_fks_assigned'))
-            }
-        })
-    }
-})
-
-$('#remove_global_fk_btn').on('click', function(){
-    remove_global_fks = $('#global_fks').val()
-    $.each(remove_global_fks, function(){
-        var index = $.inArray(this.toString(), config_dict['global_fks']);
-        if (index !== -1) config_dict['global_fks'].splice(index, 1);
-        
-        remove_option(this, $('#global_fks'))
-        append_option(this, this, $('#common_column_names'))
-    })
-})
-
-$('#custom_fk_table_1').on('change', function(){
-    populate_columns_on_table_select($(this), $('#custom_fk_column_1'), $('#custom_fk_table_2'), $('#custom_fk_column_2'))
-})
-
-$('#custom_fk_table_2').on('change', function(){
-    populate_columns_on_table_select($(this), $('#custom_fk_column_2'), $('#custom_fk_table_1'), $('#custom_fk_column_1'))
-})
-
-function populate_columns_on_table_select(this_table_elem, this_column_elem, other_table_elem, other_column_elem){
-    table_name = this_table_elem.val()
-    this_column_elem.html("<option selected disabled hidden style='display: none' value=''></option>")
-    $.each(table_columns[table_name], function(){
-        append_option(this, this, this_column_elem)
-    })
-    this_column_elem.selectpicker('refresh')
-
-    disable_custom_fk_options_on_col_select(other_table_elem, other_column_elem, this_table_elem, this_column_elem)
-
-    reenable_all_options(other_column_elem)
-}
-
-$('#custom_fk_column_1').on('change', function(){
-    disable_custom_fk_options_on_col_select($('#custom_fk_table_1'), $(this), $('#custom_fk_table_2'), $('#custom_fk_column_2'))
-})
-
-$('#custom_fk_column_2').on('change', function(){
-    disable_custom_fk_options_on_col_select($('#custom_fk_table_2'), $(this), $('#custom_fk_table_1'), $('#custom_fk_column_1'))
-})
-
-function disable_custom_fk_options_on_col_select(this_table_elem, this_column_elem, other_table_elem, other_column_elem){
-    this_table = this_table_elem.val()
-    this_column = this_column_elem.val()
-    if (this_column != null){
-        this_column_type = column_type(this_table, this_column)
-        other_table = other_table_elem.val()
-        if (this_column_type == 'MANY'){
-            if (other_table != null){
-                // disable or re-enable options that have a MANY or ONE type respectively
-                $.each(other_column_elem.find('option'), function() {
-                    other_column_option = $(this).val()
-                    if (other_column_option != '') {
-                        if (column_type(other_table, $(this).val()) == "MANY"){
-                            $(this).prop('disabled', true)
-                        }
-                        else{
-                            $(this).prop('disabled', false)
-                        }
-                    }
-                })
-            }
-        }
-        else {
-            // If this column is a ONE type, then all options are available to it
-            reenable_all_options(other_column_elem)
-        }
-    }
-    other_column_elem.selectpicker('refresh')
-}
-
-function reenable_all_options(elem){
-    $.each(elem.find('option'), function() {
-        if ($(this).val() != ''){
-            $(this).prop('disabled', false)
-        }
-    })
-    elem.selectpicker('refresh')
-}
-
-$('#add_custom_fk_btn').on('click', function(){
-    table_1 = $('#custom_fk_table_1').val()
-    table_2 = $('#custom_fk_table_2').val()
-    column_1 = $('#custom_fk_column_1').val()
-    column_2 = $('#custom_fk_column_2').val()
-    if (table_1 == table_2){
-        alert('Cannot link a table to itself')
-    }
-    else if($.inArray(column_1, config_dict['global_fks']) != -1 && $.inArray(column_2, config_dict['global_fks']) != -1 && column_1 == column_2){
-        alert('These columns are already linked by the global foreign keys above')
-    }
-    else {
-        add_custom_fk(table_1, column_1, table_2, column_2)
-    }
-})
-
-$('#remove_custom_fk_btn').on('click', function() {
-    custom_fk_indexes = $('#custom_fks_assigned').val()
-    $.each(custom_fk_indexes, function() {
-        delete config_dict['custom_fks'][this]
-        remove_option(this, $('#custom_fks_assigned'))
-    })
-})
-
-$('#submit_config_btn').on('click', function() {
-    if (chosen_dataset != null){
-        $('#alert_locking_config').attr('style', 'visibility: shown;')
-        send_data = {
-            'chosen_dataset': chosen_dataset,
-            'config_dict': config_dict
-        }
-        $.ajax({
-            type: "POST",
-            url: "{{ url_for('submit_config_dict') }}",
-            data: JSON.stringify(send_data),
-            dataType: "json",
-            contentType: 'application/json;charset=UTF-8',
-            success: function(return_data){
-                $('#common_column_names').prop('disabled', true)
-                $('#add_global_fk_btn').prop('disabled', true)
-                $('#remove_global_fk_btn').prop('disabled', true)
-                $('#global_fks').prop('disabled', true)
-                $('#custom_fk_table_1').prop('disabled', true)
-                $('#custom_fk_column_1').prop('disabled', true)
-                $('#custom_fk_table_2').prop('disabled', true)
-                $('#custom_fk_column_2').prop('disabled', true)
-                $('#add_custom_fk_btn').prop('disabled', true)
-                $('#remove_custom_fk_btn').prop('disabled', true)
-                $('#custom_fks_assigned').prop('disabled', true)
-                $('#submit_config_btn').prop('disabled', true)
-
-                $('#custom_fk_column_1').selectpicker('refresh')
-                $('#custom_fk_column_2').selectpicker('refresh')
-
-                $('#config_second_part_div').prop('hidden', false)
-                column_links = return_data.column_links
-                
-                $.each(return_data.custom_column_names, function(table, column_rename_dict) {
-                    $.each(column_rename_dict, function(column, new_name){
-                        idx = get_col_idx(table, column)
-                        custom_column_names_dict[idx] = new_name
-                    })
-                })
-
-                $.each(return_data.exclude_columns, function(table, columns){
-                    $.each(columns, function(){
-                        idx = get_col_idx(table, this.toString())
-                        if ($.inArray(idx, exclude_columns_idxs) == -1){
-                            exclude_columns_idxs.push(idx)
-                        }
-                    })
-                })
-
-                struct_display_names = return_data.column_display_names
-                
-                $('#rename_table').selectpicker('refresh')
-
-                $('#alert_locking_config').attr('style', 'visibility: hidden;')
-            }
-        })
-    }
 })
 
 $('#rename_table').on('change', function(){
@@ -433,7 +161,7 @@ $('#rename_table').on('change', function(){
                 display_name = struct_display_names[idx]
             }
 
-            if ($.inArray(idx,exclude_columns_idxs) == -1) {
+            if ($.inArray(idx,exclude_columns_ids) == -1) {
                 checked_flag = ''
             }
             else {
@@ -463,7 +191,7 @@ $('#submit_customization_btn').on('click', function(){
     })
 
     config_dict['exclude_columns'] = {}
-    $.each(exclude_columns_idxs, function(){
+    $.each(exclude_column_ids, function(){
         column_link = column_links[this]
         $.each(column_link, function(table, column){
             if (!(table in config_dict['exclude_columns'])){
@@ -485,101 +213,14 @@ $('#submit_customization_btn').on('click', function(){
     })
 })
 
-function get_col_idx(table, column){
-    return_idx = -1
-    $.each(column_links, function(idx, table_links){
-        $.each(table_links, function(table_existing, column_existing){
-            if (table_existing == table && column_existing == column){
-                return_idx = idx
-                return
-            }
-        })
-    })
-    return return_idx
-}
-
-function add_custom_fk(table_1, column_1, table_2, column_2){
-    // First ensure that it is not already in config_dict
-    var already_there = false
-    $.each(config_dict['custom_fks'], function(k, v) {
-        if ((table_1 == v['table_1'] && column_1 == v['column_1']) || (table_1 == v['table_2'] && column_1 == v['column_2'])){
-            if ((table_2 == v['table_2'] && column_2 == v['column_2']) || (table_2 == v['table_1'] && (column_2 == v['column_1']))){
-                already_there = true
-            }
-        }
-    })
-    
-    if (already_there){
-        alert('This foreign key link is already in the list')
-    }
-    else{
-        if (Object.keys(config_dict['custom_fks']).length == 0){
-            new_index = 0
-        }
-        else{
-            new_index = Math.max.apply(null, Object.keys(config_dict['custom_fks'])) + 1
-        }
-        new_custom_fk = {'table_1': table_1, 'column_1': column_1, 'table_2': table_2, 'column_2': column_2}
-        config_dict['custom_fks'][new_index] = new_custom_fk
-        custom_fk_repr = stringify_custom_fk(new_custom_fk)
-        append_option(new_index, custom_fk_repr, $('#custom_fks_assigned'))
-    }
-}
-
-function append_option(val, text, element_to_append_to){
-    new_option = $('<option />', {
-        val: val,
-        text: text
-    })
-    element_to_append_to.append(new_option.clone())
-}
-
-function remove_option(val, element_to_remove_from){
-    element_to_remove_from.find('option[value='+val+']').remove()
-}
-
-function stringify_custom_fk(custom_fk_dict){
-    return custom_fk_dict['table_1'] + '.' + custom_fk_dict['column_1'] + '<->' + custom_fk_dict['table_2'] + '.' + custom_fk_dict['column_2']
-}
-
-function column_type(table, column){
-    return column_metadata[table][column]['type']
-}
-
 function clear_elements(){
-    $('#common_column_names').html("")
-    $('#global_fks').html("")
-    $('#custom_fk_table_1').html("<option selected disabled hidden style='display: none' value=''></option>")
-    $('#custom_fk_column_1').html("<option selected disabled hidden style='display: none' value=''></option>")
-    $('#custom_fk_table_2').html("<option selected disabled hidden style='display: none' value=''></option>")
-    $('#custom_fk_column_2').html("<option selected disabled hidden style='display: none' value=''></option>")
     $('#rename_table').html("<option selected disabled hidden style='display: none' value=''></option>")
-    $('#custom_fks_assigned').html("")
-
-    $('#common_column_names').prop('disabled', false)
-    $('#add_global_fk_btn').prop('disabled', false)
-    $('#remove_global_fk_btn').prop('disabled', false)
-    $('#global_fks').prop('disabled', false)
-    $('#custom_fk_table_1').prop('disabled', false)
-    $('#custom_fk_column_1').prop('disabled', false)
-    $('#custom_fk_table_2').prop('disabled', false)
-    $('#custom_fk_column_2').prop('disabled', false)
-    $('#add_custom_fk_btn').prop('disabled', false)
-    $('#remove_global_fk_btn').prop('disabled', false)
-    $('#custom_fks_assigned').prop('disabled', false)
-    $('#submit_config_btn').prop('disabled', false)
-
-    $('#config_second_part_div').prop('hidden', true)
     $('#rename_datatable').DataTable().clear().draw()
-
-    $('#custom_fk_column_1').selectpicker('refresh')
-    $('#custom_fk_column_2').selectpicker('refresh')
     $('#rename_table').selectpicker('refresh')
     $('#alert_save_customization').prop('hidden', true)
 
+    exclude_columns_ids = []
     custom_column_names_dict = {}
-    custom_fks_dict = {}
-    exclude_columns_idxs = []
 }
 
 </script>
