@@ -18,7 +18,7 @@
     </div>
 </div>
 <hr>
-<div id="customize_columns_div" hidden>
+<div id="customize_columns_div">
     <p class="h5">Customize columns for visualization</p>
     <div class="form-group col-3">
         <label for="rename_table">Choose table</label>
@@ -47,7 +47,6 @@
         </div>
         <div class="col-4">
             <div class="alert alert-success" id="alert_save_customization" role="alert" hidden>
-                Customization successfully submitted!
             </div>
         </div>
     </div>
@@ -58,8 +57,10 @@
 {% block app_scripts %}
 <script>
 
-var exclude_columns_ids = []
-var custom_column_names_dict = {}
+var column_customization = {}
+var custom_column_names = {}
+var exclude_column_ids = []
+var include_column_ids = []
 
 $(document).ready(function(){
     $('.alert').alert()
@@ -78,14 +79,21 @@ $(document).ready(function(){
     })
     
     $(document).on('click', '.chkRow', function () {
+        // Update both an include and exclude list because I'll only be updating values, and don't want to have to keep track of old values prior to customization unecessarily
+
         if ($(this).prop('checked')){
-            if ($.inArray($(this).val(), exclude_columns_ids) == -1){
-                exclude_columns_ids.push($(this).val())
+            if ($.inArray($(this).val(), exclude_column_ids) == -1){
+                exclude_column_ids.push($(this).val())
             }
+            var index = $.inArray($(this).val(), include_column_ids);
+            if (index !== -1) include_column_ids.splice(index, 1);
         }
         else {
-            var index = $.inArray($(this).val(), exclude_columns_ids);
-            if (index !== -1) exclude_columns_ids.splice(index, 1);
+            var index = $.inArray($(this).val(), exclude_column_ids);
+            if (index !== -1) exclude_column_ids.splice(index, 1);
+            if ($.inArray($(this).val(), include_column_ids) == -1){
+                include_column_ids.push($(this).val())
+            }
         }
     });
     
@@ -105,11 +113,10 @@ $(document).ready(function(){
 
 function update_custom_name(updatedCell, updatedRow, oldValue){
     table = $('#rename_table').val()
-    column_id = updatedRow.data()[1]
-    custom_column_names_dict[column_id] = updatedCell.data()
+    column_id = updatedRow.data()[0]
+    custom_column_names[column_id] = updatedCell.data()
 }
 
-// FIX THIS
 $('#dataset_select').change(function(){
     clear_elements()
     chosen_dataset = $('#dataset_select').val()
@@ -120,27 +127,16 @@ $('#dataset_select').change(function(){
     }
     $.ajax({
         type: "GET",
-        url: "{{ url_for('get_custom_column_data') }}",
+        url: "{{ url_for('column_customization') }}",
         data: send_data,
         dataType: "json",
         contentType: 'application/json;charset=UTF-8',
         success: function(return_data){
-            $.each(return_data.custom_column_names, function(table, column_rename_dict) {
-                $.each(column_rename_dict, function(column, new_name){
-                    idx = get_col_idx(table, column)
-                    custom_column_names_dict[idx] = new_name
-                })
+            column_customization = return_data
+            $.each(column_customization, function(table, column){
+                append_option(table, table, $('#rename_table'))
             })
-
-            $.each(return_data.exclude_columns, function(table, columns){
-                $.each(columns, function(){
-                    idx = get_col_idx(table, this.toString())
-                    if ($.inArray(idx, exclude_column_ids) == -1){
-                        exclude_column_ids.push(idx)
-                    }
-                })
-            })
-
+            $('#rename_table').selectpicker('refresh')
             $('#alert_loading_initial_data').prop('hidden', true)
         }
     })
@@ -151,66 +147,57 @@ $('#rename_table').on('change', function(){
     table = $(this).val()
     rename_datatable = $('#rename_datatable').DataTable()
     rename_datatable.clear().draw()
-    $.each(table_columns[table], function(){
-        idx = get_col_idx(table, this.toString())
-        if (idx != -1){
-            if (idx in custom_column_names_dict){
-                display_name = custom_column_names_dict[idx]
-            }
-            else{
-                display_name = struct_display_names[idx]
-            }
-
-            if ($.inArray(idx,exclude_columns_ids) == -1) {
-                checked_flag = ''
-            }
-            else {
-                checked_flag = 'checked'
-            }
-
-            rename_datatable.row.add([
-                this,
-                display_name,
-                '<div class="form-check"><input type="checkbox" class="chkRow form-check-input" value=' + idx +' ' + checked_flag + '></input></div>'
-            ]).draw(false)
+    $.each(column_customization[table], function(){
+        column_id = this['column_id']
+        if ($.inArray(String(column_id), exclude_column_ids) != -1){
+            checked_flag == 'checked'
         }
+        else if ($.inArray(String(column_id), include_column_ids) != -1) {
+            checked_flag == ''
+        }
+        else if (this['visible'] == true){
+            checked_flag = ''
+        }
+        else {
+            checked_flag = 'checked'
+        }
+
+        column_custom_name = custom_column_names[column_id]
+        if (column_custom_name == undefined){
+            column_custom_name = this['column_custom_name']
+        }
+                
+        rename_datatable.row.add([
+            this['column_id'],
+            this['column_source_name'],
+            column_custom_name,
+            '<div class="form-check"><input type="checkbox" class="chkRow form-check-input" value=' + this['column_id'] +' ' + checked_flag + '></input></div>'
+        ]).draw(false)
     })
 })
 
 $('#submit_customization_btn').on('click', function(){
     $('#alert_save_customization').prop('hidden', true)
-    // get all table/columns associated with each item in custom_column_names_dicts
-    $.each(custom_column_names_dict, function(idx, new_name){
-        column_link = column_links[idx]
-        $.each(column_link, function(table, column){
-            if (!(table in config_dict['custom_column_names'])){
-                config_dict['custom_column_names'][table] = {}
-            }
-            config_dict['custom_column_names'][table][column] = new_name
-        })
-    })
-
-    config_dict['exclude_columns'] = {}
-    $.each(exclude_column_ids, function(){
-        column_link = column_links[this]
-        $.each(column_link, function(table, column){
-            if (!(table in config_dict['exclude_columns'])){
-                config_dict['exclude_columns'][table] = []
-            }
-            config_dict['exclude_columns'][table].push(column)
-        })
-    })
-
+    
     $.ajax({
-        type: "POST",
-        url: "{{ url_for('submit_config_dict') }}",
-        data: JSON.stringify(send_data),
+        type: "PUT",
+        url: "{{ url_for('column_customization') }}",
+        data: JSON.stringify({'custom_column_names': custom_column_names, 'exclude_column_ids': exclude_column_ids, 'include_column_ids': include_column_ids}),
         dataType: "json",
         contentType: 'application/json;charset=UTF-8',
         success: function(return_data){
             $('#alert_save_customization').prop('hidden', false)
+            if (return_data == true){
+                $('#alert_save_customization').prop('class', 'alert alert-success')
+                $('#alert_save_customization').text('Customization saved successfully')
+            }
+            else {
+                $('#alert_save_customization').prop('class', 'alert alert-danger')
+                $('#alert_save_customization').text('An error occured - check logs')
+            }
         }
     })
+    
 })
 
 function clear_elements(){
@@ -219,8 +206,18 @@ function clear_elements(){
     $('#rename_table').selectpicker('refresh')
     $('#alert_save_customization').prop('hidden', true)
 
-    exclude_columns_ids = []
-    custom_column_names_dict = {}
+    column_customization = {}
+    custom_column_names = {}
+    exclude_column_ids = []
+    include_column_ids = []
+}
+
+function append_option(val, text, element_to_append_to){
+    new_option = $('<option />', {
+        val: val,
+        text: text
+    })
+    element_to_append_to.append(new_option.clone())
 }
 
 </script>

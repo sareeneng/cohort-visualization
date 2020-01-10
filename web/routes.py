@@ -226,6 +226,7 @@ def get_accessible_tables():
 
     return jsonify(return_data)
 
+
 @flask_app.route('/get_table_columns')
 @login_required(roles=PAGE_ACCESS['visualization'])
 def get_table_columns():
@@ -241,11 +242,64 @@ def get_table_columns():
 
     return jsonify(return_data)
 
+
 @flask_app.route('/config')
 @login_required(roles=PAGE_ACCESS['config'])
 def config():
     datasets = sorted([x[0] for x in db.session.query(DatasetMetadata.dataset_name).all()], key=lambda x: x.upper())
     return render_template('config.html', header='Configuration', datasets=datasets, navbar_access=navbar_access())
+
+
+@flask_app.route('/column_customization', methods=['PUT', 'GET'])
+@login_required(roles=PAGE_ACCESS['config'])
+def column_customization():
+    if request.method == 'GET':
+        return_data = defaultdict(list)
+        chosen_dataset = request.args.get('chosen_dataset')
+        column_data = db.session.query(ColumnMetadata).filter(ColumnMetadata.dataset_name == chosen_dataset).all()
+
+        for x in column_data:
+            return_data[x.table_name].append({
+                'column_id': x.id,
+                'column_source_name': x.column_source_name,
+                'column_custom_name': x.column_custom_name,
+                'visible': x.visible
+            })
+        
+        return return_data
+    elif request.method == 'PUT':
+        # inefficient, but not worth trying to do bulk updates
+        data = request.get_json()
+        logging.info(f'Update customization {data}')
+        success = True
+        for column_id, new_column_name in data['custom_column_names'].items():
+            found_column = db.session.query(ColumnMetadata).filter(ColumnMetadata.id == column_id).first()
+            if found_column is None:
+                logging.warning(f'Could not find column with id {column_id}')
+                success = False
+            else:
+                found_column.column_custom_name = new_column_name
+        db.session.commit()
+
+        for column_id in data['exclude_column_ids']:
+            found_column = db.session.query(ColumnMetadata).filter(ColumnMetadata.id == column_id).first()
+            if found_column is None:
+                logging.warning(f'Could not find column with id {column_id}')
+                success = False
+            else:
+                found_column.visible = False
+        db.session.commit()
+
+        for column_id in data['include_column_ids']:
+            found_column = db.session.query(ColumnMetadata).filter(ColumnMetadata.id == column_id).first()
+            if found_column is None:
+                logging.warning(f'Could not find column with id {column_id}')
+                success = False
+            else:
+                found_column.visible = True
+        db.session.commit()
+        return jsonify(success)
+
 
 @flask_app.route('/manage_users', methods=['GET', 'POST'])
 @login_required(roles=PAGE_ACCESS['manage_users'])
