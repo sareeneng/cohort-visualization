@@ -2,13 +2,14 @@ import itertools
 import logging
 import os
 import pandas as pd
+import sqlite3
 import constants as c
 import utilities as u
 
 from decimal import Decimal as D
 from pandas.api.types import is_numeric_dtype
 from sqlalchemy.exc import OperationalError
-from web import db
+from web import db, flask_app
 from web.models import DatasetMetadata, TableMetadata, ColumnMetadata, TableRelationship
 
 
@@ -22,6 +23,7 @@ class DBMaker():
         self.abs_path = os.path.join(os.getcwd(), directory_path)
         self.dataset_name = dataset_name
         self.data_file_extension = data_file_extension
+        self.data_conn = sqlite3.connect(flask_app.config['DATA_DB'])
 
     def create_db(self, overwrite=False):
         # First check to see if either dataset_name or the folder are already in the db
@@ -56,7 +58,7 @@ class DBMaker():
             logging.info(f'Writing {table_name} to {db_location}')
             
             df = pd.read_csv(os.path.join(self.abs_path, data_file_name))
-            df.to_sql(db_location, con=db.engine)
+            df.to_sql(db_location, con=self.data_conn)
             table_metadata = TableMetadata(
                 dataset_name=self.dataset_name,
                 table_name=table_name,
@@ -89,7 +91,7 @@ class DBMaker():
         for table in table_metadata:
             sql_statement = f'DROP TABLE {table.db_location};'
             try:
-                db.engine.execute(sql_statement)
+                self.data_conn.cursor().execute(sql_statement)
             except OperationalError:
                 logging.error(f'Unable to drop {table.db_location}. Does it exist in the db?')
         
@@ -297,6 +299,7 @@ class DBExtractor():
         # path-finding, get data out
         self.dataset_name = dataset_name
         self.prefix = db.session.query(DatasetMetadata.prefix).filter(DatasetMetadata.dataset_name == self.dataset_name).first()[0]
+        self.data_conn = sqlite3.connect(flask_app.config['DATA_DB'])
     
     def find_table_all_connectable_tables(self, table):
         # Return children and siblings, e.g. tables that I can go to next from this table
@@ -479,7 +482,7 @@ class DBExtractor():
             previous_table = current_table
 
         logging.info(sql_statement)
-        df = pd.read_sql(sql_statement, con=db.engine)
+        df = pd.read_sql(sql_statement, con=self.data_conn)
         return df
 
     def aggregate_df(self, df_original, groupby_columns, filters, aggregate_column=None, aggregate_fxn='Count'):
@@ -591,7 +594,7 @@ class DBExtractor():
 
     def analyze_column(self, table, column):
         sql_statement = f'SELECT {column} from {self.prefix}_{table}'
-        series = pd.read_sql(sql_statement, con=db.engine).loc[:, column].dropna()
+        series = pd.read_sql(sql_statement, con=self.data_conn).loc[:, column].dropna()
         if is_numeric_dtype(series):
             return {
                 'type': c.COLUMN_TYPE_NUMERIC,

@@ -9,7 +9,6 @@ import numpy as np
 import os
 from flask.json import JSONEncoder
 
-
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -50,6 +49,7 @@ logger.addHandler(handler_debug)
 flask_app = Flask(__name__)
 flask_app.json_encoder = CustomJSONEncoder
 flask_app.config.from_object(Config)
+flask_app.config['DATA_DB'] = os.path.join(basedir, 'data.db')
 bootstrap = Bootstrap(flask_app)
 csrf = CSRFProtect(flask_app)
 db = SQLAlchemy(flask_app)
