@@ -517,12 +517,11 @@ class DB():
         
         remaining_tables = [x for x in self.table_names if x not in accessible_tables]
 
-        # potential paths represents all complete paths that can traverse between the columns in include_columns. To check if the other tables are accessible, see if there's a path between the last member in each path and the remaining table
         for remaining_table in remaining_tables:
             found_valid_path = False
             for path in all_paths:
                 if not found_valid_path:
-                    if len(self.find_paths_between_tables(path[-1], remaining_table)) > 0:
+                    if len(self.find_paths_multi_tables(path + [remaining_table])) > 0:
                         found_valid_path = True
                         accessible_tables.add(remaining_table)
                         for idx in self.get_table_col_idxs(remaining_table):

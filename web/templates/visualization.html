@@ -27,12 +27,15 @@
                 <div class="form-group col-9">
                     <select class="selectpicker form-control show-tick" id="outcome_variable" data-live-search="true"></select>
                 </div>
-                <div class="form-group col-3">
-                    <button type="button" class="btn btn-primary" id="clear_outcome_btn">Clear</button>
+            </div>
+            <div class="form-row col-8">
+                <div class="form-group col">
+                    <button type="button" class="btn btn-primary" id="update_graph_btn">Update Graph</button>
+                </div>
+                <div class="form-group col">
+                    <button type="button" class="btn btn-primary" id="clear_btn">Clear</button>
                 </div>
             </div>
-
-            <button type="button" class="btn btn-primary" id="update_graph_btn">Update Graph</button>
         </div>
     </div>
     {% for n in range(4) %}
@@ -246,8 +249,20 @@
         
     })
 
-    $('#clear_outcome_btn').on('click', function(){
-        $('#outcome_variable').selectpicker('val', '').change()
+    $('#clear_btn').on('click', function(){
+        $('#outcome_variable').selectpicker('val', '')
+        card_num = 1
+        $('#ch1').text('')
+        $('#cb1').html('')
+        $('#ch2').text('')
+        $('#cb2').html('')
+        $('#ch3').text('')
+        $('#cb3').html('')
+        c1 = {'idx': -1, 'type': null}
+        c2 = {'idx': -1, 'type': null}
+        c3 = {'idx': -1, 'type': null}
+        $('#ind_variables').selectpicker('val', '')
+
     })
 
     function get_table_column_data(){
