@@ -73,17 +73,14 @@
 {% block app_scripts %}
 <script>
     var myChart
-    var ordered_groupby_idxs = []
-    var table_columns
-    var column_display_names
+    var ordered_groupby_column_ids = []
     var column_links
     var chosen_dataset
-    var exclude_columns
 
-    c1 = {'idx': -1, 'type': null}
-    c2 = {'idx': -1, 'type': null}
-    c3 = {'idx': -1, 'type': null}
-    c_outcome = {'idx': -1, 'type': null}
+    c1 = {'column_id': -1, 'type': null}
+    c2 = {'column_id': -1, 'type': null}
+    c3 = {'column_id': -1, 'type': null}
+    c_outcome = {'column_id': -1, 'type': null}
 
 
     $('#dataset_select').change(function(){
@@ -93,28 +90,27 @@
 
     $('#ind_variables').on('changed.bs.select', function(e, clickedIndex, isSelected, previousValue){
         chosen_option = $(this).find('option').eq(clickedIndex)
-        idx = chosen_option.val()
+        column_id = chosen_option.val()
         column_name = chosen_option.text()
         
         if(isSelected){
             send_data = {
-                'chosen_dataset': chosen_dataset,
-                'idx': idx
+                'column_id': column_id
             }
             make_ajax_call(type="GET", url="{{ url_for('get_column_info') }}", onSuccess=function(return_data){
-                if (c1['idx'] == -1){
+                if (c1['column_id'] == -1){
                     card_num = 1
-                    c1['idx'] = idx
+                    c1['column_id'] = column_id
                     c1['type'] = return_data.type
                 }
-                else if (c2['idx'] == -1){
+                else if (c2['column_id'] == -1){
                     card_num = 2
-                    c2['idx'] = idx
+                    c2['column_id'] = column_id
                     c2['type'] = return_data.type
                 }
-                else if (c3['idx'] == -1){
+                else if (c3['column_id'] == -1){
                     card_num = 3
-                    c3['idx'] = idx
+                    c3['column_id'] = column_id
                     c3['type'] = return_data.type
                 }
                 
@@ -186,27 +182,26 @@
                     split_div = $('<div class="row mt-3"><label for="divide' + card_num + '" class="col col-form-label d-flex align-items-center" style="font-size: 14px;">Divide range into</label></div><div class="row"><div class="col-6" style="padding-right: 0px;"><input type="number" id="divide' + card_num + '" class="form-control" value=1 min=1 max=20></div><div class="col-6 d-flex align-items-center">parts</div></div></div>')
                     $('#cb' + card_num).append(split_div)
                 }
-
                 filter_dropdown_items()  // have to include this in AJAX call
             })
         }
         else {
-            if (c1['idx'] == idx){
+            if (c1['column_id'] == column_id){
                 card_num = 1
-                c1 = {'idx': -1, 'type': null}
+                c1 = {'column_id': -1, 'type': null}
             }
-            else if (c2['idx'] == idx){
+            else if (c2['column_id'] == column_id){
                 card_num = 2
-                c2 = {'idx': -1, 'type': null}
+                c2 = {'column_id': -1, 'type': null}
             }
-            else if (c3['idx'] == idx){
+            else if (c3['column_id'] == column_id){
                 card_num = 3
-                c3 = {'idx': -1, 'type': null}
+                c3 = {'column_id': -1, 'type': null}
             }
             $('#ch' + card_num).text('')
             $('#cb' + card_num).html('')
+            filter_dropdown_items()
         }
-        filter_dropdown_items()
     })
 
     $('#outcome_variable').change(function() {
@@ -215,21 +210,21 @@
             $('#distribution_choices_text_div').attr('style', 'display: none;')
             $('#distribution_choices_numeric_div').attr('style', 'display: none;')
             $('#ch4').text('')
-            c_outcome = {'idx': -1, 'type': null}
-
+            c_outcome = {'column_id': -1, 'type': null}
+            
             filter_dropdown_items()
         }
         else{
-            idx = $(this).val()
+            column_id = $(this).val()
             send_data = {
                 'chosen_dataset': chosen_dataset,
-                'idx': idx
+                'column_id': column_id
             }
-            column_name = $(this).find('[value=' + idx + ']').text()
+            column_name = $(this).find('[value=' + column_id + ']').text()
             $('#ch4').text(column_name)
         
             make_ajax_call(type="GET", url="{{ url_for('get_column_info') }}", onSuccess=function(return_data){
-                c_outcome = {'idx': idx, 'type': return_data.type}
+                c_outcome = {'column_id': column_id, 'type': return_data.type}
 
                 if (return_data.type == 'TEXT') {
                     $('#distribution_choices_text_div').attr('style', '')
@@ -241,7 +236,6 @@
                     $('#distribution_choices_text_div').attr('style', 'display: none;')
                     $('#distribution_choice_numeric_1').prop('checked', true)
                 }
-
                 filter_dropdown_items()
 
             })
@@ -283,11 +277,21 @@
             dataType: "json",
             contentType: 'application/json;charset=UTF-8',
             success: function(return_data){
-                table_columns = return_data.table_columns
-                column_display_names = return_data.column_display_names
-                column_links = return_data.column_links
-                exclude_columns = return_data.exclude_columns
-                populate_dropdowns()
+                clear_dropdowns()
+
+                // Dictionary of {table: [{'column_id': 2, 'column_custom_name': 'asdf'}, {'column_id': 1, 'column_custom_name': 'fdsa'}]}
+
+                $.each(return_data, function(table, column_data) {
+                    new_optgroup = $('<optgroup label="' + table + '"/>"')
+                    $.each(column_data, function(){
+                        append_option(this['column_id'], this['column_custom_name'], new_optgroup)
+                    })
+                    new_optgroup.append('</optgroup>')
+                    $('#ind_variables').append(new_optgroup.clone())
+                    $('#outcome_variable').append(new_optgroup.clone())
+                })
+                $('#ind_variables').selectpicker('refresh');
+                $('#outcome_variable').selectpicker('refresh');                
             }
         })
     }
@@ -305,7 +309,7 @@
                 c_info = c3
             }
 
-            if (c_info['idx'] != -1){
+            if (c_info['column_id'] != -1){
                 if (c_info['type'] == 'TEXT'){
                     filter_info = {'type': 'list', 'filter': []}
                     $.each($('#cfilter' + this).find('option'), function(){
@@ -313,17 +317,17 @@
                             filter_info['filter'].push($(this).text())
                         }
                     })
-                    filters[c_info['idx']] = filter_info
+                    filters[c_info['column_id']] = filter_info
                 }
                 else if (c_info['type'] == 'NUMERIC'){
-                    filters[c_info['idx']] = {'type': 'range', 'filter': {'min': $('#slider' + this).data().from, 'max': $('#slider' + this).data().to, 'bins': $('#divide' + this).val()}}
+                    filters[c_info['column_id']] = {'type': 'range', 'filter': {'min': $('#slider' + this).data().from, 'max': $('#slider' + this).data().to, 'bins': $('#divide' + this).val()}}
                 }                
                 
             }
         })
-        current_idxs = get_idxs()
-        ordered_groupby_idxs = current_idxs['ordered_groupby_idxs']
-        selected_outcome_var_idx = current_idxs['selected_outcome_var_idx']
+        current_column_ids = get_column_ids()
+        ordered_groupby_column_ids = current_column_ids['ordered_groupby_column_ids']
+        selected_outcome_var_column_id = current_column_ids['selected_outcome_var_column_id']
 
 
         aggregate_fxn = $("input[name='distribution_choice']:checked").val()
@@ -333,8 +337,8 @@
 
         send_data = {
             'chosen_dataset': chosen_dataset,
-            'chosen_ind_idxs': ordered_groupby_idxs,
-            'chosen_outcome_idx': selected_outcome_var_idx,
+            'chosen_ind_column_ids': ordered_groupby_column_ids,
+            'chosen_outcome_column_id': selected_outcome_var_column_id,
             'aggregate_fxn': aggregate_fxn,
             'filters': JSON.stringify(filters)
         }
@@ -419,36 +423,35 @@
         })
     })
 
-    function get_idxs(){
-        ordered_groupby_idxs = []
+    function get_column_ids(){
+        ordered_groupby_column_ids = []
         $.each([c1, c2, c3], function(){
-            if (this['idx'] != -1){
-                ordered_groupby_idxs.push(this['idx'])
+            if (this['column_id'] != -1){
+                ordered_groupby_column_ids.push(this['column_id'])
             }
         })
-        if (c_outcome['idx'] != -1) {
-            selected_outcome_var_idx = c_outcome['idx']
+        if (c_outcome['column_id'] != -1) {
+            selected_outcome_var_column_id = c_outcome['column_id']
         }
         else{
-            selected_outcome_var_idx = null
+            selected_outcome_var_column_id = null
         }
-        return {'ordered_groupby_idxs': ordered_groupby_idxs, 'selected_outcome_var_idx': selected_outcome_var_idx}
+        return {'ordered_groupby_column_ids': ordered_groupby_column_ids, 'selected_outcome_var_column_id': selected_outcome_var_column_id}
     }
 
     function filter_dropdown_items(){
-        current_idxs = get_idxs()
-        ordered_groupby_idxs = current_idxs['ordered_groupby_idxs']
-        selected_outcome_var_idx = current_idxs['selected_outcome_var_idx']
+        current_column_ids = get_column_ids()
+        ordered_groupby_column_ids = current_column_ids['ordered_groupby_column_ids']
+        selected_outcome_var_column_id = current_column_ids['selected_outcome_var_column_id']
         send_data = {
-            'chosen_dataset': chosen_dataset,
-            'chosen_ind_idxs': ordered_groupby_idxs,
-            'chosen_outcome_idx': selected_outcome_var_idx
+            'chosen_ind_column_ids': ordered_groupby_column_ids,
+            'chosen_outcome_column_id': selected_outcome_var_column_id,
+            'chosen_dataset': chosen_dataset
         }
-        make_ajax_call(type="GET", url="{{ url_for('get_accessible_variables') }}", onSuccess=function(return_data){
-            $.each(return_data.accessible_columns_list, function(){
-                $('#ind_variables').find('[value=' + this[0]+']').prop('disabled', !this[2])
-                $('#outcome_variable').find('[value=' + this[0]+']').prop('disabled', !this[2])
-                
+        make_ajax_call(type="GET", url="{{ url_for('get_accessible_tables') }}", onSuccess=function(return_data){
+            $.each(return_data, function(table, is_accessible) {
+                $('#ind_variables').find("optgroup[label='" + table + "']").prop('disabled', !is_accessible)
+                $('#outcome_variable').find("optgroup[label='" + table + "']").prop('disabled', !is_accessible)
             })
             $('#ind_variables').selectpicker('refresh')
             $('#outcome_variable').selectpicker('refresh')
@@ -458,42 +461,25 @@
     function clear_dropdowns(){
         $('#ind_variables').html("")
         $('#outcome_variable').html("<option selected disabled hidden style='display: none' value=''></option>")
-        ordered_groupby_idxs = []
+        ordered_groupby_column_ids = []
         if (myChart){myChart.destroy()}
     }
 
     function populate_dropdowns(){
-        clear_dropdowns()
-
-        // Each element is essentially a tuple of (idx, column_name)
-        $.each(table_columns, function(table, columns) {
-            new_optgroup = $('<optgroup label="' + table + '"/>')
-            $.each(columns, function(){
-                if ($.inArray(this.toString(), exclude_columns[table]) == -1){
-                    idx = get_col_idx(table, this.toString())
-                    append_option(idx, column_display_names[idx], new_optgroup)
-                }
-            })
-            new_optgroup.append('</optgroup>')
-            $('#ind_variables').append(new_optgroup.clone())
-            $('#outcome_variable').append(new_optgroup.clone())
-
-        })
-        $('#ind_variables').selectpicker('refresh');
-        $('#outcome_variable').selectpicker('refresh');
+        
     }
 
-    function get_col_idx(table, column){
-        return_idx = -1
-        $.each(column_links, function(idx, table_links){
+    function get_col_column_id(table, column){
+        return_column_id = -1
+        $.each(column_links, function(column_id, table_links){
             $.each(table_links, function(table_existing, column_existing){
                 if (table_existing == table && column_existing == column){
-                    return_idx = idx
+                    return_column_id = column_id
                     return
                 }
             })
         })
-        return return_idx
+        return return_column_id
     }
 
     function append_option(val, text, element_to_append_to, selected, table_row){
