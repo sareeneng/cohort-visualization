@@ -1,4 +1,4 @@
-from db_structure import DBExtractor
+import db_structure
 from web import flask_app, db
 from web.forms import LoginForm, ChangePWForm, AddUserForm, PermissionChangeForm
 from web.models import ColumnMetadata, DatasetMetadata, TableMetadata, Group, User, UserGroups
@@ -110,7 +110,7 @@ def visualization():
 def get_column_info():
     column_id = request.args.get('column_id')
     found_row = db.session.query(ColumnMetadata).filter(ColumnMetadata.id == column_id).first()
-    db_extractor = DBExtractor(found_row.dataset_name)
+    db_extractor = db_structure.DBExtractor(found_row.dataset_name)
     col_info = db_extractor.analyze_column(table=found_row.table_name, column=found_row.column_source_name)
 
     return jsonify(col_info)
@@ -136,7 +136,7 @@ def get_graph_data():
 
     column_metadata = db.session.query(ColumnMetadata).filter(ColumnMetadata.id.in_(chosen_ind_column_ids + [chosen_outcome_column_id])).all()
 
-    db_extractor = DBExtractor(dataset_name=chosen_dataset)
+    db_extractor = db_structure.DBExtractor(dataset_name=chosen_dataset)
 
     tables = list(set(x.table_name for x in column_metadata))
     table_columns_of_interest = [(x.table_name, x.column_source_name) for x in column_metadata]
@@ -216,7 +216,7 @@ def get_accessible_tables():
 
         include_tables = list(set([x[0] for x in db.session.query(ColumnMetadata.table_name).filter(ColumnMetadata.id.in_(all_chosen_column_ids))]))
         
-        db_extractor = DBExtractor(dataset_name=chosen_dataset)
+        db_extractor = db_structure.DBExtractor(dataset_name=chosen_dataset)
         accessible_tables = db_extractor.find_multi_tables_still_accessible_tables(include_tables=include_tables)
         for table in all_tables:
             if table in include_tables or table in accessible_tables:
