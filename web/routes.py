@@ -111,7 +111,7 @@ def get_column_info():
     column_id = request.args.get('column_id')
     found_row = db.session.query(ColumnMetadata).filter(ColumnMetadata.id == column_id).first()
     db_extractor = db_structure.DBExtractor(found_row.dataset_name)
-    col_info = db_extractor.analyze_column(table=found_row.table_name, column=found_row.column_source_name)
+    col_info = db_extractor.analyze_column(table=found_row.table_name, column=found_row.column_source_name, limit_rows=10000)
 
     return jsonify(col_info)
 
@@ -150,7 +150,7 @@ def get_graph_data():
             aggregate_column_display_name = x.column_custom_name
 
     paths = db_extractor.find_paths_multi_tables(tables)
-    df = db_extractor.get_biggest_df_from_paths(paths, table_columns_of_interest)
+    df = db_extractor.get_biggest_df_from_paths(paths, table_columns_of_interest, limit_rows=10000)
 
     # Gets filters with {column_id: filter data}
     filters_with_id_keys = json.loads(request.args.get('filters', None))

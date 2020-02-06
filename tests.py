@@ -24,7 +24,7 @@ class TestPathFinding(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.db_maker = db_structure.DBMaker(dataset_name='sample2', directory_path=os.path.join('datasets', 'sample2'))
-        self.db_maker.create_db()
+        self.db_maker.create_db_metadata(dump_to_data_db=True)
         self.db_linker = db_structure.DBLinker(dataset_name='sample2')
         self.db_linker.add_global_fk('col1')
         self.db_linker.add_global_fk('col2')

@@ -59,6 +59,8 @@ class DatasetMetadata(db.Model):
 	dataset_name = db.Column(db.String(), unique=True, index=True)
 	folder = db.Column(db.String(), unique=True)
 	prefix = db.Column(db.String(), unique=True)
+	sql_server = db.Column(db.String())
+	sql_db = db.Column(db.String())
 
 
 class TableMetadata(db.Model):
@@ -67,6 +69,7 @@ class TableMetadata(db.Model):
 	table_name = db.Column(db.String(), index=True)
 	db_location = db.Column(db.String(), unique=True)
 	file = db.Column(db.String())
+	num_records = db.Column(db.Integer())
 
 
 class ColumnMetadata(db.Model):
@@ -77,6 +80,7 @@ class ColumnMetadata(db.Model):
 	column_custom_name = db.Column(db.String())
 	is_many = db.Column(db.Boolean())
 	visible = db.Column(db.Boolean(), default=True)
+	num_non_null = db.Column(db.Integer())
 
 
 class TableRelationship(db.Model):

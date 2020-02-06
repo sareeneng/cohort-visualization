@@ -2,10 +2,14 @@ import itertools
 import logging
 import os
 import pandas as pd
+import pyodbc
 import sqlite3
+import sys
+import traceback
 import constants as c
 import utilities as u
 
+from collections import defaultdict
 from decimal import Decimal as D
 from pandas.api.types import is_numeric_dtype
 from sqlalchemy.exc import OperationalError
@@ -13,19 +17,48 @@ from web import db, flask_app
 from web.models import DatasetMetadata, TableMetadata, ColumnMetadata, TableRelationship
 
 
+def execute_sql_query(query, sql_server, sql_db):
+    df = None
+    cnxn = None
+    try:
+        cnxn = pyodbc.connect("DRIVER={ODBC DRIVER 17 for SQL Server};SERVER=" + sql_server + ";DATABASE=" + sql_db + ";Trusted_Connection=yes;)")
+
+        def handle_sql_variant_as_string(value):
+            return value.decode('utf-16le')
+
+        cnxn.add_output_converter(-155, handle_sql_variant_as_string)
+
+        df = pd.read_sql_query(query, cnxn)
+    finally:
+        if cnxn is not None:
+            cnxn.close()
+        logging.debug('CLOSED CONNECTION')
+    return df
+
+
 class DBMaker():
     '''
     This class will take the files in the directory and then create tables in the main application db. It will also add metadata
     '''
 
-    def __init__(self, dataset_name, directory_path, data_file_extension='.csv', delimiter=','):
-        self.directory_path = directory_path
-        self.abs_path = os.path.join(os.getcwd(), directory_path)
+    def __init__(self, dataset_name, directory_path=None, data_file_extension='.csv', delimiter=',', sql_server=None, sql_db=None, schema_name=None):
         self.dataset_name = dataset_name
-        self.data_file_extension = data_file_extension
         self.data_conn = sqlite3.connect(flask_app.config['DATA_DB'])
+        if directory_path is not None:
+            self.directory_path = directory_path
+            self.abs_path = os.path.join(os.getcwd(), directory_path)
+            self.data_file_extension = data_file_extension
+            self.sql_server = None
+            self.sql_db = None
+        else:
+            self.directory_path = None
+            self.abs_path = None
+            self.data_file_extension = None
+            self.sql_server = sql_server
+            self.sql_db = sql_db
+            self.schema_name = schema_name
 
-    def create_db(self, overwrite=False):
+    def create_db_metadata(self, dump_to_data_db=False, num_rows=10000, ignore_tables_with_substrings=[]):
         # First check to see if either dataset_name or the folder are already in the db
         x = db.session.query(DatasetMetadata).filter(DatasetMetadata.dataset_name == self.dataset_name).first()
         if x is not None:
@@ -39,61 +72,123 @@ class DBMaker():
             logging.error(e)
             raise Exception(e)
 
-        prefix = self.dataset_name
+        prefix = self.dataset_name if self.sql_server is None else None
 
         dataset_metadata = DatasetMetadata(
             dataset_name=self.dataset_name,
             folder=self.directory_path,
-            prefix=prefix
+            prefix=prefix,
+            sql_server=self.sql_server,
+            sql_db=self.sql_db
         )
         db.session.add(dataset_metadata)
-        
-        data_file_names = u.find_file_types(self.directory_path, self.data_file_extension)
-
-        for data_file_name in data_file_names:
-            idx = data_file_name.rfind('.')
-            table_name = data_file_name[:idx]
-            db_location = f'{prefix}_{table_name}'
-
-            logging.info(f'Writing {table_name} to {db_location}')
-            
-            df = pd.read_csv(os.path.join(self.abs_path, data_file_name))
-            df.to_sql(db_location, con=self.data_conn)
-            table_metadata = TableMetadata(
-                dataset_name=self.dataset_name,
-                table_name=table_name,
-                db_location=db_location,
-                file=data_file_name
-            )
-
-            db.session.add(table_metadata)
-
-            for column in df.columns:
-                if len(df[column].dropna()) > len(df[column].dropna().unique()):
-                    is_many = True
-                else:
-                    is_many = False
-
-                column_metadata = ColumnMetadata(
-                    dataset_name=self.dataset_name,
-                    table_name=table_name,
-                    column_source_name=column,
-                    column_custom_name=column,
-                    is_many=is_many
-                )
-                db.session.add(column_metadata)
-        
         db.session.commit()
-        logging.info(f'Finished writing {self.dataset_name}')
+
+        if self.directory_path is not None:
+            data_file_names = u.find_file_types(self.directory_path, self.data_file_extension)
+            
+            for data_file_name in data_file_names:
+                idx = data_file_name.rfind('.')
+                table_name = data_file_name[:idx]
+                db_location = f'{prefix}_{table_name}'
+                df = pd.read_csv(os.path.join(self.abs_path, data_file_name))
+                if dump_to_data_db:
+                    logging.info(f'Writing {table_name} to {db_location}')
+                    df.to_sql(db_location, con=self.data_conn)
+                self.add_table_metadata(table_name, num_records=len(df), db_location=db_location, file=data_file_name, commit=False)
+
+                for column in df.columns:
+                    dropna_column = df[column].dropna()
+                    dropna_len = len(dropna_column)
+                    if dropna_len > len(dropna_column.unique()):
+                        is_many = True
+                    else:
+                        is_many = False
+                    
+                    self.add_column_metadata(table_name, column_source_name=column, column_custom_name=column, is_many=is_many, num_non_null=dropna_len, commit=False)
+        else:
+            query = f"select t.name from sys.tables t "
+            if self.schema_name is not None:
+                query += f" WHERE schema_name(t.schema_id) = '{self.schema_name}' "
+            for ignore_substring in ignore_tables_with_substrings:
+                query += f" AND t.name NOT LIKE '%{ignore_substring}%' "
+            query += " ORDER BY name"
+
+            tables = execute_sql_query(query=query, sql_server=self.sql_server, sql_db=self.sql_db)
+            logging.info(f"{len(tables['name'])} tables found")
+            for table in tables['name']:
+                logging.debug(f"Writing metadata for {table}")
+                try:
+                    query = f"SELECT TOP {num_rows} * FROM {table}"
+                    df = execute_sql_query(query=query, sql_server=self.sql_server, sql_db=self.sql_db)
+                    if len(df) == 0:
+                        logging.error(f'No data found in {table}, will ignore it.')
+                        continue
+                    for column in df.columns:
+                        dropna_column = df[column].dropna()
+                        dropna_len = len(dropna_column)
+                        if dropna_len == 0:
+                            logging.warning(f'Only null data in column {column}, will ignore it.')
+                            continue
+                        dropna_unique_len = len(dropna_column.unique())
+                        if dropna_len > dropna_unique_len:
+                            is_many = True
+                        else:
+                            is_many = False
+                        
+                        self.add_column_metadata(table, column_source_name=column, column_custom_name=column, is_many=is_many, num_non_null=dropna_len, commit=False)
+                    self.add_table_metadata(table, num_records=len(df), db_location=None, file=None, commit=False)
+                    db.session.commit()
+                except Exception as e:
+                    exc_type, exc_value, exc_tb = sys.exc_info()
+                    filename, line_num, func_name, text = traceback.extract_tb(exc_tb)[-1]
+                    logging.error(f'Unable to write table {table}.')
+                    logging.error(f'Thrown from: {filename}')
+                    logging.error(e)
+                    db.session.rollback()
+        logging.info("Done writing metadata")
+        db.session.commit()
+
+    def add_table_metadata(self, table_name, num_records, db_location=None, file=None, commit=False):
+        table_metadata = TableMetadata(
+            dataset_name=self.dataset_name,
+            num_records=num_records,
+            table_name=table_name,
+            db_location=db_location,
+            file=file
+        )
+        db.session.add(table_metadata)
+        if commit:
+            db.session.commit()
+
+    def add_column_metadata(self, table_name, column_source_name, column_custom_name, is_many, num_non_null, commit=False):
+        column_metadata = ColumnMetadata(
+            dataset_name=self.dataset_name,
+            table_name=table_name,
+            column_source_name=column_source_name,
+            column_custom_name=column_custom_name,
+            num_non_null=num_non_null,
+            is_many=is_many
+        )
+        db.session.add(column_metadata)
+        if commit:
+            db.session.commit()
+
+
+class DBDestroyer():
+    def __init__(self, dataset_name):
+        self.dataset_name = dataset_name
+        self.data_conn = sqlite3.connect(flask_app.config['DATA_DB'])
 
     def remove_db(self):
         table_metadata = db.session.query(TableMetadata).filter(TableMetadata.dataset_name == self.dataset_name).all()
         for table in table_metadata:
-            sql_statement = f'DROP TABLE {table.db_location};'
-            try:
-                self.data_conn.cursor().execute(sql_statement)
-            except OperationalError:
-                logging.error(f'Unable to drop {table.db_location}. Does it exist in the db?')
+            if table.db_location is not None:
+                sql_statement = f'DROP TABLE {table.db_location};'
+                try:
+                    self.data_conn.cursor().execute(sql_statement)
+                except OperationalError:
+                    logging.error(f'Unable to drop {table.db_location}. Does it exist in the db?')
         
         db.session.query(TableMetadata).filter(TableMetadata.dataset_name == self.dataset_name).delete()
 
@@ -111,6 +206,14 @@ class DBLinker():
         # Create global FKs, custom FKs. Write to .links file
         self.dataset_name = dataset_name
 
+    def get_common_column_names(self):
+        all_column_metadata = db.session.query(ColumnMetadata).filter(ColumnMetadata.dataset_name == self.dataset_name).all()
+        column_counts = defaultdict(int)
+        for column_metadata in all_column_metadata:
+            column_counts[column_metadata.column_source_name] += 1
+        common_columns = sorted([k for k, v in column_counts.items() if v > 1])
+        return common_columns
+
     def column_type_is_many(self, table, column):
         found_row = db.session.query(ColumnMetadata).filter(ColumnMetadata.dataset_name == self.dataset_name, ColumnMetadata.table_name == table, ColumnMetadata.column_source_name == column).first()
         try:
@@ -119,40 +222,54 @@ class DBLinker():
             logging.error(f'Unable to find column type for {table}.{column}')
             return None
 
-    def table_relationship_exists(self, table_1, table_2):
-        if db.session.query(TableRelationship).filter(TableRelationship.dataset_name == self.dataset_name, ((TableRelationship.reference_table == table_1) & (TableRelationship.other_table == table_2)) | ((TableRelationship.reference_table == table_2) & (TableRelationship.other_table == table_1))).first() is None:
-            return False
-        return True
+    def table_connectable_relationship_exists(self, table_1, table_2):
+        x = db.session.query(TableRelationship).filter(
+            TableRelationship.dataset_name == self.dataset_name,
+            ((TableRelationship.reference_table == table_1) & (TableRelationship.other_table == table_2)) | ((TableRelationship.reference_table == table_2) & (TableRelationship.other_table == table_1)),
+            ((TableRelationship.is_child == True) | (TableRelationship.is_parent == True) | (TableRelationship.is_sibling == True))  # noqa: E712
+        ).first()
+        if x is None:
+            return False, None
+        if x.reference_key == x.other_key:
+            link = x.reference_key
+        else:
+            link = f'{x.reference_key}->{x.other_key}'
+        return True, link
 
     def add_global_fk(self, column):
         # Find all tables that have this column name, then run add_fk to all combos
         tables_found = [x[0] for x in db.session.query(ColumnMetadata.table_name).filter(ColumnMetadata.dataset_name == self.dataset_name, ColumnMetadata.column_source_name == column).all()]
+        logging.debug(f'{column} found in {len(tables_found)} tables: {tables_found}')
         
         for table_combination in itertools.combinations(tables_found, 2):
-            self.add_fk(table_combination[0], column, table_combination[1], column)
+            self.add_fk(table_combination[0], column, table_combination[1], column, commit=False)
+        db.session.commit()
 
-    def add_fk(self, table_1, column_1, table_2, column_2):
+    def add_fk(self, table_1, column_1, table_2, column_2, commit=True):
         column_1_is_many = self.column_type_is_many(table_1, column_1)
         column_2_is_many = self.column_type_is_many(table_2, column_2)
         
-        if self.table_relationship_exists(table_1, table_2):
-            logging.info(f'Relationship already exists between {table_1} and {table_2}. Cannot assign two foreign keys between two tables.')  # serves as a safety check.
-        else:
-            if column_1_is_many:
-                if column_2_is_many:
-                    self.add_step_sibling_link(step_sibling_1_table=table_1, step_sibling_1_column=column_1, step_sibling_2_table=table_2, step_sibling_2_column=column_2)
-                
-                elif not column_2_is_many:
-                    self.add_parent_child_link(parent_table=table_1, parent_column=column_1, child_table=table_2, child_column=column_2)
+        if column_1_is_many:
+            if column_2_is_many:
+                self.add_step_sibling_link(step_sibling_1_table=table_1, step_sibling_1_column=column_1, step_sibling_2_table=table_2, step_sibling_2_column=column_2)
+                if commit:
+                    db.session.commit()
+                return
 
+        tr_exists, link = self.table_connectable_relationship_exists(table_1, table_2)
+        if tr_exists:
+            logging.info(f'Relationship already exists between {table_1} and {table_2} on {link}. Cannot assign additional foreign key {column_1}->{column_2} between these tables.')  # serves as a safety check.
+        else:
+            if column_1_is_many and not column_2_is_many:
+                self.add_parent_child_link(parent_table=table_1, parent_column=column_1, child_table=table_2, child_column=column_2)
             elif not column_1_is_many:
                 if column_2_is_many:
                     self.add_parent_child_link(parent_table=table_2, parent_column=column_2, child_table=table_1, child_column=column_1)
                 
                 elif not column_2_is_many:
                     self.add_sibling_link(sibling_1_table=table_1, sibling_1_column=column_1, sibling_2_table=table_2, sibling_2_column=column_2)
-        
-        db.session.commit()
+        if commit:
+            db.session.commit()
 
     def add_parent_child_link(self, parent_table, parent_column, child_table, child_column, commit=False):
         parent_row = TableRelationship(
@@ -298,8 +415,15 @@ class DBExtractor():
     def __init__(self, dataset_name):
         # path-finding, get data out
         self.dataset_name = dataset_name
-        self.prefix = db.session.query(DatasetMetadata.prefix).filter(DatasetMetadata.dataset_name == self.dataset_name).first()[0]
-        self.data_conn = sqlite3.connect(flask_app.config['DATA_DB'])
+        dataset_metadata = db.session.query(DatasetMetadata).filter(DatasetMetadata.dataset_name == self.dataset_name).first()
+        self.prefix = dataset_metadata.prefix
+        self.sql_server = dataset_metadata.sql_server
+        self.sql_db = dataset_metadata.sql_db
+
+        if self.sql_server is None:
+            self.data_conn = sqlite3.connect(flask_app.config['DATA_DB'])
+        else:
+            self.data_conn = None
     
     def find_table_all_connectable_tables(self, table):
         # Return children and siblings, e.g. tables that I can go to next from this table
@@ -357,7 +481,7 @@ class DBExtractor():
         
         return accessible_tables
 
-    def find_paths_between_tables(self, start_table, destination_table, current_path=[]):
+    def find_paths_between_tables(self, start_table, destination_table, current_path=[], recursion_depth=5):
         if start_table == destination_table:
             return [start_table]
 
@@ -385,14 +509,17 @@ class DBExtractor():
                 return all_paths
             else:
                 return []
+        
+        elif len(current_path) >= recursion_depth:
+            return []
 
         for child_table in self.find_table_children(start_table):
-            for path in self.find_paths_between_tables(start_table=child_table, destination_table=destination_table, current_path=current_path):
+            for path in self.find_paths_between_tables(start_table=child_table, destination_table=destination_table, current_path=current_path, recursion_depth=recursion_depth):
                 all_paths.append(path)
         
         for sibling_table in self.find_table_siblings(start_table):
             if sibling_table not in current_path:  # prevents just looping across siblings forever
-                for path in self.find_paths_between_tables(start_table=sibling_table, destination_table=destination_table, current_path=current_path):
+                for path in self.find_paths_between_tables(start_table=sibling_table, destination_table=destination_table, current_path=current_path, recursion_depth=recursion_depth):
                     all_paths.append(path)
 
         return all_paths
@@ -444,13 +571,13 @@ class DBExtractor():
             TableRelationship.other_table == table_2
         ).first()
 
-    def get_biggest_df_from_paths(self, paths, table_columns_of_interest):
+    def get_biggest_df_from_paths(self, paths, table_columns_of_interest, limit_rows=None):
         if len(paths) == 1:
-            return self.get_df_from_path(paths[0], table_columns_of_interest)
+            return self.get_df_from_path(paths[0], table_columns_of_interest, limit_rows=limit_rows)
 
         dfs = []
         for path in paths:
-            dfs.append(self.get_df_from_path(path, table_columns_of_interest))
+            dfs.append(self.get_df_from_path(path, table_columns_of_interest, limit_rows=limit_rows))
         biggest_df = dfs[0]
 
         for df in dfs[1:]:
@@ -459,19 +586,26 @@ class DBExtractor():
 
         return df
 
-    def get_df_from_path(self, path, table_columns_of_interest):
+    def prefixify(self, table_name):
+        if self.prefix is None:
+            return table_name
+        return f'{self.prefix}_{table_name}'
+
+    def get_df_from_path(self, path, table_columns_of_interest, limit_rows=None):
         # table_columns of interest is a list of (table, column)
         sql_statement = f'SELECT '
+        if limit_rows is not None:
+            sql_statement += f' TOP {limit_rows} '
         for table, column in table_columns_of_interest:
             # custom_name = self.db_customizer.get_custom_column_name(table, column)
-            sql_statement += f'{self.prefix}_{table}.{column} AS {table}_{column}, '  # AS {custom_name}, '
+            sql_statement += f'{self.prefixify(table)}.{column} AS {table}_{column}, '  # AS {custom_name}, '
         sql_statement = sql_statement[:-2]
 
         previous_table = f'{path[0]}'
-        sql_statement += f' FROM {self.prefix}_{previous_table} '
+        sql_statement += f' FROM {self.prefixify(previous_table)} '
         for current_table in path[1:]:
-            current_table_db = f'{self.prefix}_{current_table}'
-            previous_table_db = f'{self.prefix}_{previous_table}'
+            current_table_db = f'{self.prefixify(current_table)}'
+            previous_table_db = f'{self.prefixify(previous_table)}'
             keys = self.get_joining_keys(previous_table, current_table)
             try:
                 left_key, right_key = keys[0], keys[1]
@@ -482,7 +616,10 @@ class DBExtractor():
             previous_table = current_table
 
         logging.info(sql_statement)
-        df = pd.read_sql(sql_statement, con=self.data_conn)
+        if self.data_conn is None:
+            df = execute_sql_query(query=sql_statement, sql_server=self.sql_server, sql_db=self.sql_db)
+        else:
+            df = pd.read_sql(sql_statement, con=self.data_conn)
         return df
 
     def aggregate_df(self, df_original, groupby_columns, filters, aggregate_column=None, aggregate_fxn='Count'):
@@ -592,9 +729,15 @@ class DBExtractor():
 
         return bin_cuts
 
-    def analyze_column(self, table, column):
-        sql_statement = f'SELECT {column} from {self.prefix}_{table}'
-        series = pd.read_sql(sql_statement, con=self.data_conn).loc[:, column].dropna()
+    def analyze_column(self, table, column, limit_rows=None):
+        sql_statement = "SELECT "
+        if limit_rows is not None:
+            sql_statement += f" TOP {limit_rows} {column} "
+        sql_statement += f' FROM {self.prefixify(table)}'
+        if self.data_conn is None:
+            series = execute_sql_query(query=sql_statement, sql_server=self.sql_server, sql_db=self.sql_db).loc[:, column].dropna()
+        else:
+            series = pd.read_sql(sql_statement, con=self.data_conn).loc[:, column].dropna()
         if is_numeric_dtype(series):
             return {
                 'type': c.COLUMN_TYPE_NUMERIC,
