@@ -11,7 +11,7 @@ import utilities as u
 
 from collections import defaultdict
 from decimal import Decimal as D
-from pandas.api.types import is_numeric_dtype
+from pandas.api.types import is_numeric_dtype, is_bool_dtype, is_datetime64_any_dtype
 from sqlalchemy.exc import OperationalError
 from web import db, flask_app
 from web.models import DatasetMetadata, TableMetadata, ColumnMetadata, TableRelationship
@@ -34,6 +34,74 @@ def execute_sql_query(query, sql_server, sql_db):
             cnxn.close()
         logging.debug('CLOSED CONNECTION')
     return df
+
+
+def calculate_column_metadata(column):
+    dropna_column = column.dropna()
+    dropna_len = len(dropna_column)
+    unique_values = dropna_column.unique()
+    dropna_unique_len = len(unique_values)
+
+    if dropna_len > dropna_unique_len:
+        is_many = True
+    else:
+        is_many = False
+
+    if is_bool_dtype(dropna_column):
+        column_data_type = c.COLUMN_TYPE_BOOLEAN
+    elif is_datetime64_any_dtype(dropna_column):
+        column_data_type = c.COLUMN_TYPE_DATETIME
+        unique_values = []
+    elif is_numeric_dtype(dropna_column):
+        if dropna_unique_len == 2:
+            if 0 in dropna_column.unique() and 1 in dropna_column.unique():
+                column_data_type = c.COLUMN_TYPE_BOOLEAN
+            else:
+                column_data_type = c.COLUMN_TYPE_CONTINUOUS
+        elif dropna_unique_len == 1:
+            if 1 in dropna_column.unique():
+                column_data_type = c.COLUMN_TYPE_BOOLEAN
+            else:
+                column_data_type = c.COLUMN_TYPE_CONTINUOUS
+                unique_values = []
+        else:
+            column_data_type = c.COLUMN_TYPE_CONTINUOUS
+            unique_values = []
+    elif is_datetime64_any_dtype(pd.to_datetime(dropna_column, errors='ignore')):
+        column_data_type = c.COLUMN_TYPE_DATETIME
+        unique_values = []
+    else:
+        try:
+            if dropna_unique_len == 2:
+                unique_set = set([x.upper() for x in dropna_column.unique()])
+                if len(unique_set.intersection(set(['1', 'TRUE', 'T', 'Y', 'YES']))) == 1 and len(unique_set.intersection(set(['0', 'FALSE', 'F', 'N', 'NO', 'NONE']))) == 1:
+                    column_data_type = c.COLUMN_TYPE_BOOLEAN
+                else:
+                    column_data_type = c.COLUMN_TYPE_DISCRETE
+            elif dropna_unique_len == 1:
+                if dropna_column.unique()[0].upper() in ['1', 'TRUE', 'T', 'Y', 'YES']:
+                    column_data_type = c.COLUMN_TYPE_BOOLEAN
+                    dropna_len = len(column)  # include non-nulls because null = False in this case
+                else:
+                    column_data_type = c.COLUMN_TYPE_DISCRETE
+            else:
+                column_data_type = c.COLUMN_TYPE_DISCRETE
+        except AttributeError as e:
+            logging.error(f'Unable to write column {column.name}')
+            logging.error(e)
+            return {
+                'column_data_type': None,
+                'is_many': False,
+                'num_non_null': 0,
+                'unique_values': []
+            }
+
+    return {
+        'column_data_type': column_data_type,
+        'is_many': is_many,
+        'num_non_null': dropna_len,
+        'unique_values': unique_values
+    }
 
 
 class DBMaker():
@@ -98,14 +166,11 @@ class DBMaker():
                 self.add_table_metadata(table_name, num_records=len(df), db_location=db_location, file=data_file_name, commit=False)
 
                 for column in df.columns:
-                    dropna_column = df[column].dropna()
-                    dropna_len = len(dropna_column)
-                    if dropna_len > len(dropna_column.unique()):
-                        is_many = True
+                    x = calculate_column_metadata(df[column])
+                    if x['num_non_null'] > 0:
+                        self.add_column_metadata(table_name, column_source_name=column, column_custom_name=column, is_many=x['is_many'], num_non_null=x['num_non_null'], column_data_type=x['column_data_type'], commit=False)
                     else:
-                        is_many = False
-                    
-                    self.add_column_metadata(table_name, column_source_name=column, column_custom_name=column, is_many=is_many, num_non_null=dropna_len, commit=False)
+                        logging.warning(f'No non-null data found in {table_name}.{column}, ignoring')
         else:
             query = f"select t.name from sys.tables t "
             if self.schema_name is not None:
@@ -116,33 +181,26 @@ class DBMaker():
 
             tables = execute_sql_query(query=query, sql_server=self.sql_server, sql_db=self.sql_db)
             logging.info(f"{len(tables['name'])} tables found")
-            for table in tables['name']:
-                logging.debug(f"Writing metadata for {table}")
+            for table_name in tables['name']:
+                logging.debug(f"Writing metadata for {table_name}")
                 try:
-                    query = f"SELECT TOP {num_rows} * FROM {table}"
+                    query = f"SELECT TOP {num_rows} * FROM {table_name}"
                     df = execute_sql_query(query=query, sql_server=self.sql_server, sql_db=self.sql_db)
                     if len(df) == 0:
-                        logging.error(f'No data found in {table}, will ignore it.')
+                        logging.error(f'No data found in {table_name}, will ignore it.')
                         continue
                     for column in df.columns:
-                        dropna_column = df[column].dropna()
-                        dropna_len = len(dropna_column)
-                        if dropna_len == 0:
-                            logging.warning(f'Only null data in column {column}, will ignore it.')
-                            continue
-                        dropna_unique_len = len(dropna_column.unique())
-                        if dropna_len > dropna_unique_len:
-                            is_many = True
+                        x = calculate_column_metadata(df[column])
+                        if x['num_non_null'] > 0:
+                            self.add_column_metadata(table_name, column_source_name=column, column_custom_name=column, is_many=x['is_many'], num_non_null=x['num_non_null'], column_data_type=x['column_data_type'], commit=False)
                         else:
-                            is_many = False
-                        
-                        self.add_column_metadata(table, column_source_name=column, column_custom_name=column, is_many=is_many, num_non_null=dropna_len, commit=False)
-                    self.add_table_metadata(table, num_records=len(df), db_location=None, file=None, commit=False)
+                            logging.warning(f'No non-null data found in {table_name}.{column}, ignoring')
+                    self.add_table_metadata(table_name, num_records=len(df), db_location=None, file=None, commit=False)
                     db.session.commit()
                 except Exception as e:
                     exc_type, exc_value, exc_tb = sys.exc_info()
                     filename, line_num, func_name, text = traceback.extract_tb(exc_tb)[-1]
-                    logging.error(f'Unable to write table {table}.')
+                    logging.error(f'Unable to write table {table_name}.')
                     logging.error(f'Thrown from: {filename}')
                     logging.error(e)
                     db.session.rollback()
@@ -161,14 +219,15 @@ class DBMaker():
         if commit:
             db.session.commit()
 
-    def add_column_metadata(self, table_name, column_source_name, column_custom_name, is_many, num_non_null, commit=False):
+    def add_column_metadata(self, table_name, column_source_name, column_custom_name, is_many, num_non_null, column_data_type, commit=False):
         column_metadata = ColumnMetadata(
             dataset_name=self.dataset_name,
             table_name=table_name,
             column_source_name=column_source_name,
             column_custom_name=column_custom_name,
             num_non_null=num_non_null,
-            is_many=is_many
+            is_many=is_many,
+            data_type=column_data_type
         )
         db.session.add(column_metadata)
         if commit:
@@ -632,18 +691,41 @@ class DBExtractor():
             filter = filters.get(column, None)
             if filter is None:
                 series = df.loc[:, column]
-                if is_numeric_dtype(series):
+                column_metadata = calculate_column_metadata(series)
+                if column_metadata['column_data_type'] == c.COLUMN_TYPE_CONTINUOUS:
                     min = u.reduce_precision(series.min(), 2)
                     max = u.reduce_precision(series.max(), 2)
 
                     label = f'({min}, {max})'
                     df[column] = label
                     filter_filters.append([label])
-                else:
-                    filter_filters.append(sorted(series.unique(), key=lambda x: x.upper()))
+                elif column_metadata['column_data_type'] == c.COLUMN_TYPE_DISCRETE:
+                    filter_filters.append(sorted(column_metadata['unique_values'], key=lambda x: x.upper()))
+                elif column_metadata['column_data_type'] == c.COLUMN_TYPE_BOOLEAN:
+                    filter_filters.append(sorted(column_metadata['unique_values']))
             elif filter['type'] == 'list':
                 filter_filters.append(filter['filter'])
                 df = df[df[column].isin(filter['filter'])]
+            elif filter['type'] == 'bool':
+                column_values = df[column].unique()
+                if len(filter['filter']) == 1:
+                    true_column_value = next((x for x in column_values if str(x).upper() in ['1', 'TRUE', 'T', 'Y', 'YES']), None)
+                    false_column_value = next((x for x in column_values if str(x).upper() in ['0', 'FALSE', 'F', 'N', 'NO', 'NONE']), None)
+
+                    if true_column_value is None and false_column_value is None and len(column_values) == 1:
+                        true_column_value = column_values[0]
+                    
+                    if str(filter['filter'][0]).upper() in ['1', 'TRUE', 'T', 'Y', 'YES', str(true_column_value).upper()]:
+                        filter_filters.append([true_column_value])
+                        df = df[df[column] == true_column_value]
+                    elif str(filter['filter'][0].upper() in ['0', 'FALSE', 'F', 'N', 'NO', 'NONE', str(false_column_value).upper()]):
+                        filter_filters.append([false_column_value])
+                        if false_column_value is not None:
+                            df = df[df[column] == false_column_value]
+                        else:
+                            df = df[df[column].isnull()]
+                else:
+                    filter_filters.append(column_values)
             elif filter['type'] == 'range':
                 bin_cuts = self.get_bin_cuts(filter['filter']['min'], filter['filter']['max'], filter['filter']['bins'])
                 bin_labels = [str(x) for x in u.pairwise(bin_cuts)]
@@ -738,16 +820,30 @@ class DBExtractor():
             series = execute_sql_query(query=sql_statement, sql_server=self.sql_server, sql_db=self.sql_db).loc[:, column].dropna()
         else:
             series = pd.read_sql(sql_statement, con=self.data_conn).loc[:, column].dropna()
-        if is_numeric_dtype(series):
+
+        column_metadata = db.session.query(ColumnMetadata).filter(ColumnMetadata.dataset_name == self.dataset_name, ColumnMetadata.table_name == table, ColumnMetadata.column_source_name == column).first()
+
+        if column_metadata.data_type == c.COLUMN_TYPE_CONTINUOUS:
             return {
-                'type': c.COLUMN_TYPE_NUMERIC,
+                'type': c.COLUMN_TYPE_CONTINUOUS,
                 'min': series.min(),
                 'mean': series.mean(),
                 'max': series.max(),
                 'median': series.median()
             }
-        else:
+        elif column_metadata.data_type == c.COLUMN_TYPE_DISCRETE:
             return {
-                'type': c.COLUMN_TYPE_TEXT,
+                'type': c.COLUMN_TYPE_DISCRETE,
                 'possible_vals': sorted(list(series.unique()), key=lambda x: x.upper())
+            }
+        elif column_metadata.data_type == c.COLUMN_TYPE_BOOLEAN:
+            return {
+                'type': c.COLUMN_TYPE_BOOLEAN,
+                'possible_vals': [True, False]
+            }
+        elif column_metadata.data_type == c.COLUMN_TYPE_DATETIME:
+            return {
+                'type': c.COLUMN_TYPE_DATETIME,
+                'min': series.min(),
+                'max': series.max()
             }

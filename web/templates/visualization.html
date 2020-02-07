@@ -45,7 +45,7 @@
                 <div class="card-body" id="cb{{n+1}}">
                     {% if n == 3 %}
                         <div id="distribution_choices_text_div" style="display: none;">
-                        {% for distribution_choice in distribution_choices["TEXT"]%}
+                        {% for distribution_choice in distribution_choices["DISCRETE"]%}
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="distribution_choice" id="distribution_choice_text_{{loop.index}}" value="{{distribution_choice}}">
                                 <label class="form-check-label" for="distribution_choice_text_{{loop.index}}">{{ distribution_choice }}</label>
@@ -53,7 +53,7 @@
                         {% endfor %}
                         </div>
                         <div id="distribution_choices_numeric_div" style="display: none;">
-                        {% for distribution_choice in distribution_choices["NUMERIC"]%}
+                        {% for distribution_choice in distribution_choices["CONTINUOUS"]%}
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="distribution_choice" id="distribution_choice_numeric_{{loop.index}}" value="{{distribution_choice}}" >
                                 <label class="form-check-label" for="distribution_choice_numeric_{{loop.index}}">{{ distribution_choice }}</label>
@@ -117,7 +117,7 @@
                 $('#ch' + card_num).text(column_name)
                 $('#cb' + card_num).html('<h6>Include: </h6>')
 
-                if (return_data.type == 'TEXT'){
+                if ((return_data.type == 'DISCRETE') | (return_data.type == 'BOOLEAN')){
                     multiselect = $('<select class="form-control" multiple size=10 style="overflow-x: auto; font-size: 14px;" id=cfilter' + card_num + '>')
                     $.each(return_data.possible_vals, function(){
                         append_option(this, this, multiselect, selected=true, table_row=true)
@@ -126,7 +126,7 @@
 
                     $('#cb' + card_num).append(multiselect)
                 }
-                else {
+                else if (return_data.type == 'CONTINUOUS') {
                     card_body = $('<div class="row"><div class="col-5" style="padding: 0px;"><input type="text" class="form-control form-control-sm" id="min' + card_num +'" value=' + return_data.min + ' style="text-align: center;"></div><div class="col" style="padding: 0px;"></div><div class="col-5" style="padding: 0px;"><input type="text" class="form-control form-control-sm" id="max' + card_num + '" value=' + return_data.max + '  style="text-align: center;"></div></div><div class="row mt-2"></div><input type="text" class="js-range-slider" value="" id="slider' + card_num + '"/>')
                     $('#cb' + card_num).append(card_body)
 
@@ -182,6 +182,7 @@
                     split_div = $('<div class="row mt-3"><label for="divide' + card_num + '" class="col col-form-label d-flex align-items-center" style="font-size: 14px;">Divide range into</label></div><div class="row"><div class="col-6" style="padding-right: 0px;"><input type="number" id="divide' + card_num + '" class="form-control" value=1 min=1 max=20></div><div class="col-6 d-flex align-items-center">parts</div></div></div>')
                     $('#cb' + card_num).append(split_div)
                 }
+
                 filter_dropdown_items()  // have to include this in AJAX call
             })
         }
@@ -226,12 +227,12 @@
             make_ajax_call(type="GET", url="{{ url_for('get_column_info') }}", onSuccess=function(return_data){
                 c_outcome = {'column_id': column_id, 'type': return_data.type}
 
-                if (return_data.type == 'TEXT') {
+                if (return_data.type == 'DISCRETE') {
                     $('#distribution_choices_text_div').attr('style', '')
                     $('#distribution_choices_numeric_div').attr('style', 'display: none;')
                     $('#distribution_choice_text_1').prop('checked', true)
                 }
-                else if (return_data.type == 'NUMERIC'){
+                else if (return_data.type == 'CONTINUOUS'){
                     $('#distribution_choices_numeric_div').attr('style', '')
                     $('#distribution_choices_text_div').attr('style', 'display: none;')
                     $('#distribution_choice_numeric_1').prop('checked', true)
@@ -310,7 +311,7 @@
             }
 
             if (c_info['column_id'] != -1){
-                if (c_info['type'] == 'TEXT'){
+                if (c_info['type'] == 'DISCRETE'){
                     filter_info = {'type': 'list', 'filter': []}
                     $.each($('#cfilter' + this).find('option'), function(){
                         if ($(this).prop('selected')){
@@ -319,7 +320,16 @@
                     })
                     filters[c_info['column_id']] = filter_info
                 }
-                else if (c_info['type'] == 'NUMERIC'){
+                else if (c_info['type'] == 'BOOLEAN'){
+                    filter_info = {'type': 'bool', 'filter': []}
+                    $.each($('#cfilter' + this).find('option'), function(){
+                        if ($(this).prop('selected')){
+                            filter_info['filter'].push($(this).text())
+                        }
+                    })
+                    filters[c_info['column_id']] = filter_info
+                }
+                else if (c_info['type'] == 'CONTINUOUS'){
                     filters[c_info['column_id']] = {'type': 'range', 'filter': {'min': $('#slider' + this).data().from, 'max': $('#slider' + this).data().to, 'bins': $('#divide' + this).val()}}
                 }                
                 

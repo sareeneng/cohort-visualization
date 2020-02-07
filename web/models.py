@@ -81,6 +81,7 @@ class ColumnMetadata(db.Model):
 	is_many = db.Column(db.Boolean())
 	visible = db.Column(db.Boolean(), default=True)
 	num_non_null = db.Column(db.Integer())
+	data_type = db.Column(db.String())
 
 
 class TableRelationship(db.Model):

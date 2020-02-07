@@ -9,6 +9,7 @@ from functools import wraps
 from collections import defaultdict
 import json
 import logging
+import constants as c
 
 PAGE_ACCESS = {
     'visualization': ['Basic', 'Admin'],
@@ -99,8 +100,8 @@ def visualization():
     datasets = sorted([x[0] for x in db.session.query(DatasetMetadata.dataset_name).all()], key=lambda x: x.upper())
 
     distribution_choices = {
-        'TEXT': ['Count', 'Percents'],
-        'NUMERIC': ['Mean', 'Median', 'Sum']
+        'DISCRETE': ['Count', 'Percents'],
+        'CONTINUOUS': ['Mean', 'Median', 'Sum']
     }
     return render_template('visualization.html', header="Cohort Visualization", datasets=datasets, distribution_choices=distribution_choices, navbar_access=navbar_access())
 
@@ -232,7 +233,7 @@ def get_accessible_tables():
 def get_table_columns():
     return_data = defaultdict(list)
     chosen_dataset = request.args.get('chosen_dataset')
-    column_metadata = db.session.query(ColumnMetadata).filter(ColumnMetadata.dataset_name == chosen_dataset, ColumnMetadata.visible == True).all()  # noqa: E712
+    column_metadata = db.session.query(ColumnMetadata).filter(ColumnMetadata.dataset_name == chosen_dataset, ColumnMetadata.visible == True, ColumnMetadata.data_type != c.COLUMN_TYPE_DATETIME).all()  # noqa: E712
 
     for x in column_metadata:
         return_data[x.table_name].append({'column_id': x.id, 'column_custom_name': x.column_custom_name})
