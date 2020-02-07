@@ -839,7 +839,7 @@ class DBExtractor():
         elif column_metadata.data_type == c.COLUMN_TYPE_BOOLEAN:
             return {
                 'type': c.COLUMN_TYPE_BOOLEAN,
-                'possible_vals': [True, False]
+                'possible_vals': sorted(list(series.unique()), key=lambda x: str(x).upper())
             }
         elif column_metadata.data_type == c.COLUMN_TYPE_DATETIME:
             return {
