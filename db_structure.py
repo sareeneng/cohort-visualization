@@ -1,5 +1,6 @@
 import itertools
 import logging
+import math
 import os
 import pandas as pd
 import pyodbc
@@ -126,7 +127,7 @@ class DBMaker():
             self.sql_db = sql_db
             self.schema_name = schema_name
 
-    def create_db_metadata(self, dump_to_data_db=False, num_rows=10000, ignore_tables_with_substrings=[]):
+    def create_db_metadata(self, dump_to_data_db=False, analyze_percentage=50, min_rows=1000, max_rows=10000, ignore_tables_with_substrings=[]):
         # First check to see if either dataset_name or the folder are already in the db
         x = db.session.query(DatasetMetadata).filter(DatasetMetadata.dataset_name == self.dataset_name).first()
         if x is not None:
@@ -163,7 +164,7 @@ class DBMaker():
                 if dump_to_data_db:
                     logging.info(f'Writing {table_name} to {db_location}')
                     df.to_sql(db_location, con=self.data_conn)
-                self.add_table_metadata(table_name, num_records=len(df), db_location=db_location, file=data_file_name, commit=False)
+                self.add_table_metadata(table_name, num_records=len(df), num_analyzed=len(df), db_location=db_location, file=data_file_name, commit=False)
 
                 for column in df.columns:
                     x = calculate_column_metadata(df[column])
@@ -181,10 +182,31 @@ class DBMaker():
 
             tables = execute_sql_query(query=query, sql_server=self.sql_server, sql_db=self.sql_db)
             logging.info(f"{len(tables['name'])} tables found")
+
+            # https://blogs.msdn.microsoft.com/martijnh/2010/07/15/sql-serverhow-to-quickly-retrieve-accurate-row-count-for-table/
+            query = f"SELECT tbl.name, MAX(CAST(p.rows AS int)) AS rows FROM sys.tables AS tbl INNER JOIN sys.indexes AS idx ON idx.object_id = tbl.object_id and idx.index_id < 2 INNER JOIN sys.partitions AS p ON p.object_id=CAST(tbl.object_id AS int) AND p.index_id=idx.index_id "
+            if self.schema_name is not None:
+                query += f" WHERE (SCHEMA_NAME(tbl.schema_id)='{self.schema_name}') "
+            query += " GROUP BY tbl.name"
+
+            num_rows_df = execute_sql_query(query=query, sql_server=self.sql_server, sql_db=self.sql_db)
+            
             for table_name in tables['name']:
+                num_rows_in_db = int(num_rows_df[num_rows_df['name'] == table_name].iloc[0]['rows'])
+                if num_rows_in_db == 0:
+                    logging.warning(f'0 rows for {table_name}, will ignore it')
+                    continue
                 logging.debug(f"Writing metadata for {table_name}")
                 try:
+                    by_percentage = math.ceil(analyze_percentage / 100 * num_rows_in_db)
+                    if by_percentage < min_rows:
+                        num_rows = min_rows
+                    elif by_percentage > max_rows:
+                        num_rows = max_rows
+                    else:
+                        num_rows = by_percentage
                     query = f"SELECT TOP {num_rows} * FROM {table_name}"
+                    logging.debug(query)
                     df = execute_sql_query(query=query, sql_server=self.sql_server, sql_db=self.sql_db)
                     if len(df) == 0:
                         logging.error(f'No data found in {table_name}, will ignore it.')
@@ -195,7 +217,7 @@ class DBMaker():
                             self.add_column_metadata(table_name, column_source_name=column, column_custom_name=column, is_many=x['is_many'], num_non_null=x['num_non_null'], column_data_type=x['column_data_type'], commit=False)
                         else:
                             logging.warning(f'No non-null data found in {table_name}.{column}, ignoring')
-                    self.add_table_metadata(table_name, num_records=len(df), db_location=None, file=None, commit=False)
+                    self.add_table_metadata(table_name, num_records=num_rows_in_db, num_analyzed=len(df), db_location=None, file=None, commit=False)
                     db.session.commit()
                 except Exception as e:
                     exc_type, exc_value, exc_tb = sys.exc_info()
@@ -207,10 +229,11 @@ class DBMaker():
         logging.info("Done writing metadata")
         db.session.commit()
 
-    def add_table_metadata(self, table_name, num_records, db_location=None, file=None, commit=False):
+    def add_table_metadata(self, table_name, num_records, num_analyzed, db_location=None, file=None, commit=False):
         table_metadata = TableMetadata(
             dataset_name=self.dataset_name,
             num_records=num_records,
+            num_analyzed=num_analyzed,
             table_name=table_name,
             db_location=db_location,
             file=file

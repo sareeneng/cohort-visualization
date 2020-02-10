@@ -70,6 +70,7 @@ class TableMetadata(db.Model):
 	db_location = db.Column(db.String(), unique=True)
 	file = db.Column(db.String())
 	num_records = db.Column(db.Integer())
+	num_analyzed = db.Column(db.Integer())
 
 
 class ColumnMetadata(db.Model):
