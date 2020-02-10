@@ -227,7 +227,7 @@
             make_ajax_call(type="GET", url="{{ url_for('get_column_info') }}", onSuccess=function(return_data){
                 c_outcome = {'column_id': column_id, 'type': return_data.type}
 
-                if (return_data.type == 'DISCRETE') {
+                if ((return_data.type == 'DISCRETE') | (return_data.type == 'BOOLEAN')) {
                     $('#distribution_choices_text_div').attr('style', '')
                     $('#distribution_choices_numeric_div').attr('style', 'display: none;')
                     $('#distribution_choice_text_1').prop('checked', true)

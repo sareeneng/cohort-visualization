@@ -765,6 +765,11 @@ class DBExtractor():
                     df = (g.median()).round(2).reset_index()
                     df[aggregate_column] = df[aggregate_column].fillna(0)
 
+            # Need to convert groupby columns to strings now, otherwise get_breakdown_label breaks occasionally
+
+            for column in groupby_columns:
+                df[column] = df[column].astype(str)
+
             def get_breakdown_label(row, ind_variables):
                 return_str = ''
                 for x in ind_variables:
