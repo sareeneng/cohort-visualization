@@ -1,6 +1,6 @@
 import db_structure
+import graph
 import logging
-import os
 import utilities as u
 import unittest
 
@@ -23,66 +23,71 @@ logger.addHandler(handler_debug)
 class TestPathFinding(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.db_maker = db_structure.DBMaker(dataset_name='sample2', directory_path=os.path.join('datasets', 'sample2'))
-        self.db_maker.create_db_metadata(dump_to_data_db=True)
-        self.db_linker = db_structure.DBLinker(dataset_name='sample2')
-        self.db_linker.add_global_fk('col1')
-        self.db_linker.add_global_fk('col2')
-        self.db_linker.add_global_fk('col3')
-        self.db_linker.add_global_fk('col4')
-        self.db_linker.add_global_fk('col5')
-        self.db_linker.add_global_fk('col6')
-        self.db_linker.add_global_fk('col7')
-        self.db_linker.add_global_fk('col8')
-        self.db_extractor = db_structure.DBExtractor(dataset_name='sample2')
+        g = graph.Graph()
+        g.add_node('A')
+        g.add_node('B')
+        g.add_node('C')
+        g.add_node('D')
+        g.add_node('E')
+        g.add_node('F')
+        g.add_edge('A', 'C')
+        g.add_edge('A', 'D')
+        g.add_edge('A', 'B')
+        g.add_edge('B', 'A')
+        g.add_edge('B', 'E')
+        g.add_edge('C', 'D')
+        g.add_edge('C', 'F')
+        g.add_edge('D', 'C')
+        g.add_edge('E', 'F')
+        self.g = g
 
-    @classmethod
-    def tearDownClass(self):
-        print('Removing db')
-        self.db_maker.remove_db()
-
-    def test_two_tables(self):
-        x = self.db_extractor.find_paths_between_tables('A', 'F')
+    def test_two_nodes(self):
+        x = self.g.find_paths_between_nodes('A', 'F')
         self.assertEqual(len(x), 3)
         self.assertIn(['A', 'D', 'C', 'F'], x)
         self.assertIn(['A', 'C', 'F'], x)
         self.assertIn(['A', 'B', 'E', 'F'], x)
 
-        x = self.db_extractor.find_paths_between_tables('B', 'F')
+        x = self.g.find_paths_between_nodes('B', 'F')
         self.assertEqual(len(x), 3)
         self.assertIn(['B', 'E', 'F'], x)
         self.assertIn(['B', 'A', 'D', 'C', 'F'], x)
         self.assertIn(['B', 'A', 'C', 'F'], x)
 
         # A could have the option to go A-->C or A-->D-->C. However it will always be better to use A-->C direct unless I need to pull in a var from D
-        x = self.db_extractor.find_paths_between_tables('A', 'C')
+        x = self.g.find_paths_between_nodes('A', 'C')
         self.assertEqual([['A', 'C']], x)
 
-        x = self.db_extractor.find_paths_between_tables('A', 'A')
+        x = self.g.find_paths_between_nodes('A', 'A')
         self.assertEqual(['A'], x)
 
-        x = self.db_extractor.find_paths_between_tables('B', 'E')
+        x = self.g.find_paths_between_nodes('B', 'E')
         self.assertEqual([['B', 'E']], x)
 
-        x = self.db_extractor.find_paths_between_tables('E', 'B')
+        x = self.g.find_paths_between_nodes('E', 'B')
         self.assertEqual([], x)
 
     def test_multi(self):
-        # test back-tracking with multi_tables path-finding
-        x = self.db_extractor.find_paths_multi_tables(['A', 'D', 'C', 'F'])
+        # ensure no back-tracking with multi_tables path-finding
+        x = self.g.find_paths_multi_nodes(['A', 'D', 'C', 'F'], back_tracking_allowed=False)
+        self.assertEqual(len(x), 1)
+        self.assertIn(['A', 'D', 'C', 'F'], x)
+
+        # now check back-tracking with multi_tables path-finding
+        x = self.g.find_paths_multi_nodes(['A', 'D', 'C', 'F'], back_tracking_allowed=True)
         self.assertEqual(len(x), 2)
         self.assertIn(['A', 'D', 'C', 'F'], x)
         self.assertIn(['A', 'C', 'D', 'C', 'F'], x)
 
-        x = self.db_extractor.find_paths_multi_tables(['A', 'B', 'D', 'E'])
+        x = self.g.find_paths_multi_nodes(['A', 'B', 'D', 'E'])
         self.assertEqual([], x)
 
-        x = self.db_extractor.find_paths_multi_tables(['D', 'C', 'F'])
+        x = self.g.find_paths_multi_nodes(['D', 'C', 'F'], back_tracking_allowed=True)
         self.assertEqual(len(x), 2)
         self.assertIn(['D', 'C', 'F'], x)
         self.assertIn(['C', 'D', 'C', 'F'], x)
 
-        x = self.db_extractor.find_paths_multi_tables(['D', 'C', 'F'], fix_first=True)
+        x = self.g.find_paths_multi_nodes(['D', 'C', 'F'], fix_first=True)
         self.assertEqual([['D', 'C', 'F']], x)
 
 
@@ -106,6 +111,7 @@ class TestUtilities(unittest.TestCase):
         self.assertEqual(['A'], x)
 
 
+@unittest.skip
 class TestDataExtraction(unittest.TestCase):
     @classmethod
     def setUpClass(self):
