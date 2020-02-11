@@ -1,3 +1,4 @@
+import copy
 import logging
 import itertools
 import utilities as u
@@ -54,13 +55,17 @@ class Graph():
 
         return sibling_nodes
 
-    def find_paths_between_nodes(self, start_node, end_node, current_path=[], search_depth=5):
+    def find_paths_between_nodes(self, start_node, end_node, current_path=None, search_depth=5):
         if start_node == end_node:
             return [start_node]
         
         all_paths = []
 
-        current_path = current_path.copy() + [start_node]
+        if current_path is None:
+            current_path = Path()
+        else:
+            current_path = copy.deepcopy(current_path)
+        current_path.add_node(self.nodes[start_node])
         accessible_nodes = self.nodes[start_node].accessible_nodes
 
         if len(accessible_nodes) == 0:
@@ -69,7 +74,8 @@ class Graph():
 
         if end_node in accessible_nodes:
             # immediately return valid path rather than going through children/siblings
-            all_paths.append(current_path.copy() + [end_node])
+            current_path.add_node(self.nodes[end_node])
+            all_paths.append(current_path)
             return all_paths
 
         parent_nodes = self.get_node_parents(start_node)
@@ -84,13 +90,15 @@ class Graph():
                 sibling_siblings = self.get_node_siblings(start_node_sibling)
                 if end_node in sibling_siblings:
                     found_sibling_of_sibling = True
-                    all_paths.append(current_path.copy() + [start_node_sibling] + [end_node])
+                    current_path.add_node(self.nodes[start_node_sibling])
+                    current_path.add_node(self.nodes[end_node])
+                    all_paths.append(current_path)
             if found_sibling_of_sibling:
                 return all_paths
             else:
                 return []
 
-        if len(current_path) >= search_depth:
+        if current_path.length >= search_depth:
             return []
         
         for child_node in child_nodes:
@@ -98,7 +106,7 @@ class Graph():
                 all_paths.append(path)
 
         for sibling_node in sibling_nodes:
-            if sibling_node not in current_path:  # prevents just looping back and forth between siblings forever
+            if not current_path.contains_node(sibling_node):  # prevents just looping back and forth between siblings forever
                 for path in self.find_paths_between_nodes(start_node=sibling_node, end_node=end_node, current_path=current_path, search_depth=search_depth):
                     all_paths.append(path)
         
@@ -145,7 +153,9 @@ class Graph():
             # remove paths that traverse a node twice
             flattened_valid_complete_paths = [x for x in flattened_valid_complete_paths if len(x) == len(set(x))]
 
-        return flattened_valid_complete_paths
+        path_objects = [Path(x) for x in flattened_valid_complete_paths]
+
+        return path_objects
 
 
 class Node():
@@ -165,14 +175,50 @@ class Node():
             return
         self.accessible_node_edges[other_node] = Edge(start_node=self, end_node=other_node, start_label=this_label, end_label=other_label)
     
+    def __hash__(self):
+        return hash((self.name))
+    
     def __repr__(self):
-        return f'Node {self.name}'
+        return self.name
+
+    def __eq__(self, other):
+        return self.name == other.name
 
 
 class Edge():
-    def __init__(self, start_node, end_node, start_label=None, end_label=None):
+    def __init__(self, start_node, end_node, start_label=None, end_label=None, weight=0):
         self.start_node = start_node
         self.end_node = end_node
         # user might provide only start_label or end_label, in that case assume the start_label and end_label are the same
         self.start_label = end_label if start_label is None else start_label
         self.end_label = start_label if end_label is None else end_label
+        self.weight = weight
+
+
+class Path():
+    def __init__(self, nodes_list=None):
+        self.nodes = nodes_list if nodes_list is not None else []
+
+    @property
+    def length(self):
+        return len(self.nodes)
+
+    @property
+    def nodes_list(self):
+        return [x.name for x in self.nodes]
+
+    @property
+    def is_unidirectional(self):
+        return len(self.nodes_list) == len(set(self.nodes_list))
+
+    def add_node(self, node):
+        self.nodes.append(node)
+
+    def contains_node(self, node):
+        return node in self.nodes_list
+
+    def __eq__(self, other):
+        return self.nodes_list == other
+
+    def __iter__(self):
+        return iter(self.nodes)
