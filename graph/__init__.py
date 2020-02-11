@@ -22,15 +22,15 @@ class Graph():
         if end_node not in self.nodes:
             logging.error(f'{end_node} not in nodes.')
             return
-        self.nodes[start_node].add_edge(other_node=end_node, this_label=start_label, other_label=end_label)
+        self.nodes[start_node].add_edge(other_node=self.nodes[end_node], this_label=start_label, other_label=end_label)
 
     def get_node_parents(self, node):
         # node has a parent when the other node has an edge pointing to this node, but this node does not have an edge pointing to the other node
         accessible_nodes = self.nodes[node].accessible_nodes
         parent_nodes = []
-        for check_node in self.nodes:
+        for check_node in self.nodes.values():
             if check_node != node and check_node not in accessible_nodes:
-                if node in self.nodes[check_node].accessible_nodes:
+                if node in check_node.accessible_nodes:
                     parent_nodes.append(check_node)
         
         return parent_nodes
@@ -159,16 +159,22 @@ class Graph():
 
 
 class Node():
-    def __init__(self, name):
+    def __new__(cls, name):
+        # https://stackoverflow.com/questions/46283738/attributeerror-when-using-python-deepcopy
+        self = super().__new__(cls)
         self.name = name
         self.accessible_node_edges = {}
+        return self
+    
+    def __getnewargs__(self):
+        return (self.name,)
 
     @property
     def accessible_nodes(self):
         return self.accessible_node_edges.keys()
 
     def add_edge(self, other_node, this_label=None, other_label=None):
-        # other_node is a string
+        # other_node is an object
         # can only have one edge per node
         if other_node in self.accessible_nodes:
             logging.error(f'{self.name} is already linked to {other_node}. Cannot add an extra edge with this directionality between the two.')
@@ -182,6 +188,8 @@ class Node():
         return self.name
 
     def __eq__(self, other):
+        if type(other) == str:
+            return self.name == other
         return self.name == other.name
 
 
