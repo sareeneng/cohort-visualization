@@ -14,7 +14,7 @@ class Graph():
             return
         self.nodes[name] = Node(name)
 
-    def add_edge(self, start_node, end_node, start_label=None, end_label=None):
+    def add_edge(self, start_node, end_node, start_label=None, end_label=None, weight=0):
         # start_node and end_node are strings
         if start_node not in self.nodes:
             logging.error(f'{start_node} not in nodes.')
@@ -22,7 +22,7 @@ class Graph():
         if end_node not in self.nodes:
             logging.error(f'{end_node} not in nodes.')
             return
-        self.nodes[start_node].add_edge(other_node=self.nodes[end_node], this_label=start_label, other_label=end_label)
+        self.nodes[start_node].add_edge(other_node=self.nodes[end_node], this_label=start_label, other_label=end_label, weight=weight)
 
     def get_node_parents(self, node):
         # node has a parent when the other node has an edge pointing to this node, but this node does not have an edge pointing to the other node
@@ -54,6 +54,15 @@ class Graph():
                 sibling_nodes.append(check_node)
 
         return sibling_nodes
+
+    def find_best_paths_between_nodes(self, start_node, end_node, best_is, weight_operation, search_depth=5):
+        all_paths = self.find_paths_between_nodes(start_node, end_node, search_depth=search_depth)
+        path_weights = [x.get_weight(weight_operation) for x in all_paths]
+        if best_is == 'largest':
+            best_indices = [i for i in range(len(path_weights)) if path_weights[i] == max(path_weights)]
+        elif best_is == 'smallest':
+            best_indices = [i for i in range(len(path_weights)) if path_weights[i] == min(path_weights)]
+        return [all_paths[i] for i in best_indices]
 
     def find_paths_between_nodes(self, start_node, end_node, current_path=None, search_depth=5):
         if start_node == end_node:
@@ -173,13 +182,16 @@ class Node():
     def accessible_nodes(self):
         return self.accessible_node_edges.keys()
 
-    def add_edge(self, other_node, this_label=None, other_label=None):
+    def add_edge(self, other_node, this_label=None, other_label=None, weight=0):
         # other_node is an object
         # can only have one edge per node
         if other_node in self.accessible_nodes:
             logging.error(f'{self.name} is already linked to {other_node}. Cannot add an extra edge with this directionality between the two.')
             return
-        self.accessible_node_edges[other_node] = Edge(start_node=self, end_node=other_node, start_label=this_label, end_label=other_label)
+        self.accessible_node_edges[other_node] = Edge(start_node=self, end_node=other_node, start_label=this_label, end_label=other_label, weight=weight)
+
+    def get_edge(self, other_node):
+        return self.accessible_node_edges[other_node]
     
     def __hash__(self):
         return hash((self.name))
@@ -202,10 +214,14 @@ class Edge():
         self.end_label = start_label if end_label is None else end_label
         self.weight = weight
 
+    def __repr__(self):
+        return f'{self.start_node}-{self.start_label if self.start_label is not None else ""}-({self.weight})-{self.end_label if self.end_label is not None else ""}->{self.end_node}'
+
 
 class Path():
     def __init__(self, nodes_list=None):
         self.nodes = nodes_list if nodes_list is not None else []
+        self.edges = []
 
     @property
     def length(self):
@@ -215,12 +231,26 @@ class Path():
     def nodes_list(self):
         return [x.name for x in self.nodes]
 
-    @property
-    def is_unidirectional(self):
-        return len(self.nodes_list) == len(set(self.nodes_list))
+    def get_weight(self, weight_operation):
+        if weight_operation is None:
+            return None
+        if len(self.edges) == 0:
+            return None
+        if weight_operation == 'sum':
+            return sum([x.weight for x in self.edges])
+        elif weight_operation == 'min':
+            return min([x.weight for x in self.edges])
+        elif weight_operation == 'max':
+            return max([x.weight for x in self.edges])
 
     def add_node(self, node):
-        self.nodes.append(node)
+        if len(self.nodes) == 0:
+            self.nodes.append(node)
+        else:
+            last_node = self.nodes[-1]
+            edge = last_node.get_edge(node)
+            self.nodes.append(node)
+            self.edges.append(edge)
 
     def contains_node(self, node):
         return node in self.nodes_list
@@ -230,3 +260,6 @@ class Path():
 
     def __iter__(self):
         return iter(self.nodes)
+
+    def __repr__(self):
+        return str(self.nodes)
