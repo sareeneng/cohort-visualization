@@ -523,8 +523,8 @@ class DBExtractor():
                 self.g.add_edge(tr.reference_table, tr.other_table)
                 self.g.add_edge(tr.other_table, tr.reference_table)
     
-    def find_paths_between_tables(self, start_table, destination_table):
-        return sorted(nx.all_simple_paths(self.g, start_table, destination_table), key=lambda x: len(x))
+    def find_paths_between_tables(self, start_table, destination_table, search_depth=5):
+        return sorted(nx.all_simple_paths(self.g, start_table, destination_table, cutoff=search_depth), key=lambda x: len(x))
 
     def find_multi_tables_still_accessible_tables(self, include_tables, fix_first=False):
         # Given a list of include_tables that must be in a valid path (not necessarily in order), iterate through the rest of the tables to figure out if there are paths between include_tables and each of those
@@ -552,7 +552,15 @@ class DBExtractor():
         
         return accessible_tables
 
-    def find_paths_multi_tables(self, list_of_tables, fix_first=False):
+    def find_paths_multi_tables(self, list_of_tables):
+        all_paths = []
+        for i in itertools.permutations(list_of_tables, 2):
+            two_node_paths = self.find_paths_between_tables(i[0], i[1])
+            for j in two_node_paths:
+                all_paths.append([k for k in u.pairwise(j)])
+        return all_paths
+
+    def _find_paths_multi_tables(self, list_of_tables, fix_first=False):
         '''
         Given a list of tables in any order, find a path that traverses all of them.
 
@@ -640,7 +648,7 @@ class DBExtractor():
             except TypeError:
                 logging.error(f'Path {path} is invalid. Unable to join {previous_table} to {current_table}')
                 raise(TypeError)
-            sql_statement += f'JOIN {current_table_db} ON {previous_table_db}.{left_key} = {current_table_db}.{right_key} '
+            sql_statement += f'LEFT JOIN {current_table_db} ON {previous_table_db}.{left_key} = {current_table_db}.{right_key} '
             previous_table = current_table
 
         logging.info(sql_statement)

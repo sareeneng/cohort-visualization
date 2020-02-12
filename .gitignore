@@ -9,3 +9,4 @@ scratch.*
 *.bak
 *.db
 *.journal
+*.ipynb

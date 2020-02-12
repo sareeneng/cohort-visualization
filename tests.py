@@ -1,5 +1,4 @@
 import db_structure
-import graph
 import logging
 import utilities as u
 import unittest
@@ -23,97 +22,30 @@ logger.addHandler(handler_debug)
 class TestPathFinding(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        g = graph.Graph()
-        g.add_node('A')
-        g.add_node('B')
-        g.add_node('C')
-        g.add_node('D')
-        g.add_node('E')
-        g.add_node('F')
-        g.add_edge('A', 'C', weight=2)
-        g.add_edge('A', 'D', weight=4)
-        g.add_edge('A', 'B', weight=1)
-        g.add_edge('B', 'A', weight=3)
-        g.add_edge('B', 'E', weight=5)
-        g.add_edge('C', 'D', weight=2)
-        g.add_edge('C', 'F', weight=3)
-        g.add_edge('D', 'C', weight=3)
-        g.add_edge('E', 'F', weight=3)
-        self.g = g
+        self.db_extractor = db_structure.DBExtractor('sample3')
 
     def test_two_nodes(self):
-        x = self.g.find_paths_between_nodes('A', 'F')
-        self.assertEqual(len(x), 3)
-        self.assertIn(['A', 'D', 'C', 'F'], x)
-        self.assertIn(['A', 'C', 'F'], x)
-        self.assertIn(['A', 'B', 'E', 'F'], x)
-        sum_weights = sorted([i.get_weight('sum') for i in x])
-        self.assertEqual([5, 9, 10], sum_weights)
-        min_weights = sorted([i.get_weight('min') for i in x])
-        self.assertEqual([1, 2, 3], min_weights)
-        max_weights = sorted([i.get_weight('max') for i in x])
-        self.assertEqual([3, 4, 5], max_weights)
+        x = self.db_extractor.find_paths_between_tables('payments', 'products')
+        self.assertEqual(len(x), 2)
+        self.assertIn(['payments', 'orders', 'order_details', 'products'], x)
+        self.assertIn(['payments', 'order_details', 'products'], x)
 
-        x = self.g.find_paths_between_nodes('B', 'F')
-        self.assertEqual(len(x), 3)
-        self.assertIn(['B', 'E', 'F'], x)
-        self.assertIn(['B', 'A', 'D', 'C', 'F'], x)
-        self.assertIn(['B', 'A', 'C', 'F'], x)
-        sum_weights = sorted([i.get_weight('sum') for i in x])
-        self.assertEqual([8, 8, 13], sum_weights)
-        min_weights = sorted([i.get_weight('min') for i in x])
-        self.assertEqual([2, 3, 3], min_weights)
-        max_weights = sorted([i.get_weight('max') for i in x])
-        self.assertEqual([3, 4, 5], max_weights)
+        x = self.db_extractor.find_paths_between_tables('orders', 'order_details')
+        self.assertEqual([['orders', 'order_details']], x)
 
-        x = self.g.find_best_paths_between_nodes('A', 'F', best_is='largest', weight_operation='min')
-        self.assertEqual([['A', 'D', 'C', 'F']], x)
-        x = self.g.find_best_paths_between_nodes('A', 'F', best_is='largest', weight_operation='max')
-        self.assertEqual([['A', 'B', 'E', 'F']], x)
-        x = self.g.find_best_paths_between_nodes('A', 'F', best_is='largest', weight_operation='sum')
-        self.assertEqual([['A', 'D', 'C', 'F']], x)
-        x = self.g.find_best_paths_between_nodes('A', 'F', best_is='smallest', weight_operation='min')
-        self.assertEqual([['A', 'B', 'E', 'F']], x)
-        x = self.g.find_best_paths_between_nodes('A', 'F', best_is='smallest', weight_operation='max')
-        self.assertEqual([['A', 'C', 'F']], x)
-        x = self.g.find_best_paths_between_nodes('A', 'F', best_is='smallest', weight_operation='sum')
-        self.assertEqual([['A', 'C', 'F']], x)
-
-        # A could have the option to go A-->C or A-->D-->C. However it will always be better to use A-->C direct unless I need to pull in a var from D
-        x = self.g.find_paths_between_nodes('A', 'C')
-        self.assertEqual([['A', 'C']], x)
-
-        x = self.g.find_paths_between_nodes('A', 'A')
-        self.assertEqual(['A'], x)
-
-        x = self.g.find_paths_between_nodes('B', 'E')
-        self.assertEqual([['B', 'E']], x)
-
-        x = self.g.find_paths_between_nodes('E', 'B')
+        x = self.db_extractor.find_paths_between_tables('products', 'orders')
         self.assertEqual([], x)
 
+        x = self.db_extractor.find_paths_between_tables('payments', 'offices')
+        self.assertEqual(len(x), 4)
+        self.assertIn(['payments', 'orders', 'order_details', 'offices'], x)
+        self.assertIn(['payments', 'orders', 'customers', 'offices'], x)
+        self.assertIn(['payments', 'order_details', 'offices'], x)
+        self.assertIn(['payments', 'order_details', 'orders', 'customers', 'offices'], x)
+    
     def test_multi(self):
-        # ensure no back-tracking with multi_tables path-finding
-        x = self.g.find_paths_multi_nodes(['A', 'D', 'C', 'F'], back_tracking_allowed=False)
-        self.assertEqual(len(x), 1)
-        self.assertIn(['A', 'D', 'C', 'F'], x)
-
-        # now check back-tracking with multi_tables path-finding
-        x = self.g.find_paths_multi_nodes(['A', 'D', 'C', 'F'], back_tracking_allowed=True)
-        self.assertEqual(len(x), 2)
-        self.assertIn(['A', 'D', 'C', 'F'], x)
-        self.assertIn(['A', 'C', 'D', 'C', 'F'], x)
-
-        x = self.g.find_paths_multi_nodes(['A', 'B', 'D', 'E'])
-        self.assertEqual([], x)
-
-        x = self.g.find_paths_multi_nodes(['D', 'C', 'F'], back_tracking_allowed=True)
-        self.assertEqual(len(x), 2)
-        self.assertIn(['D', 'C', 'F'], x)
-        self.assertIn(['C', 'D', 'C', 'F'], x)
-
-        x = self.g.find_paths_multi_nodes(['D', 'C', 'F'], fix_first=True)
-        self.assertEqual([['D', 'C', 'F']], x)
+        x = self.db_extractor.find_paths_multi_tables(['payments', 'products', 'offices'])
+        self.assertEqual(len(x), )
 
 
 class TestUtilities(unittest.TestCase):
