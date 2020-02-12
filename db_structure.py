@@ -1,6 +1,7 @@
 import itertools
 import logging
 import math
+import networkx as nx
 import os
 import pandas as pd
 import pyodbc
@@ -506,36 +507,24 @@ class DBExtractor():
             self.data_conn = sqlite3.connect(flask_app.config['DATA_DB'])
         else:
             self.data_conn = None
+
+        self.g = nx.DiGraph()
+        table_metadata = db.session.query(TableMetadata).filter(TableMetadata.dataset_name == self.dataset_name).all()
+        for x in table_metadata:
+            self.g.add_node(x.table_name)
+        
+        trs = db.session.query(TableRelationship).filter(TableRelationship.dataset_name == self.dataset_name).all()
+        for tr in trs:
+            if tr.is_parent:
+                self.g.add_edge(tr.reference_table, tr.other_table)
+            if tr.is_child:
+                self.g.add_edge(tr.other_table, tr.reference_table)
+            if tr.is_sibling:
+                self.g.add_edge(tr.reference_table, tr.other_table)
+                self.g.add_edge(tr.other_table, tr.reference_table)
     
-    def find_table_all_connectable_tables(self, table):
-        # Return children and siblings, e.g. tables that I can go to next from this table
-
-        return sorted([x[0] for x in db.session.query(TableRelationship.other_table).filter(
-            TableRelationship.dataset_name == self.dataset_name,
-            TableRelationship.reference_table == table,
-            (TableRelationship.is_parent | TableRelationship.is_sibling)
-        ).all()], key=lambda x: x.upper())
-
-    def find_table_children(self, table):
-        return sorted([x[0] for x in db.session.query(TableRelationship.other_table).filter(
-            TableRelationship.dataset_name == self.dataset_name,
-            TableRelationship.reference_table == table,
-            TableRelationship.is_parent
-        ).all()], key=lambda x: x.upper())
-
-    def find_table_siblings(self, table):
-        return sorted([x[0] for x in db.session.query(TableRelationship.other_table).filter(
-            TableRelationship.dataset_name == self.dataset_name,
-            TableRelationship.reference_table == table,
-            TableRelationship.is_sibling
-        ).all()], key=lambda x: x.upper())
-
-    def find_table_parents(self, table):
-        return sorted([x[0] for x in db.session.query(TableRelationship.other_table).filter(
-            TableRelationship.dataset_name == self.dataset_name,
-            TableRelationship.reference_table == table,
-            TableRelationship.is_child
-        ).all()], key=lambda x: x.upper())
+    def find_paths_between_tables(self, start_table, destination_table):
+        return sorted(nx.all_simple_paths(self.g, start_table, destination_table), key=lambda x: len(x))
 
     def find_multi_tables_still_accessible_tables(self, include_tables, fix_first=False):
         # Given a list of include_tables that must be in a valid path (not necessarily in order), iterate through the rest of the tables to figure out if there are paths between include_tables and each of those
@@ -562,49 +551,6 @@ class DBExtractor():
                 accessible_tables.append(table)
         
         return accessible_tables
-
-    def find_paths_between_tables(self, start_table, destination_table, current_path=[], recursion_depth=5):
-        if start_table == destination_table:
-            return [start_table]
-
-        all_paths = []
-        
-        current_path = current_path.copy() + [start_table]
-        if (destination_table in self.find_table_all_connectable_tables(start_table)):  # immediately return valid path rather than going through children/siblings
-            all_paths.append(current_path.copy() + [destination_table])
-            return all_paths
-
-        elif len(self.find_table_children(start_table)) == 0 and len(self.find_table_siblings(start_table)) == 0:  # destination table wasn't found and this path has nowhere else to go
-            return []
-
-        elif destination_table in self.find_table_parents(start_table):
-            # if found in parents, then if parent is not a sibling of any of this tables siblings, then there's no path to get up to that parent
-            # if it is a sibling of a sibling, then return that sibling + destination table appended to current_path
-            found_sibling_of_sibling = False
-            start_table_siblings = self.find_table_siblings(start_table)
-            for start_table_sibling in start_table_siblings:
-                sibling_siblings = self.find_table_siblings(start_table_sibling)
-                if destination_table in sibling_siblings:
-                    found_sibling_of_sibling = True
-                    all_paths.append(current_path.copy() + [start_table_sibling] + [destination_table])
-            if found_sibling_of_sibling:
-                return all_paths
-            else:
-                return []
-        
-        elif len(current_path) >= recursion_depth:
-            return []
-
-        for child_table in self.find_table_children(start_table):
-            for path in self.find_paths_between_tables(start_table=child_table, destination_table=destination_table, current_path=current_path, recursion_depth=recursion_depth):
-                all_paths.append(path)
-        
-        for sibling_table in self.find_table_siblings(start_table):
-            if sibling_table not in current_path:  # prevents just looping across siblings forever
-                for path in self.find_paths_between_tables(start_table=sibling_table, destination_table=destination_table, current_path=current_path, recursion_depth=recursion_depth):
-                    all_paths.append(path)
-
-        return all_paths
 
     def find_paths_multi_tables(self, list_of_tables, fix_first=False):
         '''
