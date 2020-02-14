@@ -1,3 +1,4 @@
+import copy
 import itertools
 import logging
 import math
@@ -524,7 +525,9 @@ class DBExtractor():
                 self.g.add_edge(tr.other_table, tr.reference_table)
     
     def find_paths_between_tables(self, start_table, destination_table, search_depth=5):
-        return sorted(nx.all_simple_paths(self.g, start_table, destination_table, cutoff=search_depth), key=lambda x: len(x))
+        all_paths = sorted(nx.all_simple_paths(self.g, start_table, destination_table, cutoff=search_depth), key=lambda x: len(x))
+        pairwise_paths = [list(u.pairwise(x)) for x in all_paths]
+        return pairwise_paths
 
     def find_multi_tables_still_accessible_tables(self, include_tables, fix_first=False):
         # Given a list of include_tables that must be in a valid path (not necessarily in order), iterate through the rest of the tables to figure out if there are paths between include_tables and each of those
@@ -553,52 +556,75 @@ class DBExtractor():
         return accessible_tables
 
     def find_paths_multi_tables(self, list_of_tables):
-        all_paths = []
-        for i in itertools.permutations(list_of_tables, 2):
-            two_node_paths = self.find_paths_between_tables(i[0], i[1])
-            for j in two_node_paths:
-                all_paths.append([k for k in u.pairwise(j)])
-        return all_paths
+        ''' if a table has a path that goes to every other table, then it is valid'''
+        
+        # if given list [A, B, C], then valid paths are when A-->B AND A-->C, or B-->A AND B-->C, or C-->A AND C-->B
+        path_combos_to_check = []
+        for table in list_of_tables:
+            list_copy = copy.copy(list_of_tables)
+            list_copy.remove(table)
+            path_combos_to_check.append([(table, i) for i in list_copy])
 
-    def _find_paths_multi_tables(self, list_of_tables, fix_first=False):
+        # now I have a list that's like [ [(A, B), (A, C)],  [(B, A), (B, C)],  [(C, A), (C, B)].
+
+        valid_paths = []
+        for path_combo in path_combos_to_check:  # [(A, B), (A, C)]
+            partial_paths = []
+            still_valid = True
+            for path_to_check in path_combo:  # (A, B), then (B, C)
+                simple_paths = self.find_paths_between_tables(path_to_check[0], path_to_check[1])
+                if len(simple_paths) == 0:
+                    still_valid = False
+                    break
+                partial_paths.append(simple_paths)
+            if still_valid:
+                # partial_paths is now a triple-nested list like: [ [ [(A, D), (D, B)], [(A, E), (E, B)] ], [(A, F), (F, C)], [(A, G), (G, C)] ]
+                # inner-most is a single path from A-->B 
+                # next level out is all single paths from A-->B
+                # next level out is all single paths from A-->B, and A-->C
+                for i in itertools.product(*partial_paths):  # take cartesian product of the second level
+                    valid_paths.append([item for sublist in i for item in sublist])
+
         '''
-        Given a list of tables in any order, find a path that traverses all of them.
-
-        If fix_first is True, then the first element will remain constant (useful when wanting to break down a specific outcome by various other variables)
+        now within each valid path, there may be duplicate pairs so get rid of them
+        # [
+            [(A, B), (B, E), (A, B), (E, C)] --> [(A, B), (B, E), (E, C)]
+            [(A, B), (B, C)] --> no change
+        # ]
         '''
-        # first get all combos, these are candidate incomplete paths (missing intermediary tables)
-        if len(list_of_tables) == 1:
-            return [list_of_tables]
+        valid_paths_dedup = []
+        for path in valid_paths:
+            current_path = []
+            for pair in path:
+                if pair not in current_path:
+                    current_path.append(pair)
+            valid_paths_dedup.append(current_path)
 
-        permutations = itertools.permutations(list_of_tables)
-        if fix_first:
-            permutations = [x for x in permutations if x[0] == list_of_tables[0]]
-        
-        valid_incomplete_paths = []
-        for permutation in permutations:
-            is_valid = True
-            for pair in u.pairwise(permutation):
-                if len(self.find_paths_between_tables(start_table=pair[0], destination_table=pair[1])) == 0:
-                    is_valid = False
-            if is_valid:
-                valid_incomplete_paths.append(permutation)
-        
-        unflattened_valid_complete_paths = []
-        for valid_incomplete_path in valid_incomplete_paths:
-            path_possibilities_pairwise = []
-            for pair in u.pairwise(valid_incomplete_path):
-                path_possibilities_pairwise.append(self.find_paths_between_tables(start_table=pair[0], destination_table=pair[1]))
-            combos = itertools.product(*path_possibilities_pairwise)
-            for combo in combos:
-                unflattened_valid_complete_paths.append(list(combo))
+        '''
+        then if we come across a pair that only has tables that have already been traversed, then get rid of it
+        [
+            [(A, B), (A, C), (B, C)] --> [(A, B), (A, C)]
+            [(A, B), (A, D), (B, C)] no change
+        ]
+        '''
+        valid_paths_no_redundants = []
+        for path in valid_paths_dedup:
+            traversed_tables = set()
+            current_path = []
+            for i in path:
+                if i[0] not in traversed_tables or i[1] not in traversed_tables:
+                    traversed_tables.add(i[0])
+                    traversed_tables.add(i[1])
+                    current_path.append(i)
+            valid_paths_no_redundants.append(current_path)
 
-        flattened_valid_complete_paths = []
-        for l in unflattened_valid_complete_paths:
-            flattened_valid_complete_paths.append(list(u.flatten(l)))
-        
-        flattened_valid_complete_paths = u.remove_adjacent_repeats(flattened_valid_complete_paths)
-        
-        return flattened_valid_complete_paths
+        # Finally remove duplicate valid_paths
+        valid_paths_unique = []
+        for x in valid_paths_no_redundants:
+            if x not in valid_paths_unique:
+                valid_paths_unique.append(x)
+
+        return valid_paths_unique
 
     def get_joining_keys(self, table_1, table_2):
         # order matters here
