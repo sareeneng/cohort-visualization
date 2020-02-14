@@ -1,7 +1,7 @@
-payment_id,order_id,payment_amt
-1,1,3
-2,1,1
-3,2,6
-4,4,8
-5,5,4
-6,6,9
+payment_id,order_id,bank_id,payment_amt
+1,1,1,3
+2,1,1,1
+3,2,1,6
+4,4,2,8
+5,5,2,4
+6,6,4,9

@@ -15,7 +15,7 @@ import utilities as u
 from collections import defaultdict
 from decimal import Decimal as D
 from pandas.api.types import is_numeric_dtype, is_bool_dtype, is_datetime64_any_dtype
-from sqlalchemy.exc import OperationalError
+from sqlite3 import OperationalError
 from web import db, flask_app
 from web.models import DatasetMetadata, TableMetadata, ColumnMetadata, TableRelationship
 
@@ -557,14 +557,18 @@ class DBExtractor():
 
     def find_paths_multi_tables(self, list_of_tables):
         ''' if a table has a path that goes to every other table, then it is valid'''
-        
-        # if given list [A, B, C], then valid paths are when A-->B AND A-->C, or B-->A AND B-->C, or C-->A AND C-->B
-        path_combos_to_check = []
-        for table in list_of_tables:
-            list_copy = copy.copy(list_of_tables)
-            list_copy.remove(table)
-            path_combos_to_check.append([(table, i) for i in list_copy])
+        all_tables = list(self.g.nodes)
 
+        # if given list [A, B, C], and all tables are [O, A, B, C], then valid paths are when A-->B AND A-->C, or B-->A AND B-->C, or C-->A AND C-->B, or O-->A AND O-->B AND O-->C
+        path_combos_to_check = []
+        for table in all_tables:
+            list_copy = copy.copy(list_of_tables)
+            try:
+                list_copy.remove(table)
+            except ValueError:
+                pass
+            path_combos_to_check.append([(table, i) for i in list_copy])
+        
         # now I have a list that's like [ [(A, B), (A, C)],  [(B, A), (B, C)],  [(C, A), (C, B)].
 
         valid_paths = []
@@ -582,8 +586,35 @@ class DBExtractor():
                 # inner-most is a single path from A-->B 
                 # next level out is all single paths from A-->B
                 # next level out is all single paths from A-->B, and A-->C
-                for i in itertools.product(*partial_paths):  # take cartesian product of the second level
+                
+                # First reduce partial paths. Any simple path that contains all the tables in a prior simple path can be eliminated because this can only reduce data
+
+                final_partial_paths = []
+                for partial_path in partial_paths:
+                    sorted_simple_paths = sorted(partial_path, key=lambda x: len(set(u.flatten(x))))  # this sorts all simple paths from A-->B in order of number of unique tables traversed
+                    to_add_paths = []
+                    for check_path in sorted_simple_paths:
+                        check_path_is_valid = True
+                        this_path_traversed_tables = set()
+                        for pair in check_path:
+                            this_path_traversed_tables.add(pair[0])
+                            this_path_traversed_tables.add(pair[1])
+                        for added_path in to_add_paths:
+                            added_path_traversed_tables = set()
+                            for pair in added_path:
+                                added_path_traversed_tables.add(pair[0])
+                                added_path_traversed_tables.add(pair[1])
+                            if len(added_path_traversed_tables - this_path_traversed_tables) == 0:
+                                check_path_is_valid = False
+                                break
+                        if check_path_is_valid:
+                            to_add_paths.append(check_path)
+
+                    final_partial_paths.append(to_add_paths)
+                    
+                for i in itertools.product(*final_partial_paths):  # take cartesian product of the second level
                     valid_paths.append([item for sublist in i for item in sublist])
+        logging.debug(valid_paths)
 
         '''
         now within each valid path, there may be duplicate pairs so get rid of them
@@ -600,29 +631,40 @@ class DBExtractor():
                     current_path.append(pair)
             valid_paths_dedup.append(current_path)
 
+        valid_paths_no_redundants = sorted(valid_paths_dedup, key=lambda x: len(set([i for i in u.flatten(x)])))
+
         '''
-        then if we come across a pair that only has tables that have already been traversed, then get rid of it
+        sort paths by fewest tables
+        then for subsequent paths, if a valid path has been added to final list that has tables that are fully contained within this path, don't add this new path because it may reduce data
+
         [
-            [(A, B), (A, C), (B, C)] --> [(A, B), (A, C)]
-            [(A, B), (A, D), (B, C)] no change
+            [(A, B), (B, C), (C, D)] --> tables are A, B, C, D. Add since it's the first one
+            [(A, E), (E, B), (B, C), (C, D)] --> tables are A, B, C, D, E. This path contains ABCD which has already been accounted for, so discard this one
+            [(A, B), (B, E), (E, D)] --> tables are A, B, D, E. This does NOT contains ABCD, so keep this one
+
         ]
         '''
-        valid_paths_no_redundants = []
-        for path in valid_paths_dedup:
-            traversed_tables = set()
-            current_path = []
-            for i in path:
-                if i[0] not in traversed_tables or i[1] not in traversed_tables:
-                    traversed_tables.add(i[0])
-                    traversed_tables.add(i[1])
-                    current_path.append(i)
-            valid_paths_no_redundants.append(current_path)
-
-        # Finally remove duplicate valid_paths
+        
         valid_paths_unique = []
-        for x in valid_paths_no_redundants:
-            if x not in valid_paths_unique:
-                valid_paths_unique.append(x)
+        for check_path in valid_paths_no_redundants:
+            is_valid = True
+            this_path_traversed_tables = set()
+            for pair in check_path:
+                this_path_traversed_tables.add(pair[0])
+                this_path_traversed_tables.add(pair[1])
+            for verified_path in valid_paths_unique:
+                if check_path != verified_path:
+                    valid_path_traversed_tables = set()
+                    for pair in verified_path:
+                        valid_path_traversed_tables.add(pair[0])
+                        valid_path_traversed_tables.add(pair[1])
+                    if len(valid_path_traversed_tables - this_path_traversed_tables) == 0:
+                        logging.debug(f'Path {check_path} is redundant to {verified_path}')
+                        is_valid = False
+                        break
+            if is_valid:
+                logging.debug(f'Adding path {check_path}')
+                valid_paths_unique.append(check_path)
 
         return valid_paths_unique
 
