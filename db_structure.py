@@ -150,7 +150,8 @@ class DBMaker():
             folder=self.directory_path,
             prefix=prefix,
             sql_server=self.sql_server,
-            sql_db=self.sql_db
+            sql_db=self.sql_db,
+            stored_in_data_db=dump_to_data_db
         )
         db.session.add(dataset_metadata)
         db.session.commit()
@@ -161,7 +162,7 @@ class DBMaker():
             for data_file_name in data_file_names:
                 idx = data_file_name.rfind('.')
                 table_name = data_file_name[:idx]
-                db_location = f'{prefix}_{table_name}'
+                db_location = f'{prefix}_{table_name}' if dump_to_data_db else None
                 df = pd.read_csv(os.path.join(self.abs_path, data_file_name))
                 if dump_to_data_db:
                     logging.info(f'Writing {table_name} to {db_location}')
