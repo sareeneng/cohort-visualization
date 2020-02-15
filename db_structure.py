@@ -166,7 +166,7 @@ class DBMaker():
                 df = pd.read_csv(os.path.join(self.abs_path, data_file_name))
                 if dump_to_data_db:
                     logging.info(f'Writing {table_name} to {db_location}')
-                    df.to_sql(db_location, con=self.data_conn)
+                    df.to_sql(db_location, con=self.data_conn, index=False)
                 self.add_table_metadata(table_name, num_records=len(df), num_analyzed=len(df), db_location=db_location, file=data_file_name, commit=False)
 
                 for column in df.columns:
@@ -501,19 +501,32 @@ class DBExtractor():
         # path-finding, get data out
         self.dataset_name = dataset_name
         dataset_metadata = db.session.query(DatasetMetadata).filter(DatasetMetadata.dataset_name == self.dataset_name).first()
-        self.prefix = dataset_metadata.prefix
-        self.sql_server = dataset_metadata.sql_server
-        self.sql_db = dataset_metadata.sql_db
+        
+        # three options
+        # 1) Stored locally in a SQLite db created by this application. Highest priority
+        # 2) Stored remotely in a SQL Server that the user has supplied (details in dataset metadata)
+        # 3) Stored in files
 
-        if self.sql_server is None:
-            self.data_conn = sqlite3.connect(flask_app.config['DATA_DB'])
+        self.stored_in_data_db = dataset_metadata.stored_in_data_db
+        if not self.stored_in_data_db:
+            self.sql_server = dataset_metadata.sql_server
+            self.sql_db = dataset_metadata.sql_db
+            if self.sql_server is None:
+                self.data_folder = dataset_metadata.folder
+                if self.data_folder is None:
+                    raise Exception('Cannot figure out where the data is actually stored for this dataset.')
+                self.storage_type = c.STORAGE_TYPE_FILES
+            else:
+                self.storage_type = c.STORAGE_TYPE_REMOTE_DB
         else:
-            self.data_conn = None
+            self.storage_type = c.STORAGE_TYPE_LOCAL_DB
+            self.prefix = dataset_metadata.prefix
+            self.data_conn = sqlite3.connect(flask_app.config['DATA_DB'])
 
         self.g = nx.DiGraph()
         table_metadata = db.session.query(TableMetadata).filter(TableMetadata.dataset_name == self.dataset_name).all()
         for x in table_metadata:
-            self.g.add_node(x.table_name)
+            self.g.add_node(x.table_name, num_records=x.num_records)
         
         trs = db.session.query(TableRelationship).filter(TableRelationship.dataset_name == self.dataset_name).all()
         for tr in trs:
@@ -654,6 +667,14 @@ class DBExtractor():
 
         return valid_paths_unique
 
+    def get_all_dfs_with_tables(self, list_of_tables, search_depth=5):
+        # need to add in capability if columns have different names, using table relationships with reference_key, other_key
+        dfs = []
+        all_paths = self.find_paths_multi_tables(list_of_tables, search_depth=search_depth)
+        for path in all_paths:
+            dfs.append(self.get_df_from_path(path))
+        return dfs
+
     def get_joining_keys(self, table_1, table_2):
         # order matters here
         return db.session.query(TableRelationship.reference_key, TableRelationship.other_key).filter(
@@ -677,39 +698,62 @@ class DBExtractor():
         return df
 
     def prefixify(self, table_name):
-        if self.prefix is None:
+        try:
+            return f'{self.prefix}_{table_name}'
+        except NameError:
             return table_name
-        return f'{self.prefix}_{table_name}'
 
-    def get_df_from_path(self, path, table_columns_of_interest, limit_rows=None):
-        # table_columns of interest is a list of (table, column)
-        sql_statement = f'SELECT '
-        if limit_rows is not None:
-            sql_statement += f' TOP {limit_rows} '
-        for table, column in table_columns_of_interest:
-            # custom_name = self.db_customizer.get_custom_column_name(table, column)
-            sql_statement += f'{self.prefixify(table)}.{column} AS {table}_{column}, '  # AS {custom_name}, '
-        sql_statement = sql_statement[:-2]
-
-        previous_table = f'{path[0]}'
-        sql_statement += f' FROM {self.prefixify(previous_table)} '
-        for current_table in path[1:]:
-            current_table_db = f'{self.prefixify(current_table)}'
-            previous_table_db = f'{self.prefixify(previous_table)}'
-            keys = self.get_joining_keys(previous_table, current_table)
-            try:
-                left_key, right_key = keys[0], keys[1]
-            except TypeError:
-                logging.error(f'Path {path} is invalid. Unable to join {previous_table} to {current_table}')
-                raise(TypeError)
-            sql_statement += f'LEFT JOIN {current_table_db} ON {previous_table_db}.{left_key} = {current_table_db}.{right_key} '
-            previous_table = current_table
-
-        logging.info(sql_statement)
-        if self.data_conn is None:
-            df = execute_sql_query(query=sql_statement, sql_server=self.sql_server, sql_db=self.sql_db)
+    def get_df_from_path(self, path, table_columns_of_interest=None, limit_rows=None):
+        # Add ability to choose columns
+        if self.storage_type == c.STORAGE_TYPE_FILES:
+            all_tables = list(set(list(u.flatten(path))))
+            df_lookup_dict = {}
+            for table in all_tables:
+                table_metadata = db.session.query(TableMetadata).filter(TableMetadata.dataset_name == self.dataset_name, TableMetadata.table_name == table).first()
+                data_file_name = table_metadata.file
+                df_lookup_dict[table] = pd.read_csv(os.path.join(self.data_folder, data_file_name))
+            
+            first_table = path[0][0]
+            joined_tables = set()
+            joined_tables.add(first_table)
+            df = df_lookup_dict[first_table]
+            for pair in path:
+                for table in pair:
+                    if table not in joined_tables:
+                        df = df.merge(df_lookup_dict[table])
+                        joined_tables.add(table)
         else:
-            df = pd.read_sql(sql_statement, con=self.data_conn)
+            sql_statement = 'SELECT '
+            if limit_rows is not None:
+                sql_statement += f' TOP {limit_rows} '
+            elif table_columns_of_interest is None:
+                sql_statement += f' * '
+
+            if table_columns_of_interest is not None:
+                for table, column in table_columns_of_interest:
+                    # need to add custom names
+                    sql_statement += f'{self.prefixify(table)}.{column} AS {table}_{column}, '
+                sql_statement = sql_statement.strip(', ')
+            previous_table = path[0][0]
+            sql_statement += f' FROM {self.prefixify(previous_table)} '
+            joined_tables = set()
+            joined_tables.add(previous_table)
+            for pair in path:
+                # the first part of the pair will always have already been included in the path, and so can be safely ignored. Will not have a situation like [(A, B), (C, D)]. Must always be like [(A, B), (A, __)] or [(A, B), (B, __)]
+                if pair[1] not in joined_tables:
+                    try:
+                        left_key, right_key = self.get_joining_keys(pair[0], pair[1])
+                    except TypeError as e:
+                        logging.error(f'Path {path} is invalid. Unable to join {pair[0]} to {pair[1]}')
+                        raise(TypeError(e))
+                    sql_statement += f' JOIN {self.prefixify(pair[1])} ON {self.prefixify(pair[0])}.{left_key} = {self.prefixify(pair[1])}.{right_key} '
+            logging.info(sql_statement)
+
+            if self.storage_type == c.STORAGE_TYPE_LOCAL_DB:
+                df = pd.read_sql(sql_statement, con=self.data_conn)
+            else:
+                df = execute_sql_query(query=sql_statement, sql_server=self.sql_server, sql_db=self.sql_db)
+
         return df
 
     def aggregate_df(self, df_original, groupby_columns, filters, aggregate_column=None, aggregate_fxn='Count'):
