@@ -526,7 +526,20 @@ class DBExtractor():
     
     def find_paths_between_tables(self, start_table, destination_table, search_depth=5):
         all_paths = sorted(nx.all_simple_paths(self.g, start_table, destination_table, cutoff=search_depth), key=lambda x: len(x))
-        pairwise_paths = [list(u.pairwise(x)) for x in all_paths]
+        # reduce all_paths: Any simple path that contains all the tables in a prior simple path can be eliminated because this can only reduce data
+        reduced_paths = []
+        for check_path in all_paths:
+            this_path_traversed_tables = set(check_path)
+            is_valid = True
+            for added_path in reduced_paths:
+                added_path_traversed_tables = set(added_path)
+                if len(added_path_traversed_tables - this_path_traversed_tables) == 0:
+                    is_valid = False
+                    break
+            if is_valid:
+                reduced_paths.append(check_path)
+
+        pairwise_paths = [list(u.pairwise(x)) for x in reduced_paths]
         return pairwise_paths
 
     def find_multi_tables_still_accessible_tables(self, include_tables, fix_first=False):
@@ -555,7 +568,7 @@ class DBExtractor():
         
         return accessible_tables
 
-    def find_paths_multi_tables(self, list_of_tables):
+    def find_paths_multi_tables(self, list_of_tables, search_depth=5):
         ''' if a table has a path that goes to every other table, then it is valid'''
         all_tables = list(self.g.nodes)
 
@@ -586,36 +599,8 @@ class DBExtractor():
                 # inner-most is a single path from A-->B 
                 # next level out is all single paths from A-->B
                 # next level out is all single paths from A-->B, and A-->C
-                
-                # First reduce partial paths. Any simple path that contains all the tables in a prior simple path can be eliminated because this can only reduce data
-
-                final_partial_paths = []
-                for partial_path in partial_paths:
-                    sorted_simple_paths = sorted(partial_path, key=lambda x: len(set(u.flatten(x))))  # this sorts all simple paths from A-->B in order of number of unique tables traversed
-                    to_add_paths = []
-                    for check_path in sorted_simple_paths:
-                        check_path_is_valid = True
-                        this_path_traversed_tables = set()
-                        for pair in check_path:
-                            this_path_traversed_tables.add(pair[0])
-                            this_path_traversed_tables.add(pair[1])
-                        for added_path in to_add_paths:
-                            added_path_traversed_tables = set()
-                            for pair in added_path:
-                                added_path_traversed_tables.add(pair[0])
-                                added_path_traversed_tables.add(pair[1])
-                            if len(added_path_traversed_tables - this_path_traversed_tables) == 0:
-                                check_path_is_valid = False
-                                break
-                        if check_path_is_valid:
-                            to_add_paths.append(check_path)
-
-                    final_partial_paths.append(to_add_paths)
-                    
-                for i in itertools.product(*final_partial_paths):  # take cartesian product of the second level
-                    valid_paths.append([item for sublist in i for item in sublist])
-        logging.debug(valid_paths)
-
+                for i in itertools.product(*partial_paths):  # take cartesian product of the second level
+                    valid_paths.append([item for sublist in i for item in sublist])     
         '''
         now within each valid path, there may be duplicate pairs so get rid of them
         # [
