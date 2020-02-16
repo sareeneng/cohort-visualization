@@ -556,30 +556,15 @@ class DBExtractor():
         pairwise_paths = [list(u.pairwise(x)) for x in reduced_paths]
         return pairwise_paths
 
-    def find_multi_tables_still_accessible_tables(self, include_tables, fix_first=False):
-        # Given a list of include_tables that must be in a valid path (not necessarily in order), iterate through the rest of the tables to figure out if there are paths between include_tables and each of those
-        
-        # In order for a table to be potentially connectable, it must have is_child, is_sibling or is_parent = True for all of the include_tables
+    def get_still_accessible_tables(self, include_tables):
+        # to determine which tables are still accessible while including certain tables, look at all table. If any table has a path to all include_tables, then all the tables that this origin table has a path to can be included. Iterate through all nodes. Add each accessible table to a set, and then return this
 
-        # First verify that this is a valid path that has been put forward
-        if len(self.find_paths_multi_tables(include_tables, fix_first=fix_first)) == 0:
-            return []
-
-        connectable_relationships = db.session.query(TableRelationship).filter(
-            TableRelationship.other_table.in_(include_tables),
-            ((TableRelationship.is_parent) | (TableRelationship.is_sibling) | (TableRelationship.is_child))
-        ).all()
-
-        possible_tables = list(set([x.reference_table for x in connectable_relationships]))
-        accessible_tables = []
-        for table in possible_tables:
-            related_include_tables = set()
-            for x in connectable_relationships:
-                if x.reference_table == table and x.other_table in include_tables:
-                    related_include_tables.add(x.other_table)
-            if len(related_include_tables) == len(include_tables):
-                accessible_tables.append(table)
-        
+        accessible_tables = set()
+        shortest_path_dict_all_nodes = nx.shortest_path(self.g)
+        for origin_node, shortest_path_dict in shortest_path_dict_all_nodes.items():
+            if len(set(include_tables) - set(shortest_path_dict.keys())) == 0:
+                for accessible_table in shortest_path_dict.keys():
+                    accessible_tables.add(accessible_table)
         return accessible_tables
 
     def find_paths_multi_tables(self, list_of_tables, search_depth=5):
@@ -667,41 +652,45 @@ class DBExtractor():
 
         return valid_paths_unique
 
-    def get_all_dfs_with_tables(self, list_of_tables, search_depth=5):
+    def get_df_table(self, table, columns_of_interest=None, limit_rows=None):
+        if self.storage_type == c.STORAGE_TYPE_FILES:
+            table_metadata = db.session.query(TableMetadata).filter(TableMetadata.dataset_name == self.dataset_name, TableMetadata.table_name == table).first()
+            data_file_name = table_metadata.file
+            df = pd.read_csv(os.path.join(self.data_folder, data_file_name))
+            if columns_of_interest is not None:
+                df = df[columns_of_interest]
+        else:
+            sql_statement = "SELECT "
+            if limit_rows is not None and self.storage_type == c.STORAGE_TYPE_REMOTE_DB:
+                sql_statement += f' TOP {limit_rows} '
+            if columns_of_interest is not None:
+                sql_statement += ', '.join(columns_of_interest)
+            else:
+                sql_statement += ' * '
+
+            sql_statement += f" FROM {self.prefixify(table)} "
+            if limit_rows is not None and self.storage_type == c.STORAGE_TYPE_LOCAL_DB:
+                sql_statement += f' LIMIT {limit_rows} '
+
+            if self.storage_type == c.STORAGE_TYPE_LOCAL_DB:
+                df = pd.read_sql(sql_statement, con=self.data_conn)
+            else:
+                df = execute_sql_query(query=sql_statement, sql_server=self.sql_server, sql_db=self.sql_db)
+    
+        return df
+
+    def get_all_dfs_with_tables(self, list_of_tables, table_columns_of_interest=None, limit_rows=None, search_depth=5):
+        if len(list_of_tables) == 1:
+            columns_of_interest = None if table_columns_of_interest is None else [x[1] for x in table_columns_of_interest]
+            df = self.get_df_table(list_of_tables[0], columns_of_interest=columns_of_interest, limit_rows=limit_rows)
+            df.columns = [f'{list_of_tables[0]}_{x}' for x in df.columns]
+            return [df]
         # need to add in capability if columns have different names, using table relationships with reference_key, other_key
         dfs = []
         all_paths = self.find_paths_multi_tables(list_of_tables, search_depth=search_depth)
         for path in all_paths:
-            dfs.append(self.get_df_from_path(path))
+            dfs.append(self.get_df_from_path(path, table_columns_of_interest=table_columns_of_interest, limit_rows=limit_rows))
         return dfs
-
-    def get_joining_keys(self, table_1, table_2):
-        # order matters here
-        return db.session.query(TableRelationship.reference_key, TableRelationship.other_key).filter(
-            TableRelationship.reference_table == table_1,
-            TableRelationship.other_table == table_2
-        ).first()
-
-    def get_biggest_df_from_paths(self, paths, table_columns_of_interest, limit_rows=None):
-        if len(paths) == 1:
-            return self.get_df_from_path(paths[0], table_columns_of_interest, limit_rows=limit_rows)
-
-        dfs = []
-        for path in paths:
-            dfs.append(self.get_df_from_path(path, table_columns_of_interest, limit_rows=limit_rows))
-        biggest_df = dfs[0]
-
-        for df in dfs[1:]:
-            if len(df) > len(biggest_df):
-                biggest_df = df
-
-        return df
-
-    def prefixify(self, table_name):
-        try:
-            return f'{self.prefix}_{table_name}'
-        except NameError:
-            return table_name
 
     def get_df_from_path(self, path, table_columns_of_interest=None, limit_rows=None):
         # Add ability to choose columns
@@ -709,31 +698,35 @@ class DBExtractor():
             all_tables = list(set(list(u.flatten(path))))
             df_lookup_dict = {}
             for table in all_tables:
-                table_metadata = db.session.query(TableMetadata).filter(TableMetadata.dataset_name == self.dataset_name, TableMetadata.table_name == table).first()
-                data_file_name = table_metadata.file
-                df_lookup_dict[table] = pd.read_csv(os.path.join(self.data_folder, data_file_name))
-            
+                table_df = self.get_df_table(table, limit_rows=limit_rows)
+                table_df.columns = [f'{table}_{x}' for x in table_df.columns]
+                df_lookup_dict[table] = table_df
+
             first_table = path[0][0]
             joined_tables = set()
             joined_tables.add(first_table)
             df = df_lookup_dict[first_table]
             for pair in path:
-                for table in pair:
-                    if table not in joined_tables:
-                        df = df.merge(df_lookup_dict[table])
-                        joined_tables.add(table)
+                if pair[1] not in joined_tables:
+                    try:
+                        left_key, right_key = self.get_joining_keys(pair[0], pair[1])
+                    except TypeError as e:
+                        logging.error(f'Path {path} is invalid. Unable to join {pair[0]} to {pair[1]}')
+                        raise(TypeError(e))
+
+                    df = df.merge(df_lookup_dict[pair[1]], left_on=f'{pair[0]}_{left_key}', right_on=f'{pair[1]}_{right_key}')
         else:
             sql_statement = 'SELECT '
-            if limit_rows is not None:
+            if limit_rows is not None and self.storage_type == c.STORAGE_TYPE_REMOTE_DB:
                 sql_statement += f' TOP {limit_rows} '
-            elif table_columns_of_interest is None:
-                sql_statement += f' * '
-
+            
             if table_columns_of_interest is not None:
                 for table, column in table_columns_of_interest:
                     # need to add custom names
                     sql_statement += f'{self.prefixify(table)}.{column} AS {table}_{column}, '
                 sql_statement = sql_statement.strip(', ')
+            else:
+                sql_statement += ' * '
             previous_table = path[0][0]
             sql_statement += f' FROM {self.prefixify(previous_table)} '
             joined_tables = set()
@@ -747,6 +740,10 @@ class DBExtractor():
                         logging.error(f'Path {path} is invalid. Unable to join {pair[0]} to {pair[1]}')
                         raise(TypeError(e))
                     sql_statement += f' JOIN {self.prefixify(pair[1])} ON {self.prefixify(pair[0])}.{left_key} = {self.prefixify(pair[1])}.{right_key} '
+                    
+                    joined_tables.add(pair[1])
+            if limit_rows is not None and self.storage_type == c.STORAGE_TYPE_LOCAL_DB:
+                sql_statement += f' LIMIT {limit_rows}'
             logging.info(sql_statement)
 
             if self.storage_type == c.STORAGE_TYPE_LOCAL_DB:
@@ -754,7 +751,25 @@ class DBExtractor():
             else:
                 df = execute_sql_query(query=sql_statement, sql_server=self.sql_server, sql_db=self.sql_db)
 
+        if table_columns_of_interest is not None:
+            extract_columns = [f'{x[0]}_{x[1]}' for x in table_columns_of_interest]
+            df = df[extract_columns]
+
         return df
+
+
+    def get_joining_keys(self, table_1, table_2):
+        # order matters here
+        return db.session.query(TableRelationship.reference_key, TableRelationship.other_key).filter(
+            TableRelationship.reference_table == table_1,
+            TableRelationship.other_table == table_2
+        ).first()
+
+    def prefixify(self, table_name):
+        try:
+            return f'{self.prefix}_{table_name}'
+        except NameError:
+            return table_name
 
     def aggregate_df(self, df_original, groupby_columns, filters, aggregate_column=None, aggregate_fxn='Count'):
         df = df_original.copy(deep=True)
@@ -892,14 +907,7 @@ class DBExtractor():
         return bin_cuts
 
     def analyze_column(self, table, column, limit_rows=None):
-        sql_statement = "SELECT "
-        if limit_rows is not None:
-            sql_statement += f" TOP {limit_rows} {column} "
-        sql_statement += f' FROM {self.prefixify(table)}'
-        if self.data_conn is None:
-            series = execute_sql_query(query=sql_statement, sql_server=self.sql_server, sql_db=self.sql_db).loc[:, column].dropna()
-        else:
-            series = pd.read_sql(sql_statement, con=self.data_conn).loc[:, column].dropna()
+        series = self.get_df_table(table, columns_of_interest=[column], limit_rows=limit_rows).loc[:, column].dropna()
 
         column_metadata = db.session.query(ColumnMetadata).filter(ColumnMetadata.dataset_name == self.dataset_name, ColumnMetadata.table_name == table, ColumnMetadata.column_source_name == column).first()
 

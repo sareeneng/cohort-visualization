@@ -150,8 +150,8 @@ def get_graph_data():
             aggregate_column = f'{x.table_name}_{x.column_source_name}'
             aggregate_column_display_name = x.column_custom_name
 
-    paths = db_extractor.find_paths_multi_tables(tables)
-    df = db_extractor.get_biggest_df_from_paths(paths, table_columns_of_interest, limit_rows=10000)
+    dfs = db_extractor.get_all_dfs_with_tables(tables, table_columns_of_interest=table_columns_of_interest, limit_rows=10000)
+    df = sorted(dfs, key=lambda x: len(x))[-1]
 
     # Gets filters with {column_id: filter data}
     filters_with_id_keys = json.loads(request.args.get('filters', None))
@@ -218,7 +218,7 @@ def get_accessible_tables():
         include_tables = list(set([x[0] for x in db.session.query(ColumnMetadata.table_name).filter(ColumnMetadata.id.in_(all_chosen_column_ids))]))
         
         db_extractor = db_structure.DBExtractor(dataset_name=chosen_dataset)
-        accessible_tables = db_extractor.find_multi_tables_still_accessible_tables(include_tables=include_tables)
+        accessible_tables = db_extractor.get_still_accessible_tables(include_tables=include_tables)
         for table in all_tables:
             if table in include_tables or table in accessible_tables:
                 return_data[table] = True
