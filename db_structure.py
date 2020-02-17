@@ -299,12 +299,23 @@ class DBLinker():
         common_columns = sorted([k for k, v in column_counts.items() if v > 1])
         return common_columns
 
-    def column_type_is_many(self, table, column):
-        found_row = db.session.query(ColumnMetadata).filter(ColumnMetadata.dataset_name == self.dataset_name, ColumnMetadata.table_name == table, ColumnMetadata.column_source_name == column).first()
+    def get_column_metadata(self, table, column):
+        return db.session.query(ColumnMetadata).filter(ColumnMetadata.dataset_name == self.dataset_name, ColumnMetadata.table_name == table, ColumnMetadata.column_source_name == column).first()
+
+    def column_is_many(self, table, column):
+        found_row = self.get_column_metadata(table, column)
         try:
             return found_row.is_many
         except AttributeError:
             logging.error(f'Unable to find column type for {table}.{column}')
+            return None
+
+    def column_type(self, table, column):
+        found_row = self.get_column_metadata(table, column)
+        try:
+            return found_row.data_type
+        except AttributeError:
+            logging.error(f'Unable to find data type for {table}.{column}')
             return None
 
     def table_connectable_relationship_exists(self, table_1, table_2):
@@ -331,11 +342,11 @@ class DBLinker():
         db.session.commit()
 
     def add_fk(self, table_1, column_1, table_2, column_2, commit=True):
-        column_1_is_many = self.column_type_is_many(table_1, column_1)
-        column_2_is_many = self.column_type_is_many(table_2, column_2)
+        column_1_metadata = self.get_column_metadata(table_1, column_1)
+        column_2_metadata = self.get_column_metadata(table_2, column_2)
         
-        if column_1_is_many:
-            if column_2_is_many:
+        if column_1_metadata.is_many:
+            if column_2_metadata.is_many:
                 self.add_step_sibling_link(step_sibling_1_table=table_1, step_sibling_1_column=column_1, step_sibling_2_table=table_2, step_sibling_2_column=column_2)
                 if commit:
                     db.session.commit()
@@ -345,13 +356,19 @@ class DBLinker():
         if tr_exists:
             logging.info(f'Relationship already exists between {table_1} and {table_2} on {link}. Cannot assign additional foreign key {column_1}->{column_2} between these tables.')  # serves as a safety check.
         else:
-            if column_1_is_many and not column_2_is_many:
+            # if we are going to join these tables together, then the joining columns should be distinct and not continuous
+            if column_1_metadata.data_type != c.COLUMN_TYPE_DISCRETE:
+                column_1_metadata.data_type = c.COLUMN_TYPE_DISCRETE
+            if column_2_metadata.data_type != c.COLUMN_TYPE_DISCRETE:
+                column_2_metadata.data_type = c.COLUMN_TYPE_DISCRETE
+
+            if column_1_metadata.is_many and not column_2_metadata.is_many:
                 self.add_parent_child_link(parent_table=table_1, parent_column=column_1, child_table=table_2, child_column=column_2)
-            elif not column_1_is_many:
-                if column_2_is_many:
+            elif not column_1_metadata.is_many:
+                if column_2_metadata.is_many:
                     self.add_parent_child_link(parent_table=table_2, parent_column=column_2, child_table=table_1, child_column=column_1)
                 
-                elif not column_2_is_many:
+                elif not column_2_metadata.is_many:
                     self.add_sibling_link(sibling_1_table=table_1, sibling_1_column=column_1, sibling_2_table=table_2, sibling_2_column=column_2)
         if commit:
             db.session.commit()
@@ -922,7 +939,7 @@ class DBExtractor():
         elif column_metadata.data_type == c.COLUMN_TYPE_DISCRETE:
             return {
                 'type': c.COLUMN_TYPE_DISCRETE,
-                'possible_vals': sorted(list(series.unique()), key=lambda x: x.upper())
+                'possible_vals': sorted(list(series.unique()), key=lambda x: str(x).upper())
             }
         elif column_metadata.data_type == c.COLUMN_TYPE_BOOLEAN:
             return {
