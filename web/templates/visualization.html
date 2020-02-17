@@ -84,6 +84,7 @@
 
 
     $('#dataset_select').change(function(){
+        clear()
         chosen_dataset = $(this).val()
         get_table_column_data()
     })
@@ -245,6 +246,10 @@
     })
 
     $('#clear_btn').on('click', function(){
+        clear()
+    })
+
+    function clear(){
         $('#outcome_variable').selectpicker('val', '')
         card_num = 1
         $('#ch1').text('')
@@ -265,7 +270,7 @@
         var graph = $('#graph');
         if (myChart){myChart.destroy()}
 
-    })
+    }
 
     function get_table_column_data(){
         send_data = {
