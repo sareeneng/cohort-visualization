@@ -8,5 +8,5 @@ scratch.*
 *.pdf
 *.bak
 *.db
-*.journal
+*journal
 *.ipynb

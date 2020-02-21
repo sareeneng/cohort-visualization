@@ -61,6 +61,7 @@ class DatasetMetadata(db.Model):
 	prefix = db.Column(db.String(), unique=True)
 	sql_server = db.Column(db.String())
 	sql_db = db.Column(db.String())
+	schema = db.Column(db.String())
 	stored_in_data_db = db.Column(db.Boolean())
 
 

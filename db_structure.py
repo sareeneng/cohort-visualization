@@ -112,7 +112,7 @@ class DBMaker():
     This class will take the files in the directory and then create tables in the main application db. It will also add metadata
     '''
 
-    def __init__(self, dataset_name, directory_path=None, data_file_extension='.csv', delimiter=',', sql_server=None, sql_db=None, schema_name=None):
+    def __init__(self, dataset_name, directory_path=None, data_file_extension='.csv', delimiter=',', sql_server=None, sql_db=None, schema=None):
         self.dataset_name = dataset_name
         self.data_conn = sqlite3.connect(flask_app.config['DATA_DB'])
         if directory_path is not None:
@@ -121,15 +121,16 @@ class DBMaker():
             self.data_file_extension = data_file_extension
             self.sql_server = None
             self.sql_db = None
+            self.schema = None
         else:
             self.directory_path = None
             self.abs_path = None
             self.data_file_extension = None
             self.sql_server = sql_server
             self.sql_db = sql_db
-            self.schema_name = schema_name
+            self.schema = schema
 
-    def create_db_metadata(self, dump_to_data_db=False, analyze_percentage=50, min_rows=1000, max_rows=10000, ignore_tables_with_substrings=[]):
+    def create_db_metadata(self, dump_to_data_db=False, analyze_percentage=50, min_rows_to_analyze=1000, max_rows=10000, ignore_tables_with_substrings=[], min_records_to_add=0):
         # First check to see if either dataset_name or the folder are already in the db
         x = db.session.query(DatasetMetadata).filter(DatasetMetadata.dataset_name == self.dataset_name).first()
         if x is not None:
@@ -151,6 +152,7 @@ class DBMaker():
             prefix=prefix,
             sql_server=self.sql_server,
             sql_db=self.sql_db,
+            schema=self.schema,
             stored_in_data_db=dump_to_data_db
         )
         db.session.add(dataset_metadata)
@@ -177,8 +179,8 @@ class DBMaker():
                         logging.warning(f'No non-null data found in {table_name}.{column}, ignoring')
         else:
             query = f"select t.name from sys.tables t "
-            if self.schema_name is not None:
-                query += f" WHERE schema_name(t.schema_id) = '{self.schema_name}' "
+            if self.schema is not None:
+                query += f" WHERE schema_name(t.schema_id) = '{self.schema}' "
             for ignore_substring in ignore_tables_with_substrings:
                 query += f" AND t.name NOT LIKE '%{ignore_substring}%' "
             query += " ORDER BY name"
@@ -188,8 +190,8 @@ class DBMaker():
 
             # https://blogs.msdn.microsoft.com/martijnh/2010/07/15/sql-serverhow-to-quickly-retrieve-accurate-row-count-for-table/
             query = f"SELECT tbl.name, MAX(CAST(p.rows AS int)) AS rows FROM sys.tables AS tbl INNER JOIN sys.indexes AS idx ON idx.object_id = tbl.object_id and idx.index_id < 2 INNER JOIN sys.partitions AS p ON p.object_id=CAST(tbl.object_id AS int) AND p.index_id=idx.index_id "
-            if self.schema_name is not None:
-                query += f" WHERE (SCHEMA_NAME(tbl.schema_id)='{self.schema_name}') "
+            if self.schema is not None:
+                query += f" WHERE (SCHEMA_NAME(tbl.schema_id)='{self.schema}') "
             query += " GROUP BY tbl.name"
 
             num_rows_df = execute_sql_query(query=query, sql_server=self.sql_server, sql_db=self.sql_db)
@@ -202,8 +204,8 @@ class DBMaker():
                 logging.debug(f"Writing metadata for {table_name}")
                 try:
                     by_percentage = math.ceil(analyze_percentage / 100 * num_rows_in_db)
-                    if by_percentage < min_rows:
-                        num_rows = min_rows
+                    if by_percentage < min_rows_to_analyze:
+                        num_rows = min_rows_to_analyze
                     elif by_percentage > max_rows:
                         num_rows = max_rows
                     else:
@@ -213,6 +215,9 @@ class DBMaker():
                     df = execute_sql_query(query=query, sql_server=self.sql_server, sql_db=self.sql_db)
                     if len(df) == 0:
                         logging.error(f'No data found in {table_name}, will ignore it.')
+                        continue
+                    if len(df) < min_records_to_add:
+                        logging.warning(f'Only {len(df)} records in {table_name} which is below the set threshold of {min_records_to_add}, will ignore it.')
                         continue
                     for column in df.columns:
                         x = calculate_column_metadata(df[column])
@@ -291,6 +296,44 @@ class DBLinker():
         # Create global FKs, custom FKs. Write to .links file
         self.dataset_name = dataset_name
 
+    def use_source_fks(self):
+        # https://stackoverflow.com/questions/483193/how-can-i-list-all-foreign-keys-referencing-a-given-table-in-sql-server
+        dataset_metadata = db.session.query(DatasetMetadata).filter(DatasetMetadata.dataset_name == self.dataset_name).first()
+        
+        query = f"SELECT  obj.name AS FK_NAME, \
+sch.name AS [schema_name], \
+tab1.name AS [table], \
+col1.name AS [column], \
+tab2.name AS [referenced_table], \
+col2.name AS [referenced_column] \
+FROM sys.foreign_key_columns fkc \
+INNER JOIN sys.objects obj \
+ON obj.object_id = fkc.constraint_object_id \
+INNER JOIN sys.tables tab1 \
+ON tab1.object_id = fkc.parent_object_id \
+INNER JOIN sys.schemas sch \
+ON tab1.schema_id = sch.schema_id \
+INNER JOIN sys.columns col1 \
+ON col1.column_id = parent_column_id AND col1.object_id = tab1.object_id \
+INNER JOIN sys.tables tab2 \
+ON tab2.object_id = fkc.referenced_object_id \
+INNER JOIN sys.columns col2 \
+ON col2.column_id = referenced_column_id AND col2.object_id = tab2.object_id \
+WHERE sch.name='{dataset_metadata.schema}' "
+
+        df_fks = execute_sql_query(query, dataset_metadata.sql_server, dataset_metadata.sql_db)
+
+        for idx, row in df_fks.iterrows():
+            table_1 = row['table']
+            table_2 = row['referenced_table']
+            column_1 = row['column']
+            column_2 = row['referenced_column']
+
+            logging.info(f'Linking {table_1}.{column_1} --> {table_2}.{column_2}')
+
+            self.add_fk(table_1, column_1, table_2, column_2, commit=False)
+        db.session.commit()
+
     def get_common_column_names(self):
         all_column_metadata = db.session.query(ColumnMetadata).filter(ColumnMetadata.dataset_name == self.dataset_name).all()
         column_counts = defaultdict(int)
@@ -344,6 +387,13 @@ class DBLinker():
     def add_fk(self, table_1, column_1, table_2, column_2, commit=True):
         column_1_metadata = self.get_column_metadata(table_1, column_1)
         column_2_metadata = self.get_column_metadata(table_2, column_2)
+
+        if column_1_metadata is None:
+            logging.error(f"Cannot find {table_1}.{column_1} metadata")
+            return
+        if column_2_metadata is None:
+            logging.error(f"Cannot find {table_2}.{column_2} metadata")
+            return
         
         if column_1_metadata.is_many:
             if column_2_metadata.is_many:
@@ -612,11 +662,11 @@ class DBExtractor():
                 partial_paths.append(simple_paths)
             if still_valid:
                 # partial_paths is now a triple-nested list like: [ [ [(A, D), (D, B)], [(A, E), (E, B)] ], [(A, F), (F, C)], [(A, G), (G, C)] ]
-                # inner-most is a single path from A-->B 
+                # inner-most is a single path from A-->B
                 # next level out is all single paths from A-->B
                 # next level out is all single paths from A-->B, and A-->C
                 for i in itertools.product(*partial_paths):  # take cartesian product of the second level
-                    valid_paths.append([item for sublist in i for item in sublist])     
+                    valid_paths.append([item for sublist in i for item in sublist])
         '''
         now within each valid path, there may be duplicate pairs so get rid of them
         # [
@@ -693,7 +743,7 @@ class DBExtractor():
                 df = pd.read_sql(sql_statement, con=self.data_conn)
             else:
                 df = execute_sql_query(query=sql_statement, sql_server=self.sql_server, sql_db=self.sql_db)
-    
+
         return df
 
     def get_all_dfs_with_tables(self, list_of_tables, table_columns_of_interest=None, limit_rows=None, search_depth=5):
@@ -705,6 +755,7 @@ class DBExtractor():
         # need to add in capability if columns have different names, using table relationships with reference_key, other_key
         dfs = []
         all_paths = self.find_paths_multi_tables(list_of_tables, search_depth=search_depth)
+        logging.debug(f'All paths for {list_of_tables}: {all_paths}')
         for path in all_paths:
             dfs.append(self.get_df_from_path(path, table_columns_of_interest=table_columns_of_interest, limit_rows=limit_rows))
         return dfs
@@ -774,18 +825,18 @@ class DBExtractor():
 
         return df
 
-
     def get_joining_keys(self, table_1, table_2):
         # order matters here
         return db.session.query(TableRelationship.reference_key, TableRelationship.other_key).filter(
             TableRelationship.reference_table == table_1,
-            TableRelationship.other_table == table_2
+            TableRelationship.other_table == table_2,
+            ((TableRelationship.is_parent == True) | (TableRelationship.is_sibling == True))  # noqa: E712
         ).first()
 
     def prefixify(self, table_name):
         try:
             return f'{self.prefix}_{table_name}'
-        except NameError:
+        except (NameError, AttributeError):
             return table_name
 
     def aggregate_df(self, df_original, groupby_columns, filters, aggregate_column=None, aggregate_fxn='Count'):
