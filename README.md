@@ -1,4 +1,6 @@
 # cohort-visualization
+First see https://arxiv.org/abs/2009.14821 for an explanation of what this project accomplishes.
+
 This project has two main parts to it
 
 1) Creating a structure to quickly relate SQL-style datafiles to each other, using "graph database"-like structure
